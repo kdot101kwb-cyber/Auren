@@ -4,7 +4,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { getFirestore, connectFirestoreEmulator, doc, getDoc, setDoc, updateDoc, deleteDoc, runTransaction, Timestamp } = require('firebase/firestore');
+const firebase = require('firebase/compat/app');
+require('firebase/compat/firestore');
+const { Timestamp } = firebase.firestore;
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'auren-emulator';
@@ -12,25 +14,22 @@ let testEnv;
 
 /** Use the modular Firestore SDK with the app supplied by a rules test context. */
 function firestoreFor(context) {
-  const db = getFirestore(context.getApp());
-  // initializeTestEnvironment loads rules into the emulator, but the modular
-  // Firestore SDK must also be explicitly pointed at that emulator. Without
-  // this, tests attempt to reach the project ID as a remote Firestore service
-  // and retry PERMISSION_DENIED errors for minutes.
-  connectFirestoreEmulator(db, '127.0.0.1', 8080);
+  // Use the Firestore instance from the rules test context so disabled-rules
+  // seeding and authenticated test contexts are honored consistently.
+  const db = context.firestore();
   const wrapRef = (path) => {
-    const ref = doc(db, path);
+    const ref = db.doc(path);
     return {
       _ref: ref,
-      get: () => getDoc(ref),
-      set: (data) => setDoc(ref, data),
-      update: (data) => updateDoc(ref, data),
-      delete: () => deleteDoc(ref),
+      get: () => ref.get(),
+      set: (data) => ref.set(data),
+      update: (data) => ref.update(data),
+      delete: () => ref.delete(),
     };
   };
   return {
     doc: wrapRef,
-    runTransaction: (updateFunction) => runTransaction(db, (transaction) =>
+    runTransaction: (updateFunction) => db.runTransaction((transaction) =>
       updateFunction({
         get: (ref) => transaction.get(ref._ref),
         update: (ref, data) => transaction.update(ref._ref, data),
