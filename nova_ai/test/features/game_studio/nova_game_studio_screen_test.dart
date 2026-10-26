@@ -17,8 +17,23 @@ void main() {
 
   testWidgets('shows linked pipeline and filters the twenty-tool catalogue', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: NovaGameStudioScreen()));
+    await tester.scrollUntilVisible(
+      find.text('مسار صناعة اللعبة'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('مسار صناعة اللعبة'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('كتالوج الأدوات المجانية (20)'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('كتالوج الأدوات المجانية (20)'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('game_tools_search')),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.enterText(find.byKey(const Key('game_tools_search')), 'Blender');
     await tester.pumpAndSettle();
     // The query field itself also contains "Blender".
