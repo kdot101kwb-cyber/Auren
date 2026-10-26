@@ -11,6 +11,7 @@ import 'features/revenue/nova_revenue_engine_screen.dart';
 import 'features/opportunities/global_opportunity_radar_screen.dart';
 import 'features/security/password_lab_screen.dart';
 import 'features/security/nova_wifi_helper_screen.dart';
+import 'features/offline/nova_offline_workspace_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -134,6 +135,7 @@ class _NovaHomeState extends State<NovaHome> {
       const GlobalOpportunityRadarScreen(),
       const PasswordLabScreen(),
       const NovaWifiHelperScreen(),
+      const NovaOfflineWorkspaceScreen(),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -152,6 +154,7 @@ class _NovaHomeState extends State<NovaHome> {
               PopupMenuItem(value: 11, child: Text('الرادار العالمي للفرص')),
               PopupMenuItem(value: 12, child: Text('NOVA Password Lab · أمان الحسابات والشبكات')),
               PopupMenuItem(value: 13, child: Text('مساعد Wi-Fi')),
+              PopupMenuItem(value: 14, child: Text('مساحة NOVA دون إنترنت')),
             ],
           ),
           IconButton(onPressed: () => showAboutDialog(context: context, applicationName: 'NOVA AI', applicationVersion: '0.2.0', children: const [Text('نسخة أولية قيد التحقق. بعض الأدوات تحتاج ربط خدمات وخادم آمن.')]), icon: const Icon(Icons.info_outline)),
@@ -205,6 +208,8 @@ class _NovaHomeState extends State<NovaHome> {
     FilledButton.icon(onPressed: () => setState(() => tab = 12), icon: const Icon(Icons.security), label: const Text('فتح NOVA Password Lab')),
     const SizedBox(height: 8),
     FilledButton.icon(onPressed: () => setState(() => tab = 13), icon: const Icon(Icons.wifi_find), label: const Text('فتح مساعد Wi-Fi')),
+    const SizedBox(height: 8),
+    FilledButton.icon(onPressed: () => setState(() => tab = 14), icon: const Icon(Icons.offline_bolt), label: const Text('فتح مساحة العمل دون إنترنت')),
     const SizedBox(height: 18),
     const Text('خطة العمل التالية', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
     const SizedBox(height: 8),
