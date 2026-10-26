@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nova_ai/features/game_studio/nova_game_studio_screen.dart';
 
 void main() {
-  testWidgets('generates starter Godot files from an idea', (tester) async {
+  testWidgets('generates starter Godot files and exposes ZIP export', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: NovaGameStudioScreen()));
     await tester.enterText(find.byKey(const Key('game_idea_input')), 'Space Crystal Adventure');
     await tester.tap(find.byKey(const Key('generate_game_button')));
@@ -15,8 +15,10 @@ void main() {
     expect(find.textContaining('لم يتم تشغيل Godot'), findsOneWidget);
   });
 
-  testWidgets('search filters game tools', (tester) async {
+  testWidgets('shows linked pipeline and filters the twenty-tool catalogue', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: NovaGameStudioScreen()));
+    expect(find.text('مسار صناعة اللعبة'), findsOneWidget);
+    expect(find.text('كتالوج الأدوات المجانية (20)'), findsOneWidget);
     await tester.enterText(find.byKey(const Key('game_tools_search')), 'Blender');
     await tester.pumpAndSettle();
     // The query field itself also contains "Blender".
