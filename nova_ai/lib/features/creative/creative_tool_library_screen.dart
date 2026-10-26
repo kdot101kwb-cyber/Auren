@@ -47,6 +47,15 @@ class _CreativeToolLibraryScreenState extends State<CreativeToolLibraryScreen> {
     _Tool('Canva Video','https://www.canva.com','فيديو','موبايل / ويب / كمبيوتر','خطة مجانية؛ عناصر Pro مستثناة'),
     _Tool('Olive Video Editor','https://olivevideoeditor.org','فيديو','كمبيوتر','مفتوح المصدر؛ راجع حالة الإصدار'),
     _Tool('Natron','https://natrongithub.github.io','فيديو','كمبيوتر','مفتوح المصدر للمؤثرات والتركيب'),
+    _Tool('MoneyPrinterTurbo','https://github.com/harry0703/MoneyPrinterTurbo','فيديو','كمبيوتر / خادم','تجميع فيديو قصير آلياً؛ بعض مزودات الصوت والذكاء قد تتطلب مفاتيح أو تكلفة'),
+    _Tool('Wan Video','https://github.com/Wan-Video/Wan2.1','فيديو','كمبيوتر / GPU','توليد فيديو؛ يتطلب نماذج وموارد GPU مناسبة'),
+    _Tool('LTX-Video','https://github.com/Lightricks/LTX-Video','فيديو','كمبيوتر / GPU','توليد فيديو؛ افحص متطلبات الذاكرة وترخيص النموذج'),
+    _Tool('AnimateDiff','https://github.com/guoyww/AnimateDiff','فيديو','كمبيوتر / GPU','تحريك عبر نماذج diffusion متوافقة'),
+    _Tool('VideoCrafter','https://github.com/AILab-CVC/VideoCrafter','فيديو','كمبيوتر / GPU','مشروع بحثي لتوليد الفيديو؛ تحقق من الصيانة والترخيص'),
+    _Tool('Open-Sora','https://github.com/hpcaitech/Open-Sora','فيديو','كمبيوتر / GPU','مشروع بحثي لتوليد الفيديو؛ يحتاج موارد كبيرة'),
+    _Tool('HunyuanVideo','https://github.com/Tencent-Hunyuan/HunyuanVideo','فيديو','كمبيوتر / GPU','توليد فيديو متقدم؛ يتطلب عتاداً قوياً'),
+    _Tool('MoviePy','https://github.com/Zulko/moviepy','فيديو','كمبيوتر / خادم','مونتاج وتجميع مقاطع وترجمات وصوت عبر Python'),
+    _Tool('Open-Sora Plan','https://github.com/PKU-YuanGroup/Open-Sora-Plan','فيديو','كمبيوتر / GPU','بحث مفتوح لتوليد الفيديو؛ راجع متطلبات الإصدار'),
 
     // Images: 30 tools
     _Tool('GIMP','https://www.gimp.org','صور','كمبيوتر','مفتوح المصدر'),
@@ -79,6 +88,10 @@ class _CreativeToolLibraryScreenState extends State<CreativeToolLibraryScreen> {
     _Tool('remove.bg','https://www.remove.bg','صور','ويب / موبايل','معاينات مجانية محدودة'),
     _Tool('Clipdrop','https://clipdrop.co','صور','ويب / موبايل','أدوات مجانية بحدود'),
     _Tool('Excalidraw','https://excalidraw.com','صور','ويب','مفتوح المصدر للرسوم التوضيحية'),
+    _Tool('Stable Diffusion WebUI Forge','https://github.com/lllyasviel/stable-diffusion-webui-forge','صور','كمبيوتر / GPU','واجهة توليد صور محلية؛ تحقق من ترخيص كل نموذج'),
+    _Tool('Fooocus','https://github.com/lllyasviel/Fooocus','صور','كمبيوتر / GPU','توليد صور محلي؛ راجع حالة الصيانة ومتطلبات النماذج'),
+    _Tool('Kandinsky','https://github.com/ai-forever/Kandinsky-3','صور','كمبيوتر / GPU','نموذج توليد صور؛ افحص الترخيص والذاكرة قبل الاستخدام'),
+    _Tool('Upscayl','https://upscayl.org','صور','كمبيوتر','تحسين دقة الصور محلياً ومفتوح المصدر'),
 
     // Games: 30 tools
     _Tool('Godot','https://godotengine.org','ألعاب','كمبيوتر','مفتوح المصدر MIT'),
@@ -111,6 +124,44 @@ class _CreativeToolLibraryScreenState extends State<CreativeToolLibraryScreen> {
     _Tool('LMMS','https://lmms.io','ألعاب','كمبيوتر','مفتوح المصدر للموسيقى'),
     _Tool('Castle Game Engine','https://castle-engine.io','ألعاب','كمبيوتر','محرك مفتوح المصدر'),
     _Tool('Open 3D Engine','https://o3de.org','ألعاب','كمبيوتر','محرك مفتوح المصدر؛ يحتاج عتاداً مناسباً'),
+
+    // Character, cartoon, and animation tools
+    _Tool('OpenToonz','https://opentoonz.github.io/e/','كرتون وشخصيات','كمبيوتر','برنامج 2D animation مفتوح المصدر'),
+    _Tool('Pencil2D','https://www.pencil2d.org','كرتون وشخصيات','كمبيوتر','رسم وتحريك ثنائي الأبعاد مفتوح المصدر'),
+    _Tool('Synfig Studio','https://www.synfig.org','كرتون وشخصيات','كمبيوتر','تحريك 2D مفتوح المصدر'),
+    _Tool('Tahoma2D','https://tahoma2d.org','كرتون وشخصيات','كمبيوتر','رسم وتحريك ثنائي الأبعاد'),
+    _Tool('Blender Grease Pencil','https://www.blender.org','كرتون وشخصيات','كمبيوتر','رسم وتحريك 2D/3D داخل Blender'),
+    _Tool('Krita Animation','https://krita.org','كرتون وشخصيات','كمبيوتر','رسم إطارات وتحريك 2D'),
+    _Tool('Wick Editor','https://www.wickeditor.com','كرتون وشخصيات','ويب','رسوم متحركة ومشاهد تفاعلية'),
+    _Tool('Live2D Cubism','https://www.live2d.com/en/','كرتون وشخصيات','كمبيوتر','تحريك شخصيات مرسومة؛ الخطة والترخيص حسب الاستخدام'),
+    _Tool('VRoid Studio','https://vroid.com/en/studio','كرتون وشخصيات','كمبيوتر','إنشاء شخصيات 3D بأسلوب anime'),
+    _Tool('Mixamo','https://www.mixamo.com','كرتون وشخصيات','ويب','تحريك هياكل شخصيات 3D؛ تحقق من شروط الأصول'),
+    _Tool('AccuRIG','https://actorcore.reallusion.com/auto-rig','كرتون وشخصيات','كمبيوتر / ويب','تجهيز هيكل لشخصيات 3D؛ راجع الشروط'),
+    _Tool('Cascadeur','https://cascadeur.com','كرتون وشخصيات','كمبيوتر','تحريك شخصيات 3D بخطة مجانية محدودة'),
+    _Tool('Blockbench','https://www.blockbench.net','كرتون وشخصيات','ويب / كمبيوتر','إنشاء شخصيات ونماذج 3D منخفضة التفاصيل'),
+    _Tool('MakeHuman','https://www.makehumancommunity.org','كرتون وشخصيات','كمبيوتر','إنشاء شخصيات بشرية 3D مفتوح المصدر'),
+    _Tool('Nerfstudio','https://github.com/nerfstudio-project/nerfstudio','كرتون وشخصيات','كمبيوتر / GPU','إعادة بناء مشاهد 3D؛ مسار متخصص وليس مولد كرتون تلقائياً'),
+
+    // Audio, voice, music, and sound effects
+    _Tool('Audacity','https://www.audacityteam.org','صوت وموسيقى','كمبيوتر','تسجيل وتنظيف ومونتاج صوت مفتوح المصدر'),
+    _Tool('Ardour','https://ardour.org','صوت وموسيقى','كمبيوتر','محطة عمل صوتية للتسجيل والمكساج'),
+    _Tool('LMMS','https://lmms.io','صوت وموسيقى','كمبيوتر','تأليف موسيقى وإيقاعات مفتوح المصدر'),
+    _Tool('MuseScore','https://musescore.org','صوت وموسيقى','كمبيوتر / ويب','تدوين موسيقي وكتابة النوتة'),
+    _Tool('BandLab','https://www.bandlab.com','صوت وموسيقى','ويب / موبايل','استوديو موسيقى تعاوني؛ الميزات حسب الخدمة'),
+    _Tool('Suno','https://suno.com','صوت وموسيقى','ويب / موبايل','توليد أغاني؛ تحقق من حدود المجاني وحقوق الاستخدام'),
+    _Tool('Udio','https://www.udio.com','صوت وموسيقى','ويب','توليد موسيقى؛ تحقق من الشروط الحالية'),
+    _Tool('Stable Audio Open','https://github.com/Stability-AI/stable-audio-tools','صوت وموسيقى','كمبيوتر / GPU','توليد أصوات ومقاطع موسيقية؛ افحص ترخيص النموذج'),
+    _Tool('AudioCraft / MusicGen','https://github.com/facebookresearch/audiocraft','صوت وموسيقى','كمبيوتر / GPU','نماذج بحثية لتوليد الموسيقى؛ راجع ترخيص الكود والأوزان'),
+    _Tool('Piper TTS','https://github.com/rhasspy/piper','صوت وصوت آلي','كمبيوتر / خادم','تحويل النص إلى كلام محلياً؛ الترخيص يختلف حسب الصوت'),
+    _Tool('Coqui TTS','https://github.com/coqui-ai/TTS','صوت وصوت آلي','كمبيوتر / خادم','أدوات تحويل النص إلى كلام؛ تحقق من حالة المشروع والترخيص'),
+    _Tool('OpenVoice','https://github.com/myshell-ai/OpenVoice','صوت وصوت آلي','كمبيوتر / GPU','استنساخ/تحويل صوت؛ استخدم أصواتاً بموافقة أصحابها'),
+    _Tool('Whisper','https://github.com/openai/whisper','صوت وصوت آلي','كمبيوتر / خادم','تحويل الكلام إلى نص والتفريغ الصوتي'),
+    _Tool('whisper.cpp','https://github.com/ggml-org/whisper.cpp','صوت وصوت آلي','كمبيوتر / أجهزة مدعومة','تشغيل تفريغ صوتي محلي بكفاءة نسبية'),
+    _Tool('RVC WebUI','https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI','صوت وصوت آلي','كمبيوتر / GPU','تحويل صوت؛ استخدم فقط صوتك أو صوتاً لديك إذن صريح له'),
+    _Tool('Bark','https://github.com/suno-ai/bark','صوت وصوت آلي','كمبيوتر / GPU','توليد صوت تجريبي؛ راجع متطلبات النموذج والترخيص'),
+    _Tool('Freesound','https://freesound.org','مؤثرات صوتية','ويب','مكتبة مؤثرات؛ افحص ترخيص كل ملف ونسبته'),
+    _Tool('Pixabay Music & SFX','https://pixabay.com/music/','مؤثرات صوتية','ويب','موسيقى ومؤثرات؛ تحقق من الترخيص لكل أصل'),
+    _Tool('BBC Sound Effects','https://sound-effects.bbcrewind.co.uk','مؤثرات صوتية','ويب','أرشيف صوتي؛ الاستخدام التجاري قد يكون مقيداً'),
   ];
 
   Future<void> _openTool(_Tool tool) async {
@@ -122,7 +173,7 @@ class _CreativeToolLibraryScreenState extends State<CreativeToolLibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final categories = ['الكل', 'فيديو', 'صور', 'ألعاب'];
+    final categories = ['الكل', 'فيديو', 'صور', 'ألعاب', 'كرتون وشخصيات', 'صوت وموسيقى', 'صوت وصوت آلي', 'مؤثرات صوتية'];
     final query = _query.trim().toLowerCase();
     final filtered = _tools.where((tool) =>
       (_category == 'الكل' || tool.category == _category) &&
@@ -146,7 +197,7 @@ class _CreativeToolLibraryScreenState extends State<CreativeToolLibraryScreen> {
               SizedBox(height: 8),
               Text('مكتبة أدوات NOVA الإبداعية', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               SizedBox(height: 6),
-              Text('90 أداة للاستكشاف: 30 فيديو، 30 صور، 30 ألعاب. هذه روابط رسمية؛ ليست كل أداة متصلة آلياً أو مجانية بلا حدود.'),
+              Text('مكتبة متوسعة للفيديو والصور والألعاب والكرتون والشخصيات والصوت والموسيقى والمؤثرات. روابط رسمية؛ ليست كل أداة متصلة آلياً أو مجانية بلا حدود.'),
             ]),
           ),
           const SizedBox(height: 12),
@@ -176,7 +227,7 @@ class _CreativeToolLibraryScreenState extends State<CreativeToolLibraryScreen> {
           )),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Text('الأدوات المطابقة: ${filtered.length} / 90', style: const TextStyle(fontWeight: FontWeight.bold)),
+            child: Text('الأدوات المطابقة: ${filtered.length} / ${_tools.length}', style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
           for (final tool in filtered)
             Card(
