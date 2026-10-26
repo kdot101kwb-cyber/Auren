@@ -8,7 +8,7 @@ function validateEndpoint(value) {
     throw new Error('HIGGSFIELD_VIDEO_ENDPOINT must be a valid HTTPS API URL.');
   }
   if (url.origin !== API_ORIGIN || url.username || url.password || url.search || url.hash) {
-    throw new Error('Endpoint must use the official Higgsfield API origin.');
+    throw new Error('Endpoint must use HTTPS and the official Higgsfield API origin.');
   }
   if (!/^\/higgsfield(?:-ai)?\/[a-zA-Z0-9._/-]+$/.test(url.pathname) || url.pathname.includes('..')) {
     throw new Error('Endpoint path is not an allowed model endpoint.');
