@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, runTransaction, Timestamp } = require('firebase/firestore');
+const { getFirestore, connectFirestoreEmulator, doc, getDoc, setDoc, updateDoc, deleteDoc, runTransaction, Timestamp } = require('firebase/firestore');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'auren-emulator';
@@ -13,6 +13,11 @@ let testEnv;
 /** Use the modular Firestore SDK with the app supplied by a rules test context. */
 function firestoreFor(context) {
   const db = getFirestore(context.getApp());
+  // initializeTestEnvironment loads rules into the emulator, but the modular
+  // Firestore SDK must also be explicitly pointed at that emulator. Without
+  // this, tests attempt to reach the project ID as a remote Firestore service
+  // and retry PERMISSION_DENIED errors for minutes.
+  connectFirestoreEmulator(db, '127.0.0.1', 8080);
   const wrapRef = (path) => {
     const ref = doc(db, path);
     return {
