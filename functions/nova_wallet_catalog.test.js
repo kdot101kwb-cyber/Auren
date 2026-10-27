@@ -5,15 +5,30 @@ const {listNovaWalletProviders, normalizeNovaWalletEntry} = require('./nova_wall
 
 test('registers Bravo and MyCashi as manual-only Sudan wallet trackers', () => {
   const wallets = listNovaWalletProviders();
-  assert.deepEqual(wallets.map((wallet) => wallet.id), ['bravo_sudan', 'mycashi_sudan']);
+  assert.deepEqual(wallets.map((wallet) => wallet.id), ['bravo_sudan', 'mycashi_sudan', 'trust_wallet', 'paypal']);
   for (const wallet of wallets) {
-    assert.equal(wallet.country, 'SD');
+    assert.ok(['SD', 'GLOBAL'].includes(wallet.country));
     assert.equal(wallet.integration, 'manual_tracking');
     assert.ok(wallet.capabilities.includes('manual_balance_entry'));
     assert.ok(wallet.unsupported.includes('live_balance_sync'));
     assert.ok(wallet.unsupported.includes('direct_transfer'));
     assert.equal(wallet.requiresUserApproval, true);
   }
+});
+
+test('Trust Wallet never accepts secrets and only advertises future public-address tracking', () => {
+  const wallet = listNovaWalletProviders().find((item) => item.id === 'trust_wallet');
+  assert.ok(wallet.unsupported.includes('seed_phrase_import'));
+  assert.ok(wallet.unsupported.includes('private_key_import'));
+  assert.ok(wallet.capabilities.includes('public_address_tracking_planned'));
+  assert.equal(wallet.integration, 'manual_tracking');
+});
+
+test('PayPal is catalogued as manual-only without claiming API access', () => {
+  const wallet = listNovaWalletProviders().find((item) => item.id === 'paypal');
+  assert.equal(wallet.integration, 'manual_tracking');
+  assert.ok(wallet.unsupported.includes('live_balance_sync'));
+  assert.ok(wallet.unsupported.includes('direct_transfer'));
 });
 
 test('normalizes manual income without claiming provider verification', () => {
