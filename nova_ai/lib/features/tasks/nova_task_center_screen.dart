@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../firebase_runtime.dart';
 
@@ -17,6 +19,90 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
   bool _busy = false;
   String? _message;
   List<Map<String, dynamic>> _tasks = const [];
+  List<Map<String, dynamic>> _drafts = const [];
+  static const _draftsKey = 'nova.task_center.offline_drafts.v1';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDrafts();
+  }
+
+  Future<void> _loadDrafts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getStringList(_draftsKey) ?? const <String>[];
+      if (!mounted) return;
+      setState(() => _drafts = raw.map((entry) => Map<String, dynamic>.from(
+        (jsonDecode(entry) as Map).cast<String, dynamic>(),
+      )).toList());
+    } catch (_) {
+      if (mounted) setState(() => _drafts = const []);
+    }
+  }
+
+  Future<void> _saveDrafts(List<Map<String, dynamic>> drafts) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_draftsKey, drafts.map((draft) => jsonEncode(draft)).toList());
+    if (mounted) setState(() => _drafts = drafts);
+  }
+
+  Future<void> _saveCurrentAsDraft(String prompt, {String? reason}) async {
+    final draft = <String, dynamic>{
+      'id': DateTime.now().microsecondsSinceEpoch.toString(),
+      'type': _type,
+      'prompt': prompt,
+      'createdAt': DateTime.now().toUtc().toIso8601String(),
+      'status': 'offline_draft',
+    };
+    try {
+      await _saveDrafts([draft, ..._drafts]);
+      _prompt.clear();
+      if (mounted) setState(() => _message = reason == null
+        ? 'حُفظت المهمة محلياً كمسودة دون إنترنت. لن تُرسل حتى تضغط مزامنة.'
+        : 'تعذر الاتصال بالخادم؛ حُفظت المهمة محلياً كمسودة. السبب: $reason');
+    } catch (error) {
+      if (mounted) setState(() => _message = 'تعذر الاتصال وحفظ المسودة محلياً: $error');
+    }
+  }
+
+  Future<void> _syncDrafts() async {
+    if (_drafts.isEmpty) {
+      setState(() => _message = 'لا توجد مسودات محلية للمزامنة.');
+      return;
+    }
+    if (!NovaFirebaseRuntime.initialized || !NovaFirebaseRuntime.appCheckActivated) {
+      setState(() => _message = 'المسودات محفوظة على الجهاز، لكن المزامنة تحتاج إعداد Firebase وApp Check.');
+      return;
+    }
+    setState(() { _busy = true; _message = null; });
+    final remaining = <Map<String, dynamic>>[];
+    var synced = 0;
+    try {
+      await _ensureSignedIn();
+      for (final draft in _drafts) {
+        try {
+          await FirebaseFunctions.instanceFor(region: 'us-central1')
+            .httpsCallable('submitNovaTask').call(<String, dynamic>{
+              'type': draft['type'],
+              'prompt': draft['prompt'],
+              'idempotencyKey': 'offline_${draft['id']}',
+              'metadata': <String, dynamic>{'source': 'nova_android_offline_queue', 'locale': 'ar'},
+            });
+          synced++;
+        } catch (_) {
+          remaining.add(draft);
+        }
+      }
+      await _saveDrafts(remaining);
+      if (mounted) setState(() => _message = 'أُرسلت $synced مسودة للخادم، وبقيت ${remaining.length} مسودة محلية. تحقق من مركز المهام لتأكيد حالة المعالجة.');
+      if (synced > 0) await _loadTasks();
+    } catch (error) {
+      if (mounted) setState(() => _message = 'تعذرت المزامنة: $error. المسودات التي لم تُرسل تبقى محفوظة محلياً.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -61,8 +147,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
       return;
     }
     if (!NovaFirebaseRuntime.initialized || !NovaFirebaseRuntime.appCheckActivated) {
-      setState(() => _message = NovaFirebaseRuntime.initializationError ??
-          'يلزم إعداد Firebase وتفعيل App Check قبل إرسال المهام.');
+      await _saveCurrentAsDraft(prompt);
       return;
     }
     setState(() { _busy = true; _message = null; });
@@ -83,7 +168,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
           'ستتم معالجتها عند توفر العامل وإعداداته؛ التسجيل وحده لا يثبت بدء التنفيذ.');
       await _loadTasks();
     } catch (error) {
-      setState(() => _message = 'فشل إرسال المهمة: $error');
+      await _saveCurrentAsDraft(prompt, reason: error.toString());
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -168,6 +253,27 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Text(_message!, textDirection: TextDirection.rtl),
       ),
+      const SizedBox(height: 12),
+      Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('المسودات المحلية: ${_drafts.length}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          const Text('تُحفظ على هذا الجهاز فقط عند انقطاع الاتصال أو عدم إعداد Firebase. لا تُرسل تلقائياً؛ اضغط المزامنة عندما يتوفر الاتصال.'),
+          const SizedBox(height: 8),
+          FilledButton.icon(onPressed: _busy ? null : _syncDrafts, icon: const Icon(Icons.sync), label: const Text('مزامنة المسودات مع الخادم')),
+          for (final draft in _drafts) ListTile(
+            leading: const Icon(Icons.cloud_off, color: Colors.orangeAccent),
+            title: Text('${draft['type'] ?? 'task'} • مسودة محلية'),
+            subtitle: Text('${draft['prompt'] ?? ''}', maxLines: 3, overflow: TextOverflow.ellipsis),
+            trailing: IconButton(
+              tooltip: 'حذف المسودة',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _busy ? null : () async { await _saveDrafts(_drafts.where((item) => item['id'] != draft['id']).toList()); },
+            ),
+          ),
+        ],
+      ))),
       const SizedBox(height: 12),
       const Text('المهام المسجلة في الخادم', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       if (_tasks.isEmpty) const Padding(
