@@ -71,8 +71,6 @@ void main() {
     expect(find.text('Godot'), findsOneWidget);
     expect(find.text('Shotcut'), findsNothing);
   });
-}
-
 
   test('secretary risk classifier escalates sensitive topics', () {
     expect(classifySecretaryRisk('Can you send the payment confirmation?'), SecretaryRisk.reviewRequired);
