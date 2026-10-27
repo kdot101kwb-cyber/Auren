@@ -32,9 +32,11 @@ class NovaDebateResultView extends StatelessWidget {
         ? (result['missingEvidence'] as List).map((e) => e.toString()).toList()
         : <String>[];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
         Card(
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -96,7 +98,8 @@ class NovaDebateResultView extends StatelessWidget {
             ),
           ),
         ),
-      ],
+        ],
+      ),
     );
   }
 
