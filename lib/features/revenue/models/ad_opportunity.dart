@@ -86,7 +86,7 @@ class AdOpportunity {
       if (age > 30) score -= 10;
     }
     if (status == VerificationStatus.ineligible) score = 0;
-    return score.clamp(0, 100);
+    return score.clamp(0, 100).toInt();
   }
 
   AdOpportunity copyWith({
