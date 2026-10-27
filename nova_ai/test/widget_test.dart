@@ -67,16 +67,22 @@ void main() {
     await tester.enterText(fields.at(0), 'customer@example.com');
     await tester.enterText(fields.at(1), 'Welcome to AUREN');
     await tester.enterText(fields.at(2), 'Thank you for contacting us. We will follow up soon.');
-    await tester.tap(find.text('حفظ المسودة على الجهاز'));
+    final saveButton = find.text('حفظ المسودة على الجهاز');
+    await tester.scrollUntilVisible(saveButton, 250, scrollable: find.byType(Scrollable).first);
+    await tester.tap(saveButton);
     await tester.pumpAndSettle();
 
-    expect(find.text('Welcome to AUREN'), findsOneWidget);
+    final draftSubject = find.text('Welcome to AUREN');
+    await tester.scrollUntilVisible(draftSubject, 250, scrollable: find.byType(Scrollable).first);
+    expect(draftSubject, findsOneWidget);
     expect(find.textContaining('مسودة محلية'), findsOneWidget);
 
-    await tester.tap(find.text('إرسال للمراجعة'));
+    final reviewButton = find.text('إرسال للمراجعة');
+    await tester.scrollUntilVisible(reviewButton, 250, scrollable: find.byType(Scrollable).first);
+    await tester.tap(reviewButton);
     await tester.pumpAndSettle();
     expect(find.textContaining('بانتظار الموافقة'), findsOneWidget);
-    expect(find.textContaining('لا تُقرأ صناديق البريد ولا تُرسل رسائل تلقائياً'), findsOneWidget);
+    expect(find.text('إرسال الآن'), findsNothing);
   });
 
   testWidgets('creative tool library shows 90 tools and filters by category', (tester) async {
