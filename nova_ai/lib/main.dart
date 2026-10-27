@@ -14,6 +14,7 @@ import 'features/auren/auren_management_dashboard_screen.dart';
 import 'features/creative/creative_tool_library_screen.dart';
 import 'features/brain/nova_autonomous_brain_screen.dart';
 import 'features/opportunities/global_opportunity_radar_screen.dart';
+import 'features/secretary/secretary_center_screen.dart';
 import 'features/voice_assistant/nova_voice_assistant_screen.dart';
 import 'features/secretary/nova_secretary_center_screen.dart';
 
@@ -147,6 +148,7 @@ class _NovaHomeState extends State<NovaHome> {
       const GitHubCiScreen(),
       const NovaAutonomousBrainScreen(),
       const NovaGlobalOpportunityRadarScreen(),
+      const SecretaryCenterScreen(),
       const NovaVoiceAssistantScreen(),
       const NovaSecretaryCenterScreen(),
     ];
@@ -169,6 +171,7 @@ class _NovaHomeState extends State<NovaHome> {
               PopupMenuItem(value: 13, child: Text('حالة GitHub Actions المباشرة')),
               PopupMenuItem(value: 14, child: Text('العقل التنفيذي الذاتي')),
               PopupMenuItem(value: 15, child: Text('الرادار العالمي متعدد اللغات')),
+              PopupMenuItem(value: 16, child: Text('مركز السكرتارية التنفيذية')),
               PopupMenuItem(value: 16, child: Text('المساعد الصوتي NOVA')),
               PopupMenuItem(value: 17, child: Text('مركز السكرتير التنفيذي والبريد')),
             ],
