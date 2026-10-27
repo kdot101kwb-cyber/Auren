@@ -6,7 +6,7 @@ const {getFirestore, FieldValue} = require('firebase-admin/firestore');
 const db = getFirestore();
 const REGION = 'us-central1';
 const TASK_COLLECTION = 'nova_tasks';
-const {normalizeNovaTaskInput} = require('./nova_command_validation');
+const {normalizeNovaTaskInput, evaluateNovaTaskRateLimit} = require('./nova_command_validation');
 const {taskPayloadFingerprint} = require('./nova_task_worker_policy');
 
 exports.submitNovaTask = onCall(
@@ -16,12 +16,27 @@ exports.submitNovaTask = onCall(
     if (!uid) throw new HttpsError('unauthenticated', 'Sign in to submit NOVA tasks.');
     const input = normalizeNovaTaskInput(request.data, HttpsError);
     const id = input.idempotencyKey;
-    const taskRef = db.collection('users').doc(uid).collection(TASK_COLLECTION).doc(id);
+    const userRef = db.collection('users').doc(uid);
+    const taskRef = userRef.collection(TASK_COLLECTION).doc(id);
     const queueRef = db.collection('nova_task_queue').doc(uid + '_' + id);
-    const auditRef = db.collection('users').doc(uid).collection('nova_audit').doc();
+    const rateRef = userRef.collection('nova_task_rate_limits').doc('submit');
+    const auditRef = userRef.collection('nova_audit').doc();
+    const now = new Date();
     const result = await db.runTransaction(async (tx) => {
       const existing = await tx.get(taskRef);
       if (existing.exists) return {created:false, taskId:id, task:existing.data()};
+      const rateSnap = await tx.get(rateRef);
+      const rate = evaluateNovaTaskRateLimit(rateSnap.exists ? rateSnap.data() : {}, now.getTime());
+      if (!rate.allowed) {
+        throw new HttpsError('resource-exhausted', 'NOVA task limit reached (10 per minute, 100 per UTC day). Try again later.');
+      }
+      tx.set(rateRef, {
+        minuteBucket:rate.minuteBucket,
+        minuteCount:rate.minuteCount,
+        dayBucket:rate.dayBucket,
+        dayCount:rate.dayCount,
+        updatedAt:FieldValue.serverTimestamp(),
+      }, {merge:true});
       const task = {
         taskId:id,
         ownerUid:uid,
