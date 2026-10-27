@@ -208,4 +208,69 @@ function rankGithubProjects(options = {}) {
     .sort((a, b) => b.score - a.score || a.setupPriority - b.setupPriority);
 }
 
-module.exports = {PROJECTS, INCOME_EXPERIMENTS, rankIncomeExperiments, rankGithubProjects};
+
+/**
+ * A deliberately small, decision-ready daily plan. This does not browse the web,
+ * contact prospects, install projects, or claim that an opportunity is verified.
+ */
+function buildSimpleOpportunityPlan(options = {}) {
+  const minutes = Number.isFinite(options.availableMinutesPerDay) && options.availableMinutesPerDay > 0
+    ? Math.min(720, Math.floor(options.availableMinutesPerDay)) : 120;
+  const income = rankIncomeExperiments({maxUpfrontCostUsd: 0, availableMinutesPerDay: minutes})[0] || null;
+  const projects = rankGithubProjects({priority: 'income', maxIntegrationCost: options.maxIntegrationCost || 'medium'}).slice(0, 3);
+  const firstActions = {
+    'micro-automation-service': {
+      deliverable: 'One short demo showing a repetitive business task before and after automation.',
+      firstAction: 'Pick one small business type and describe one repetitive task you can simplify with free tools.',
+      successSignal: 'At least one real prospect confirms the problem is worth solving.',
+    },
+    'market-research-report': {
+      deliverable: 'A one-page sample with dated sources, a competitor comparison, and clear unknowns.',
+      firstAction: 'Choose one narrow niche and collect five public, dated sources.',
+      successSignal: 'A potential buyer says the report answers a real decision they need to make.',
+    },
+    'short-content': {
+      deliverable: 'Three original short-video scripts for one clearly defined audience.',
+      firstAction: 'Choose one audience and write three distinct hooks for the same useful topic.',
+      successSignal: 'Early audience retention, saves, meaningful replies, or repeat interest—not views alone.',
+    },
+    'micro-tool': {
+      deliverable: 'A tiny clickable or local prototype for one repeated problem.',
+      firstAction: 'Write the problem in one sentence and show the proposed solution to one potential user.',
+      successSignal: 'A target user agrees to test it and can explain what value it gives them.',
+    },
+  };
+  const detail = income ? firstActions[income.id] : null;
+  return {
+    budgetUsd: 0,
+    availableMinutesPerDay: minutes,
+    incomeExperiment: income ? {
+      id: income.id, title: income.title, score: income.score,
+      expectedIncome: null, confidence: 'hypothesis-not-validated',
+      ...(detail || {}),
+      validationChecks: [
+        'Confirm a real buyer/problem before building more.',
+        'Verify the chosen platform accepts users in Sudan and supports a usable payout method.',
+        'Check fees, identity requirements, and terms from official sources before spending or signing up.',
+      ],
+      stopRule: 'Do not spend money or expand the build without a real demand signal.',
+    } : null,
+    githubCandidates: projects.map((project) => ({
+      id: project.id, name: project.name, url: project.url,
+      recommendation: 'candidate-only', licenseVerified: false, testedInNOVA: false,
+      nextStep: 'Review README, current license, last release, dependency/security status, and hardware/runtime needs before any installation.',
+    })),
+    today: [
+      'Spend the first work block creating the single deliverable above.',
+      'Check one official source for platform/payout eligibility and record what is verified versus unknown.',
+      'Ask one relevant person for feedback with a personalized message; do not mass-message or auto-send.',
+    ],
+    limitations: [
+      'Ranking is heuristic, not live market proof.',
+      'No prospect was contacted, project installed, content published, or money earned.',
+      'Third-party AI, hosting, and media services may cost money even when source code is open.',
+    ],
+  };
+}
+
+module.exports = {PROJECTS, INCOME_EXPERIMENTS, rankIncomeExperiments, rankGithubProjects, buildSimpleOpportunityPlan};
