@@ -125,7 +125,6 @@ class _NovaVoiceAssistantScreenState extends State<NovaVoiceAssistantScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('NOVA Voice'),
-        subtitle: null,
       ),
       body: SafeArea(
         child: ListView(
