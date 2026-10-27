@@ -4,12 +4,14 @@ on:
   push:
     branches:
       - feat/nova-ai-android-app
+      - feat/nova-free-game-development-toolkit
     paths:
       - "functions/**"
       - ".github/workflows/nova-functions-ci.yml"
   pull_request:
     branches:
       - main
+      - feat/nova-ai-android-app
     paths:
       - "functions/**"
       - ".github/workflows/nova-functions-ci.yml"
