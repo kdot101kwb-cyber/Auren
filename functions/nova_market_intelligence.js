@@ -37,7 +37,7 @@ const SOURCE_REGISTRY = [
 ];
 
 function normalizeTopic(value) {
-  return String(value || '').trim().replace(/\\s+/g, ' ').slice(0, 120);
+  return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 120);
 }
 
 function safeHttpsUrl(value) {
