@@ -10,7 +10,8 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Godot');
     await tester.pumpAndSettle();
 
-    expect(find.text('Godot'), findsOneWidget);
+    // The query remains visible in the TextField as well as the matching tool card.
+    expect(find.text('Godot'), findsNWidgets(2));
     expect(find.text('Flutter'), findsNothing);
     expect(find.textContaining('أداة ظاهرة'), findsOneWidget);
 
