@@ -6,6 +6,7 @@ const {getFirestore, FieldValue} = require('firebase-admin/firestore');
 const {normalizeGrokInput, buildGrokInput, extractResponseText, normalizeGrokReply} = require('./nova_grok_bot_core');
 const {resolveGrokBotEngine} = require('./nova_grok_agent_registry');
 const {buildGrokSuperpowers} = require('./nova_grok_superpowers');
+const {normalizeLesson, buildLearningContext} = require('./nova_grok_learning');
 
 const XAI_API_KEY = defineSecret('XAI_API_KEY');
 const db = getFirestore();
@@ -43,6 +44,15 @@ exports.novaGrokBot = onCall({
   const engine = resolveGrokBotEngine('grok-api');
   if (!engine.ok) throw new HttpsError('failed-precondition', 'محرك Grok غير متاح حالياً.');
   const superpowers = buildGrokSuperpowers({mode: input.mode});
+  let learningContext = [];
+  try {
+    const lessons = await db.collection('users').doc(uid).collection('nova_grok_lessons')
+      .orderBy('createdAt', 'desc').limit(12).get();
+    learningContext = buildLearningContext(lessons.docs.map((doc) => doc.data()));
+  } catch (_) {
+    // Learning memory is optional; do not fail the user's request if it is unavailable.
+    learningContext = [];
+  }
 
   await enforceRateLimit(uid);
   const key = XAI_API_KEY.value().trim();
@@ -57,7 +67,7 @@ exports.novaGrokBot = onCall({
         model: MODEL,
         input: [
           buildGrokInput(input),
-          {role: 'user', content: JSON.stringify({mode: input.mode, request: input.prompt, context: input.context})},
+          {role: 'user', content: JSON.stringify({mode: input.mode, request: input.prompt, context: input.context, confirmedLessons: learningContext})},
         ],
         store: false,
         text: {format: {type: 'json_object'}},
@@ -99,9 +109,30 @@ exports.novaGrokBot = onCall({
     mode: input.mode,
     ...result,
     superpowers,
+    learning: {confirmedLessonsApplied: learningContext.length, persistenceRequiresExplicitConsent: true},
     executionStatus: 'not_executed',
     message: result.proposedAction
       ? 'تم تجهيز مقترح فقط. لم يبدأ التنفيذ؛ يلزم ربطه بمركز المهام وموافقة المستخدم.'
       : 'تم تجهيز الرد. لم يتم تنفيذ أي إجراء خارجي.',
   };
+});
+
+exports.novaGrokSaveLesson = onCall({
+  region: REGION,
+  timeoutSeconds: 15,
+  memory: '256MiB',
+  enforceAppCheck: true,
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError('unauthenticated', 'سجّل الدخول لحفظ درس لـ NOVA.');
+  if (request.data?.save !== true) throw new HttpsError('failed-precondition', 'يلزم تأكيدك الصريح لحفظ الملاحظة.');
+  let lesson;
+  try { lesson = normalizeLesson(request.data || {}); }
+  catch (error) { throw new HttpsError('invalid-argument', error.message || 'الملاحظة غير صالحة.'); }
+  const ref = await db.collection('users').doc(uid).collection('nova_grok_lessons').add({
+    ...lesson,
+    createdAt: FieldValue.serverTimestamp(),
+    source: 'user-confirmed-feedback',
+  });
+  return {ok: true, lessonId: ref.id, message: 'تم حفظ الملاحظة المؤكدة لاستخدامها في المهام المناسبة لاحقاً.'};
 });
