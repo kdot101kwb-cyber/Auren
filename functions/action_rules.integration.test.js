@@ -32,7 +32,7 @@ function compatDb(db) {
 }
 
 function testDb(context) {
-  return compatDb(getFirestore(context.app));
+  return compatDb(getFirestore(context.getApp()));
 }
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'auren-emulator';
