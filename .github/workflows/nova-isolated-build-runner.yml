@@ -72,6 +72,15 @@ jobs:
           echo "Trigger: ${{ github.event_name }}"
           echo "Manual-dispatch fingerprint is format-checked only, not verified against Firestore."
 
+      - name: Restore missing Android host project files
+        working-directory: nova_ai
+        run: |
+          if [[ ! -f android/app/build.gradle && ! -f android/app/build.gradle.kts ]]; then
+            echo "Android Gradle app file is absent; regenerating Flutter Android host scaffolding in this ephemeral checkout."
+            flutter create --platforms=android --org com.kwb86 --project-name nova_ai .
+          fi
+          test -f android/app/build.gradle -o -f android/app/build.gradle.kts
+
       - name: Resolve Flutter dependencies
         working-directory: nova_ai
         run: flutter pub get
