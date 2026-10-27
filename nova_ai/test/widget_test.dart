@@ -49,7 +49,8 @@ void main() {
     await tester.pumpAndSettle();
 
     final voiceButton = find.byKey(const ValueKey('nova-dashboard-voice'));
-    await tester.ensureVisible(voiceButton);
+    await tester.scrollUntilVisible(voiceButton, 250, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
     await tester.tap(voiceButton);
     await tester.pumpAndSettle();
 
