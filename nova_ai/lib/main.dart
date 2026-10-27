@@ -225,7 +225,7 @@ class _NovaHomeState extends State<NovaHome> {
     const SizedBox(height: 8),
     FilledButton.icon(onPressed: () => setState(() => tab = 15), icon: const Icon(Icons.public), label: const Text('فتح الرادار العالمي متعدد اللغات')),
     const SizedBox(height: 8),
-    FilledButton.icon(onPressed: () => setState(() => tab = 17), icon: const Icon(Icons.mic), label: const Text('التحدث مع NOVA')),
+    FilledButton.icon(key: const ValueKey('nova-dashboard-voice'), onPressed: () => setState(() => tab = 17), icon: const Icon(Icons.mic), label: const Text('التحدث مع NOVA')),
     const SizedBox(height: 8),
     FilledButton.icon(onPressed: () => setState(() => tab = 18), icon: const Icon(Icons.mark_email_read_outlined), label: const Text('فتح مركز السكرتير التنفيذي والبريد')),
     const SizedBox(height: 8),
