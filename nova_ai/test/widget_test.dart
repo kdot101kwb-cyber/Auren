@@ -82,9 +82,9 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: SecretaryCenterScreen()));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextField, 'نوع الرسالة / القناة (اختياري)'), 'بريد');
-    await tester.enterText(find.widgetWithText(TextField, 'العنوان'), 'متابعة الاجتماع');
-    await tester.enterText(find.widgetWithText(TextField, 'نص البريد أو رد العميل'), 'شكراً على وقتك، سأرسل الملخص قريباً.');
+    await tester.enterText(find.byType(TextField).at(0), 'بريد');
+    await tester.enterText(find.byType(TextField).at(2), 'متابعة الاجتماع');
+    await tester.enterText(find.byType(TextField).at(3), 'شكراً على وقتك، سأرسل الملخص قريباً.');
     await tester.tap(find.text('حفظ مسودة على هذا الجهاز'));
     await tester.pumpAndSettle();
 
