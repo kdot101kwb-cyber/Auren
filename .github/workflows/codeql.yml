@@ -2,7 +2,7 @@ name: AUREN CodeQL
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/nova-ai-android-app, feat/nova-free-game-development-toolkit]
     paths:
       - 'functions/**'
       - 'backend/**'
