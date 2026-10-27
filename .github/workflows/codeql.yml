@@ -8,7 +8,7 @@ on:
       - 'backend/**'
       - '.github/workflows/**'
   pull_request:
-    branches: [main]
+    branches: [main, feat/nova-ai-android-app, feat/nova-free-game-development-toolkit]
     paths:
       - 'functions/**'
       - 'backend/**'
