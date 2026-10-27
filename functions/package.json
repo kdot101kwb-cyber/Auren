@@ -10,5 +10,8 @@
   },
   "test:emulator": "cd .. && npx --yes firebase-tools emulators:exec --project auren-emulator --only firestore \"node --test functions/action_rules.integration.test.js functions/supplier_rules.integration.test.js functions/sports_alerts_integration.test.js functions/education_rules.integration.test.js\"",
   "test:education-rules": "node --test education_rules.test.js",
-  "test:action-rules": "cd .. && npx --yes firebase-tools emulators:exec --project auren-emulator --only firestore \"node --test functions/action_rules.integration.test.js\""
+  "test:action-rules": "cd .. && npx --yes firebase-tools emulators:exec --project auren-emulator --only firestore \"node --test functions/action_rules.integration.test.js\"",
+  "dependencies": {
+    "firebase": "^11.10.0"
+  }
 }
