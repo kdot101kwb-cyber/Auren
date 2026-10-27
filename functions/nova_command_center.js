@@ -7,6 +7,7 @@ const db = getFirestore();
 const REGION = 'us-central1';
 const TASK_COLLECTION = 'nova_tasks';
 const {normalizeNovaTaskInput} = require('./nova_command_validation');
+const {taskPayloadFingerprint} = require('./nova_task_worker_policy');
 
 exports.submitNovaTask = onCall(
   {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
@@ -28,6 +29,7 @@ exports.submitNovaTask = onCall(
         prompt:input.prompt,
         metadata:input.metadata,
         requiresApproval:input.requiresApproval,
+        approvalFingerprint:input.requiresApproval ? taskPayloadFingerprint({type:input.type, prompt:input.prompt, metadata:input.metadata}) : null,
         status:input.requiresApproval ? 'awaiting_approval' : 'queued',
         executionMode:'queued_backend_worker_required',
         result:null,
@@ -108,6 +110,7 @@ exports.approveNovaTask = onCall(
       tx.update(taskRef, {
         status:'queued',
         approvedBy:uid,
+        approvedFingerprint:taskPayloadFingerprint(task),
         approvedAt:FieldValue.serverTimestamp(),
         updatedAt:FieldValue.serverTimestamp(),
       });
