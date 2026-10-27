@@ -36,10 +36,16 @@ test('department dispatch plan selects the assigned primary agent without execut
   assert.equal(dispatch.requiresSandboxForCodeExecution, true);
   assert.equal(dispatch.status, 'planned_not_executed');
   assert.equal(dispatch.externalActionExecuted, false);
+  assert.equal(dispatch.approvalRequired, false);
 });
 
 test('dispatch requires a valid department, task type, and objective', () => {
   assert.throws(() => getDepartmentAgentPlan('unknown'), /Unknown department/);
   assert.throws(() => buildDepartmentAgentDispatch({departmentId:'research', taskType:'', objective:'Find trends'}), /taskType/);
   assert.throws(() => buildDepartmentAgentDispatch({departmentId:'research', taskType:'research', objective:' '}), /objective/);
+  assert.throws(() => buildDepartmentAgentDispatch({departmentId:'research', taskType:'send_email', objective:'Send this message'}), /approved task route/);
+  const sensitive = buildDepartmentAgentDispatch({taskType:'send_email', objective:'Prepare an email draft'});
+  assert.equal(sensitive.departmentId, 'operations');
+  assert.equal(sensitive.approvalRequired, true);
+  assert.equal(sensitive.externalActionExecuted, false);
 });
