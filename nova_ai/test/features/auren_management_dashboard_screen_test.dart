@@ -15,7 +15,9 @@ void main() {
     expect(find.text('الجودة ونجاح الاختبارات'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('الأمان والخصوصية'), 250, scrollable: find.byType(Scrollable).first);
     expect(find.text('الأمان والخصوصية'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('ابدأ اجتماع اليوم'), 250, scrollable: find.byType(Scrollable).first);
     expect(find.text('ابدأ اجتماع اليوم'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('سجل اجتماعات المجلس'), 250, scrollable: find.byType(Scrollable).first);
     expect(find.text('سجل اجتماعات المجلس'), findsOneWidget);
     expect(find.textContaining('سجل الاجتماعات يظهر بعد إعداد Firebase'), findsOneWidget);
   });
