@@ -8,12 +8,6 @@ const STACK_COMMANDS = Object.freeze({
     Object.freeze({id:'tests', executable:'flutter', args:Object.freeze(['test'])}),
     Object.freeze({id:'debug_apk', executable:'flutter', args:Object.freeze(['build','apk','--debug'])}),
   ]),
-  web: Object.freeze([
-    Object.freeze({id:'inventory', executable:'nova-safe-inventory', args:Object.freeze([])}),
-  ]),
-  static_web: Object.freeze([
-    Object.freeze({id:'inventory', executable:'nova-safe-inventory', args:Object.freeze([])}),
-  ]),
 });
 
 const REQUIRED_ISOLATION = Object.freeze([
