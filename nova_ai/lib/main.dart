@@ -227,7 +227,7 @@ class _NovaHomeState extends State<NovaHome> {
     const SizedBox(height: 8),
     FilledButton.icon(onPressed: () => setState(() => tab = 17), icon: const Icon(Icons.mic), label: const Text('التحدث مع NOVA')),
     const SizedBox(height: 8),
-    FilledButton.icon(onPressed: () => setState(() => tab = 17), icon: const Icon(Icons.mark_email_read_outlined), label: const Text('فتح مركز السكرتير التنفيذي والبريد')),
+    FilledButton.icon(onPressed: () => setState(() => tab = 18), icon: const Icon(Icons.mark_email_read_outlined), label: const Text('فتح مركز السكرتير التنفيذي والبريد')),
     const SizedBox(height: 8),
     FilledButton.icon(onPressed: openAurenManagementDashboard, icon: const Icon(Icons.account_balance), label: const Text('فتح لوحة إدارة AUREN ومجلس الإدارة')),
     const SizedBox(height: 18),
