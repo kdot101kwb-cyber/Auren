@@ -5,11 +5,13 @@ on:
   pull_request:
     branches:
       - feat/nova-ai-android-app
+      - feat/nova-voice-assistant-foundation
   push:
     branches:
       - main
       - feat/nova-ai-android-app
       - feat/nova-voice-assistant-foundation
+      - feat/nova-secretary-center
     paths:
       - 'nova_ai/**'
       - '.github/workflows/nova-android-build.yml'
