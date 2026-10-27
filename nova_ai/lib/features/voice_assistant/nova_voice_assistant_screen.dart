@@ -70,9 +70,13 @@ class _NovaVoiceAssistantScreenState extends State<NovaVoiceAssistantScreen> {
   }
 
   Future<void> _configureVoice() async {
-    await _tts.setLanguage('ar');
-    await _tts.setSpeechRate(0.48);
-    await _tts.setPitch(1.0);
+    try {
+      await _tts.setLanguage('ar');
+      await _tts.setSpeechRate(0.48);
+      await _tts.setPitch(1.0);
+    } catch (_) {
+      // Widget tests and devices without a TTS engine remain usable.
+    }
   }
 
   Future<void> _toggleListening() async {
