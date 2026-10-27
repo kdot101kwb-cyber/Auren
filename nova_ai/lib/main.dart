@@ -15,6 +15,7 @@ import 'features/creative/creative_tool_library_screen.dart';
 import 'features/brain/nova_autonomous_brain_screen.dart';
 import 'features/opportunities/global_opportunity_radar_screen.dart';
 import 'features/voice_assistant/nova_voice_assistant_screen.dart';
+import 'features/secretary/nova_secretary_center_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -147,6 +148,7 @@ class _NovaHomeState extends State<NovaHome> {
       const NovaAutonomousBrainScreen(),
       const NovaGlobalOpportunityRadarScreen(),
       const NovaVoiceAssistantScreen(),
+      const NovaSecretaryCenterScreen(),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -167,7 +169,8 @@ class _NovaHomeState extends State<NovaHome> {
               PopupMenuItem(value: 13, child: Text('حالة GitHub Actions المباشرة')),
               PopupMenuItem(value: 14, child: Text('العقل التنفيذي الذاتي')),
               PopupMenuItem(value: 15, child: Text('الرادار العالمي متعدد اللغات')),
-              PopupMenuItem(value: 16, child: Text('المساعد الصوتي NOVA')), 
+              PopupMenuItem(value: 16, child: Text('المساعد الصوتي NOVA')),
+              PopupMenuItem(value: 17, child: Text('مركز السكرتير التنفيذي والبريد')),
             ],
           ),
           IconButton(onPressed: () => showAboutDialog(context: context, applicationName: 'NOVA AI', applicationVersion: '0.2.0', children: const [Text('نسخة أولية قيد التحقق. بعض الأدوات تحتاج ربط خدمات وخادم آمن.')]), icon: const Icon(Icons.info_outline)),
@@ -220,6 +223,8 @@ class _NovaHomeState extends State<NovaHome> {
     FilledButton.icon(onPressed: () => setState(() => tab = 15), icon: const Icon(Icons.public), label: const Text('فتح الرادار العالمي متعدد اللغات')),
     const SizedBox(height: 8),
     FilledButton.icon(onPressed: () => setState(() => tab = 16), icon: const Icon(Icons.mic), label: const Text('التحدث مع NOVA')),
+    const SizedBox(height: 8),
+    FilledButton.icon(onPressed: () => setState(() => tab = 17), icon: const Icon(Icons.mark_email_read_outlined), label: const Text('فتح مركز السكرتير التنفيذي والبريد')),
     const SizedBox(height: 8),
     FilledButton.icon(onPressed: openAurenManagementDashboard, icon: const Icon(Icons.account_balance), label: const Text('فتح لوحة إدارة AUREN ومجلس الإدارة')),
     const SizedBox(height: 18),
