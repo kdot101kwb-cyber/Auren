@@ -267,12 +267,8 @@ class _NovaWalletCenterScreenState extends State<NovaWalletCenterScreen> {
       if (_filter == 'expense') return entry.kind == 'expense';
       return entry.provider.name == _filter;
     }).toList();
-    final income = _entries
-        .where((entry) => entry.kind == 'income')
-        .fold<int>(0, (sum, entry) => sum + entry.amountMinor);
-    final expenses = _entries
-        .where((entry) => entry.kind == 'expense')
-        .fold<int>(0, (sum, entry) => sum + entry.amountMinor);
+    final income = _totalsByCurrency('income');
+    final expenses = _totalsByCurrency('expense');
 
     return Scaffold(
       appBar: AppBar(title: const Text('محافظ NOVA المالية')),
@@ -369,7 +365,16 @@ class _NovaWalletCenterScreenState extends State<NovaWalletCenterScreen> {
         ),
       );
 
-  Widget _summary(String label, int minor, Color color) => Card(
+  Map<String, int> _totalsByCurrency(String kind) {
+    final totals = <String, int>{};
+    for (final entry in _entries.where((entry) => entry.kind == kind)) {
+      totals.update(entry.currency, (value) => value + entry.amountMinor,
+          ifAbsent: () => entry.amountMinor);
+    }
+    return totals;
+  }
+
+  Widget _summary(String label, Map<String, int> totals, Color color) => Card(
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -377,11 +382,17 @@ class _NovaWalletCenterScreenState extends State<NovaWalletCenterScreen> {
             children: [
               Text(label, style: const TextStyle(fontSize: 12)),
               const SizedBox(height: 8),
-              Text(
-                _money(minor, 'mixed'),
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: color),
-              ),
-              const Text('مجموع حسابي؛ لا يجمع العملات بسعر صرف.', style: TextStyle(fontSize: 10)),
+              if (totals.isEmpty) Text(_money(0, 'SDG'),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: color)),
+              ...totals.entries.map((entry) => Padding(
+                    padding: const EdgeInsets.only(bottom: 3),
+                    child: Text(
+                      _money(entry.value, entry.key),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color),
+                    ),
+                  )),
+              const Text('كل عملة محسوبة منفصلة؛ لا يوجد تحويل بسعر صرف.',
+                  style: TextStyle(fontSize: 10)),
             ],
           ),
         ),
