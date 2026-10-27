@@ -53,6 +53,81 @@ class _NovaGrokBotScreenState extends State<NovaGrokBotScreen> {
     }
   }
 
+  Widget? _buildSimplePlanCard() {
+    final radar = _result?['opportunityRadar'];
+    if (radar is! Map) return null;
+    final rawPlan = radar['simplePlan'];
+    if (rawPlan is! Map) return null;
+    final plan = Map<String, dynamic>.from(rawPlan);
+    final rawExperiment = plan['incomeExperiment'];
+    final experiment = rawExperiment is Map
+        ? Map<String, dynamic>.from(rawExperiment)
+        : null;
+    final checks = experiment?['validationChecks'] is List
+        ? (experiment!['validationChecks'] as List).map((item) => item.toString()).toList()
+        : <String>[];
+    final candidates = plan['githubCandidates'] is List
+        ? (plan['githubCandidates'] as List)
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList()
+        : <Map<String, dynamic>>[];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('خطة بسيطة لليوم', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            if (experiment != null) ...[
+              Text('الفرصة: ${experiment['title'] ?? ''}', textDirection: TextDirection.rtl,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              if (experiment['firstAction'] != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text('ابدأ: ${experiment['firstAction']}', textDirection: TextDirection.rtl),
+                ),
+              if (experiment['deliverable'] != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text('المطلوب اليوم: ${experiment['deliverable']}', textDirection: TextDirection.rtl),
+                ),
+              if (checks.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                const Text('قبل الاعتماد أو الدفع:', style: TextStyle(fontWeight: FontWeight.bold)),
+                ...checks.map((item) => Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text('• $item', textDirection: TextDirection.rtl),
+                )),
+              ],
+            ] else
+              const Text('ما في فرصة مناسبة للوقت المحدد اليوم. لا نختلق خطة؛ زِد الوقت المتاح أو جرّب لاحقاً.', textDirection: TextDirection.rtl),
+            if (candidates.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Text('مشروعات GitHub المرشحة (غير مثبتة وغير مفحوصة بعد)', style: TextStyle(fontWeight: FontWeight.bold)),
+              ...candidates.take(3).map((item) => Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('• ${item['name'] ?? item['id'] ?? 'مشروع'}'),
+                    if (item['url'] != null)
+                      SelectableText(item['url'].toString(), textDirection: TextDirection.ltr),
+                  ],
+                ),
+              )),
+            ],
+            const SizedBox(height: 8),
+            const Text('لا يوجد دخل مضمون. لن يتم التواصل مع العملاء أو تثبيت الأدوات أو نشر المحتوى تلقائياً.',
+                textDirection: TextDirection.rtl, style: TextStyle(color: Colors.white70)),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('NOVA Grok Bot')),
@@ -126,6 +201,7 @@ class _NovaGrokBotScreenState extends State<NovaGrokBotScreen> {
                 style: const TextStyle(color: Colors.white70)),
           ]),
         )),
+        if (_buildSimplePlanCard() case final Widget planCard) planCard,
       ],
     ]),
   );
