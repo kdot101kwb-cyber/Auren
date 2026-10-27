@@ -29,6 +29,7 @@ void main() {
 
     await tester.tap(find.byTooltip('مسح البحث'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Flutter'), 250, scrollable: find.byType(Scrollable).first);
     expect(find.text('Flutter'), findsOneWidget);
     expect(find.textContaining('ما لقيت أداة مطابقة'), findsNothing);
   });
