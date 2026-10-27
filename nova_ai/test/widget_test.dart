@@ -21,8 +21,10 @@ void main() {
     await tester.pumpWidget(const NovaApp());
     await tester.pumpAndSettle();
 
-    final checkbox = find.byType(CheckboxListTile).first;
-    expect(checkbox, findsWidgets);
+    final task = find.text('فحص حالة مستودع AUREN');
+    await tester.scrollUntilVisible(task, 250, scrollable: find.byType(Scrollable).first);
+    final checkbox = find.ancestor(of: task, matching: find.byType(CheckboxListTile));
+    expect(checkbox, findsOneWidget);
     await tester.tap(checkbox);
     await tester.pumpAndSettle();
 
@@ -30,7 +32,9 @@ void main() {
     await tester.pumpWidget(const NovaApp());
     await tester.pumpAndSettle();
 
-    final restartedCheckbox = find.byType(CheckboxListTile).first;
+    final restartedTask = find.text('فحص حالة مستودع AUREN');
+    await tester.scrollUntilVisible(restartedTask, 250, scrollable: find.byType(Scrollable).first);
+    final restartedCheckbox = find.ancestor(of: restartedTask, matching: find.byType(CheckboxListTile));
     final tile = tester.widget<CheckboxListTile>(restartedCheckbox);
     expect(tile.value, isTrue);
   });
