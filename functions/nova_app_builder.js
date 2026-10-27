@@ -42,7 +42,8 @@ exports.submitNovaBuildJob = onCall(
       });
     });
     return {
-      jobId:id, status:'queued',
+      jobId:id, status:'queued', stage:'waiting_for_runner',
+      executionPlan, planHash,
       message:'تم تسجيل المهمة. لن يبدأ بناء الكود حتى يتصل عامل بناء معزول بالطابور.',
     };
   }
