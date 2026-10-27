@@ -62,9 +62,64 @@ exports.getNovaBuildJob = onCall(
       jobId:snap.id, type:job.type, stack:job.stack, status:job.status, stage:job.stage,
       attempts:job.attempts, maxAttempts:job.maxAttempts, summary:job.summary || null,
       executionPlan:job.executionPlan || null, planHash:job.planHash || null,
+      executionApproval:job.executionApproval || null,
       checks:job.checks || [], artifacts:job.artifacts || [], error:job.error || null,
       createdAt:job.createdAt?.toDate?.().toISOString() || null,
       updatedAt:job.updatedAt?.toDate?.().toISOString() || null,
+    };
+  }
+);
+
+
+exports.approveNovaBuildPlan = onCall(
+  {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
+  async request => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to approve a build plan.');
+    const jobId = String(request.data?.jobId || '');
+    const suppliedPlanHash = String(request.data?.planHash || '');
+    if (!/^[a-f0-9]{32}$/.test(jobId)) throw new HttpsError('invalid-argument', 'Invalid build job ID.');
+    if (!/^[a-f0-9]{64}$/.test(suppliedPlanHash)) throw new HttpsError('invalid-argument', 'Invalid plan fingerprint.');
+
+    const jobRef = db.collection('users').doc(uid).collection(TASKS).doc(jobId);
+    const queueRef = db.collection('nova_build_queue').doc(jobId);
+    const auditRef = db.collection('users').doc(uid).collection('nova_audit').doc();
+    const approvedAt = new Date().toISOString();
+
+    await db.runTransaction(async tx => {
+      const snap = await tx.get(jobRef);
+      if (!snap.exists) throw new HttpsError('not-found', 'Build job not found.');
+      const job = snap.data();
+      if (job.ownerUid !== uid) throw new HttpsError('permission-denied', 'Only the job owner can approve this plan.');
+      if (job.status !== 'queued' || job.stage !== 'waiting_for_runner') {
+        throw new HttpsError('failed-precondition', 'This build job is not waiting for approval.');
+      }
+      if (!job.executionPlan || job.executionPlan.executable !== false ||
+          job.executionPlan.status !== 'waiting_for_isolated_runner') {
+        throw new HttpsError('failed-precondition', 'There is no supported isolated-runner plan to approve.');
+      }
+      const actualHash = createHash('sha256').update(JSON.stringify(job.executionPlan)).digest('hex');
+      if (job.planHash !== actualHash || suppliedPlanHash !== actualHash) {
+        throw new HttpsError('failed-precondition', 'The plan changed. Refresh and review it again before approval.');
+      }
+      if (job.executionApproval?.approved === true) {
+        if (job.executionApproval.planHash !== actualHash || job.executionApproval.approvedBy !== uid) {
+          throw new HttpsError('failed-precondition', 'Existing approval does not match this plan.');
+        }
+        return;
+      }
+      const approval = {approved:true, approvedBy:uid, planHash:actualHash, approvedAt};
+      tx.update(jobRef, {executionApproval:approval, updatedAt:FieldValue.serverTimestamp()});
+      tx.set(queueRef, {executionApproval:approval, planHash:actualHash, updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+      tx.create(auditRef, {
+        action:'nova.build_plan.approved', actorUid:uid, jobId,
+        planHash:actualHash, createdAt:FieldValue.serverTimestamp(),
+      });
+    });
+
+    return {
+      jobId, approved:true, planHash:suppliedPlanHash,
+      message:'تمت الموافقة على بصمة الخطة المحددة فقط. لن يبدأ التنفيذ حتى يتصل عامل معزول موثوق.',
     };
   }
 );
