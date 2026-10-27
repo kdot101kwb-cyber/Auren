@@ -10,6 +10,7 @@ on:
       - main
       - feat/nova-ai-android-app
       - feat/nova-voice-assistant-foundation
+      - feat/nova-executive-secretary
     paths:
       - 'nova_ai/**'
       - '.github/workflows/nova-android-build.yml'
