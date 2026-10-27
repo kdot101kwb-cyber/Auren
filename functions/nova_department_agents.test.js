@@ -25,6 +25,15 @@ test('catalog entries have upstream repository and license metadata', () => {
   }
 });
 
+test('Open SWE remains an explicit unbenchmarked candidate', () => {
+  assert.equal(AGENT_CATALOG.open_swe.repository, 'https://github.com/langchain-ai/open-swe');
+  assert.equal(AGENT_CATALOG.open_swe.license, 'MIT');
+  assert.equal(AGENT_CATALOG.open_swe.evaluationStatus, 'candidate_not_benchmarked');
+  assert.ok(DEPARTMENT_AGENT_BINDINGS.engineering.supporting.includes('open_swe'));
+  assert.ok(DEPARTMENT_AGENT_BINDINGS.auren.supporting.includes('open_swe'));
+  assert.equal(DEPARTMENT_AGENT_BINDINGS.engineering.primary, 'openhands');
+});
+
 test('department dispatch plan selects the assigned primary agent without executing work', () => {
   const dispatch = buildDepartmentAgentDispatch({
     departmentId:'engineering',
@@ -33,6 +42,7 @@ test('department dispatch plan selects the assigned primary agent without execut
   });
   assert.equal(dispatch.primaryAgentId, 'openhands');
   assert.ok(dispatch.supportingAgentIds.includes('swe_agent'));
+  assert.ok(dispatch.supportingAgentIds.includes('open_swe'));
   assert.equal(dispatch.requiresSandboxForCodeExecution, true);
   assert.equal(dispatch.status, 'planned_not_executed');
   assert.equal(dispatch.externalActionExecuted, false);
