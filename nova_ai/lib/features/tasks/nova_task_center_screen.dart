@@ -220,14 +220,15 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
       DropdownButtonFormField<String>(
         value: _type,
         decoration: const InputDecoration(labelText: 'نوع المهمة', border: OutlineInputBorder()),
+        isExpanded: true,
         items: const [
           DropdownMenuItem(value: 'chat', child: Text('محادثة / إجابة')),
           DropdownMenuItem(value: 'plan', child: Text('خطة تنفيذ')),
           DropdownMenuItem(value: 'research', child: Text('بحث وتحليل')),
           DropdownMenuItem(value: 'opportunity_scan', child: Text('بحث عن فرص دخل')),
           DropdownMenuItem(value: 'content_draft', child: Text('مسودة محتوى')),
-          DropdownMenuItem(value: 'video_generation', child: Text('توليد فيديو عبر Higgsfield — مدفوع ويتطلب موافقة')),
-          DropdownMenuItem(value: 'social_publish', child: Text('نشر اجتماعي — يتطلب موافقة')),
+          DropdownMenuItem(value: 'video_generation', child: Text('توليد فيديو عبر Higgsfield — مدفوع ويتطلب موافقة', maxLines: 1, overflow: TextOverflow.ellipsis)),
+          DropdownMenuItem(value: 'social_publish', child: Text('نشر اجتماعي — يتطلب موافقة', maxLines: 1, overflow: TextOverflow.ellipsis)),
         ],
         onChanged: _busy ? null : (value) { if (value != null) setState(() => _type = value); },
       ),
