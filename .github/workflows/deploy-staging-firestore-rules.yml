@@ -53,7 +53,7 @@ jobs:
 
       - name: Install rules test dependencies
         working-directory: functions
-        run: npm install --no-audit --no-fund
+        run: npm install --no-audit --no-fund firebase
 
       - name: Compile rules and run authorization integration tests in isolated emulator
         run: >-
