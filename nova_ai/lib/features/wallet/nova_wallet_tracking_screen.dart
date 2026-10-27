@@ -30,7 +30,6 @@ class _NovaWalletTrackingScreenState extends State<NovaWalletTrackingScreen> {
       balanceLabel: 'الرصيد اليدوي (SDG)',
       hint: 'مثال: 25000',
       url: 'https://play.google.com/store/apps/details?id=istinara.bravocash',
-      kind: 'mobile_money',
     ),
     _WalletProvider(
       id: 'mycashi',
@@ -39,8 +38,7 @@ class _NovaWalletTrackingScreenState extends State<NovaWalletTrackingScreen> {
       balanceLabel: 'الرصيد اليدوي (SDG)',
       hint: 'مثال: 25000',
       url: 'https://play.google.com/store/apps/details?id=com.alsoug.mycashi',
-      kind: 'mobile_money',
-    ),
+      ),
     _WalletProvider(
       id: 'trust_wallet',
       name: 'Trust Wallet',
@@ -48,7 +46,6 @@ class _NovaWalletTrackingScreenState extends State<NovaWalletTrackingScreen> {
       balanceLabel: 'الرصيد التقديري (USDT أو أصل واحد تختاره)',
       hint: 'مثال: 12.50 USDT',
       url: 'https://trustwallet.com/',
-      kind: 'crypto',
     ),
     _WalletProvider(
       id: 'paypal',
@@ -57,7 +54,6 @@ class _NovaWalletTrackingScreenState extends State<NovaWalletTrackingScreen> {
       balanceLabel: 'الرصيد اليدوي (USD)',
       hint: 'مثال: 15.00',
       url: 'https://www.paypal.com/',
-      kind: 'payments',
     ),
   ];
 
@@ -245,7 +241,6 @@ class _WalletProvider {
   final String balanceLabel;
   final String hint;
   final String url;
-  final String kind;
 
   const _WalletProvider({
     required this.id,
@@ -254,6 +249,5 @@ class _WalletProvider {
     required this.balanceLabel,
     required this.hint,
     required this.url,
-    required this.kind,
   });
 }
