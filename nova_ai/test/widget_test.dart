@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nova_ai/main.dart';
 import 'package:nova_ai/features/creative/creative_tool_library_screen.dart';
+import 'package:nova_ai/features/secretary/nova_secretary_center_screen.dart';
 
 void main() {
   setUp(() {
@@ -48,13 +49,34 @@ void main() {
     await tester.pumpAndSettle();
 
     final voiceButton = find.text('التحدث مع NOVA');
-    await tester.ensureVisible(voiceButton);
+    await tester.scrollUntilVisible(voiceButton, 250, scrollable: find.byType(Scrollable).first);
     await tester.tap(voiceButton);
     await tester.pumpAndSettle();
 
     expect(find.text('NOVA Voice'), findsOneWidget);
     expect(find.text('أنا NOVA'), findsOneWidget);
     expect(find.text('أو اكتب أمرك'), findsOneWidget);
+  });
+
+
+  testWidgets('secretary saves drafts locally and moves them to review', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: NovaSecretaryCenterScreen()));
+    await tester.pumpAndSettle();
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), 'customer@example.com');
+    await tester.enterText(fields.at(1), 'Welcome to AUREN');
+    await tester.enterText(fields.at(2), 'Thank you for contacting us. We will follow up soon.');
+    await tester.tap(find.text('حفظ المسودة على الجهاز'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Welcome to AUREN'), findsOneWidget);
+    expect(find.text('مسودة محلية'), findsOneWidget);
+
+    await tester.tap(find.text('إرسال للمراجعة'));
+    await tester.pumpAndSettle();
+    expect(find.text('بانتظار الموافقة'), findsOneWidget);
+    expect(find.textContaining('لا تُقرأ صناديق البريد ولا تُرسل رسائل تلقائياً'), findsOneWidget);
   });
 
   testWidgets('creative tool library shows 90 tools and filters by category', (tester) async {
