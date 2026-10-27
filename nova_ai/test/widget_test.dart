@@ -83,9 +83,20 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: SecretaryCenterScreen()));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byKey(const ValueKey('secretary-source')), 'بريد');
-    await tester.enterText(find.byKey(const ValueKey('secretary-subject')), 'متابعة الاجتماع');
-    await tester.enterText(find.byKey(const ValueKey('secretary-body')), 'شكراً على وقتك، سأرسل الملخص قريباً.');
+    final sourceField = find.byKey(const ValueKey('secretary-source'));
+    await tester.ensureVisible(sourceField);
+    await tester.pumpAndSettle();
+    await tester.enterText(sourceField, 'بريد');
+
+    final subjectField = find.byKey(const ValueKey('secretary-subject'));
+    await tester.ensureVisible(subjectField);
+    await tester.pumpAndSettle();
+    await tester.enterText(subjectField, 'متابعة الاجتماع');
+
+    final bodyField = find.byKey(const ValueKey('secretary-body'));
+    await tester.ensureVisible(bodyField);
+    await tester.pumpAndSettle();
+    await tester.enterText(bodyField, 'شكراً على وقتك، سأرسل الملخص قريباً.');
     await tester.tap(find.text('حفظ مسودة على هذا الجهاز'));
     await tester.pumpAndSettle();
 
