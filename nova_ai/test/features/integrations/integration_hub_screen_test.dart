@@ -12,6 +12,8 @@ void main() {
     await tester.scrollUntilVisible(find.text('التصميم وتجربة المستخدم'), 250, scrollable: find.byType(Scrollable).first);
     expect(find.text('التصميم وتجربة المستخدم'), findsOneWidget);
 
+    await tester.ensureVisible(find.byType(TextField));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Godot');
     await tester.pumpAndSettle();
 
