@@ -53,11 +53,11 @@ class _NovaGrokBotScreenState extends State<NovaGrokBotScreen> {
     }
   }
 
-  Widget? _buildSimplePlanCard() {
+  Widget _buildSimplePlanCard() {
     final radar = _result?['opportunityRadar'];
-    if (radar is! Map) return null;
+    if (radar is! Map) return const SizedBox.shrink();
     final rawPlan = radar['simplePlan'];
-    if (rawPlan is! Map) return null;
+    if (rawPlan is! Map) return const SizedBox.shrink();
     final plan = Map<String, dynamic>.from(rawPlan);
     final rawExperiment = plan['incomeExperiment'];
     final experiment = rawExperiment is Map
@@ -201,7 +201,7 @@ class _NovaGrokBotScreenState extends State<NovaGrokBotScreen> {
                 style: const TextStyle(color: Colors.white70)),
           ]),
         )),
-        if (_buildSimplePlanCard() case final Widget planCard) planCard,
+        _buildSimplePlanCard(),
       ],
     ]),
   );
