@@ -67,7 +67,7 @@ void main() {
     expect(find.textContaining('125.5 SDG'), findsOneWidget);
     expect(find.text('اختبار دخل'), findsOneWidget);
     expect(
-      (await SharedPreferences.getInstance()).getStringList('nova.wallet.ledger.v1'),
+      (await SharedPreferences.getInstance()).getStringList('nova.finance.transactions.v2'),
       isNotEmpty,
     );
   });
