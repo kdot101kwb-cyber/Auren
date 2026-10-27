@@ -23,5 +23,16 @@ The list is a candidate catalogue, not evidence that these projects are installe
 
 No income is guaranteed. Platform eligibility, Sudan access, payout routes, taxes, licensing, and service fees must be verified for each actual path. The ranking intentionally returns no revenue forecast until demand evidence exists.
 
+## Simple next-step plan
+
+The callable now returns one compact plan alongside the ranked shortlist:
+- one best-fit income experiment for the available daily minutes;
+- one deliverable and first action;
+- a short validation checklist including Sudan access and payout-method checks;
+- up to three GitHub candidates, all clearly marked as unverified;
+- three practical actions for today and a stop rule that prevents spending before demand is shown.
+
+This is intentionally not a new crawler or a second scheduler: the existing revenue engine and opportunity-monitor modules already cover scheduled work/reporting patterns. The plan does not send outreach, install code, publish content, or claim current eligibility. If no experiment fits the time budget, it returns no selected experiment rather than inventing one.
+
 ## Scoring
 Rank candidates using fit to income/research goal, integration effort, upfront cost, time to first market signal, reusable skills, risks, and evidence quality. Popularity is only a discovery signal. Keep `licenseVerified` and `testedInNOVA` false until real checks are recorded.
