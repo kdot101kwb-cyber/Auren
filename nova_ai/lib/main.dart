@@ -8,6 +8,7 @@ import 'features/opportunities/opportunity_lab_screen.dart';
 import 'features/integrations/integration_hub_screen.dart';
 import 'features/integrations/github_ci_screen.dart';
 import 'features/debate/nova_debate_screen.dart';
+import 'features/brain/nova_grok_bot_screen.dart';
 import 'features/revenue/nova_revenue_engine_screen.dart';
 import 'features/auren/auren_build_workspace_screen.dart';
 import 'features/auren/auren_management_dashboard_screen.dart';
@@ -246,6 +247,12 @@ class _NovaHomeState extends State<NovaHome> {
       onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const NovaDebateScreen())),
       icon: const Icon(Icons.balance),
       label: const Text('فتح مجلس النقاش الاستراتيجي'),
+    ),
+    const SizedBox(height: 8),
+    FilledButton.icon(
+      onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const NovaGrokBotScreen())),
+      icon: const Icon(Icons.auto_awesome),
+      label: const Text('فتح NOVA Grok Bot الموحد'),
     ),
     _Notice(text: 'لن تُمنح الوكلاء صلاحيات غير محدودة. الربط الرسمي، أقل صلاحية لازمة، وسجل تدقيق وموافقة للعمليات الحساسة شروط أساسية.'),
   ]);
