@@ -1,0 +1,103 @@
+name: NOVA Isolated Flutter Build Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      plan_fingerprint:
+        description: "SHA-256 fingerprint shown by NOVA for the approved build plan"
+        required: true
+        type: string
+      confirm_build:
+        description: "I reviewed the plan and approve a one-time build on a temporary GitHub-hosted runner"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nova-isolated-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Approved Flutter validation and debug APK
+    if: ${{ inputs.confirm_build == true && (github.ref == 'refs/heads/feat/nova-free-game-development-toolkit' || github.ref == 'refs/heads/feat/nova-ai-android-app') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Reject malformed plan fingerprint
+        env:
+          PLAN_FINGERPRINT: ${{ inputs.plan_fingerprint }}
+        run: |
+          if [[ ! "$PLAN_FINGERPRINT" =~ ^[a-fA-F0-9]{64}$ ]]; then
+            echo "::error::Plan fingerprint must be a 64-character SHA-256 hex string."
+            exit 1
+          fi
+          echo "Approved plan fingerprint: $PLAN_FINGERPRINT"
+
+      - name: Checkout selected branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.2"
+          channel: stable
+          cache: true
+
+      - name: Record runner and target metadata
+        run: |
+          flutter --version
+          git rev-parse HEAD
+          echo "This is a temporary GitHub-hosted runner."
+          echo "No repository write token or production secrets are configured by this workflow."
+
+      - name: Resolve Flutter dependencies
+        working-directory: nova_ai
+        run: flutter pub get
+
+      - name: Verify formatting
+        working-directory: nova_ai
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        working-directory: nova_ai
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run tests
+        working-directory: nova_ai
+        run: flutter test
+
+      - name: Build debug APK
+        working-directory: nova_ai
+        run: flutter build apk --debug
+
+      - name: Upload debug APK
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-approved-debug-apk-${{ github.run_number }}
+          path: nova_ai/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Upload build report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-build-report-${{ github.run_number }}
+          path: |
+            nova_ai/pubspec.yaml
+            nova_ai/analysis_options.yaml
+          if-no-files-found: warn
+          retention-days: 3
