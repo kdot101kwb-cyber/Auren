@@ -268,6 +268,7 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
                   ],
                 ),
                 TextField(
+                  key: const ValueKey('nova-finance-amount'),
                   controller: _amountController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(
@@ -331,6 +332,7 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
                 ),
                 const SizedBox(height: 10),
                 TextField(
+                  key: const ValueKey('nova-finance-note'),
                   controller: _noteController,
                   maxLength: 250,
                   decoration: const InputDecoration(
