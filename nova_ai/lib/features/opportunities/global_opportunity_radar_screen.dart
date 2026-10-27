@@ -157,7 +157,6 @@ class _GlobalOpportunityRadarScreenState extends State<GlobalOpportunityRadarScr
             ),
           ),
           const SizedBox(height: 12),
-          const SizedBox(height: 12),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(14),
