@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nova_ai/main.dart';
 import 'package:nova_ai/features/creative/creative_tool_library_screen.dart';
+import 'package:nova_ai/features/secretary/secretary_center_screen.dart';
 
 void main() {
   setUp(() {
@@ -71,3 +72,25 @@ void main() {
     expect(find.text('Shotcut'), findsNothing);
   });
 }
+
+
+  test('secretary risk classifier escalates sensitive topics', () {
+    expect(classifySecretaryRisk('Can you send the payment confirmation?'), SecretaryRisk.reviewRequired);
+    expect(classifySecretaryRisk('Please confirm our meeting tomorrow'), SecretaryRisk.low);
+    expect(classifySecretaryRisk('هذه شكوى عن استرداد المبلغ'), SecretaryRisk.reviewRequired);
+  });
+
+  testWidgets('secretary center saves local drafts without sending', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: SecretaryCenterScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.widgetWithText(TextField, 'نوع الرسالة / القناة (اختياري)'), 'بريد');
+    await tester.enterText(find.widgetWithText(TextField, 'العنوان'), 'متابعة الاجتماع');
+    await tester.enterText(find.widgetWithText(TextField, 'نص البريد أو رد العميل'), 'شكراً على وقتك، سأرسل الملخص قريباً.');
+    await tester.tap(find.text('حفظ مسودة على هذا الجهاز'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('متابعة الاجتماع'), findsWidgets);
+    expect(find.text('محلية فقط'), findsOneWidget);
+    expect(find.textContaining('لم تُرسل لأي شخص'), findsOneWidget);
+  });
