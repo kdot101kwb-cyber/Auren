@@ -4,14 +4,29 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const firebase = require('firebase/compat/app');
-require('firebase/compat/firestore');
+const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
+const { doc, setDoc, getDoc, updateDoc, deleteDoc, runTransaction, Timestamp } = require('firebase/firestore');
 
-const {
-  initializeTestEnvironment,
-  assertSucceeds,
-  assertFails,
-} = require('@firebase/rules-unit-testing');
+function compatDb(db) {
+  return {
+    doc(path) {
+      const ref = doc(db, path);
+      return {
+        _ref: ref,
+        get: () => getDoc(ref),
+        set: (data) => setDoc(ref, data),
+        update: (data) => updateDoc(ref, data),
+        delete: () => deleteDoc(ref),
+      };
+    },
+    runTransaction(updateFunction) {
+      return runTransaction(db, (transaction) => updateFunction({
+        get: (ref) => transaction.get(ref._ref),
+        update: (ref, data) => transaction.update(ref._ref, data),
+      }));
+    },
+  };
+}
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'auren-supplier-rules';
 let testEnv;
@@ -35,7 +50,7 @@ function comparison(ownerId, offers = []) {
   return {
     ownerId,
     offers,
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   };
 }
 
@@ -69,17 +84,17 @@ function rfqDraft(ownerId) {
     delivery: 'يُحدّد لاحقاً',
     contact: '',
     draft: 'Please provide a quotation.',
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   };
 }
 
 function userDb(uid) {
-  return testEnv.authenticatedContext(uid).firestore();
+  return compatDb(testEnv.authenticatedContext(uid).firestore());
 }
 
 async function seed(pathname, data) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    await context.firestore().doc(pathname).set(data);
+    await compatDb(context.firestore()).doc(pathname).set(data);
   });
 }
 
@@ -90,7 +105,7 @@ test('comparison owner can create, read, update, and delete the active draft', a
   await assertSucceeds(ref.get());
   await assertSucceeds(ref.update({
     offers: [validOffer('offer-2')],
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
   await assertSucceeds(ref.delete());
 });
@@ -104,7 +119,7 @@ test('another user cannot read, create, modify, or delete a supplier comparison'
   await assertFails(otherRef.set(comparison('supplier-attacker', [validOffer()])));
   await assertFails(otherRef.update({
     offers: [validOffer('tampered')],
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
   await assertFails(otherRef.delete());
 });
@@ -135,7 +150,7 @@ test('RFQ owner can create, read, modify, and delete the active draft', async ()
   await assertSucceeds(ref.get());
   await assertSucceeds(ref.update({
     product: 'Organic cotton T-shirts',
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
   await assertSucceeds(ref.delete());
 });
@@ -149,7 +164,7 @@ test('another user cannot read, create, modify, or delete an RFQ draft', async (
   await assertFails(otherRef.set(rfqDraft('rfq-attacker')));
   await assertFails(otherRef.update({
     product: 'Tampered product',
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
   await assertFails(otherRef.delete());
 });
