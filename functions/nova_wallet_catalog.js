@@ -27,6 +27,30 @@ const WALLETS = Object.freeze([
     requiresUserApproval: true,
     verificationNote: 'Confirm the installed app and current provider terms before relying on account or payout details.',
   },
+  {
+    id: 'trust_wallet',
+    name: 'Trust Wallet',
+    country: 'GLOBAL',
+    category: 'self_custody_crypto_wallet',
+    appUrl: 'https://trustwallet.com/',
+    integration: 'manual_tracking',
+    capabilities: ['manual_balance_entry', 'manual_income_entry', 'manual_expense_entry', 'public_address_tracking_planned'],
+    unsupported: ['seed_phrase_import', 'private_key_import', 'live_balance_sync', 'direct_transfer', 'automatic_payment'],
+    requiresUserApproval: true,
+    verificationNote: 'Never request a recovery phrase or private key. Public-address balance lookup is a separate future read-only integration and is not enabled by this catalog.',
+  },
+  {
+    id: 'paypal',
+    name: 'PayPal',
+    country: 'GLOBAL',
+    category: 'online_payment_account',
+    appUrl: 'https://www.paypal.com/',
+    integration: 'manual_tracking',
+    capabilities: ['manual_balance_entry', 'manual_income_entry', 'manual_expense_entry', 'receipt_reference'],
+    unsupported: ['live_balance_sync', 'direct_transfer', 'automatic_payment'],
+    requiresUserApproval: true,
+    verificationNote: 'Availability, receiving, and withdrawal features vary by country and account. No PayPal OAuth/API integration is enabled.',
+  },
 ]);
 const ENTRY_TYPES = new Set(['income', 'expense', 'transfer', 'balance_adjustment']);
 
