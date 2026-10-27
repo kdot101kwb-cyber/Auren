@@ -38,7 +38,6 @@ void main() {
     final tile = tester.widget<CheckboxListTile>(restartedCheckbox);
     expect(tile.value, isTrue);
   });
-}
 
 
   testWidgets('wallet ledger records a local income entry', (tester) async {
@@ -72,3 +71,4 @@ void main() {
       isNotEmpty,
     );
   });
+}
