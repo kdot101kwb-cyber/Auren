@@ -44,6 +44,16 @@ const AGENT_PROJECTS = Object.freeze({
     integrationMode:'sandboxed_code_adapter',
     costNote:'Software is open source; safe compute and model inference may cost money.',
   },
+  grok_build: {
+    id:'grok_build',
+    name:'Grok Build (official)',
+    repository:'https://github.com/xai-org/grok-build',
+    license:'Apache-2.0',
+    runtime:'Rust CLI/TUI on a separate development worker',
+    role:'Official coding agent for repository-aware edits, shell tasks, and long-running development work',
+    integrationMode:'sandboxed_code_adapter',
+    costNote:'The source is open; model access, an execution host, and inference may cost money.',
+  },
   smolagents: {
     id:'smolagents',
     name:'smolagents',
@@ -76,10 +86,69 @@ const AGENT_PROJECTS = Object.freeze({
   },
 });
 
+
+/**
+ * Grok-related integration candidates verified against repository metadata,
+ * README/package metadata, and license files on 2026-10-27.
+ * These are catalog records only: no provider call or external process is enabled.
+ */
+const GROK_INTEGRATIONS = Object.freeze({
+  xai_sdk_ts: Object.freeze({
+    id:'xai_sdk_ts',
+    name:'Official SpaceXAI TypeScript SDK',
+    repository:'https://github.com/xai-org/xai-sdk-ts',
+    packageName:'@xai-official/sdk',
+    license:'Apache-2.0',
+    runtime:'Node.js >=22.13, TypeScript, ESM',
+    role:'Server-side Grok API provider adapter for endpoints supported by the SDK',
+    integrationMode:'server_side_provider_sdk',
+    integrationStatus:'catalogued_not_connected',
+    runtimeReady:false,
+    mobileEmbedded:false,
+    requiresServerSideSecret:true,
+    requiresExplicitOwnerCostApproval:true,
+    mayIncurCosts:true,
+    experimental:true,
+    costNote:'The SDK is open source; an API key and model inference may cost money.',
+  }),
+  grok_build: Object.freeze({
+    id:'grok_build',
+    name:'Grok Build (official)',
+    repository:'https://github.com/xai-org/grok-build',
+    license:'Apache-2.0',
+    runtime:'Rust CLI/TUI on a separate development worker',
+    role:'Repository-aware coding agent with shell and long-running task support',
+    integrationMode:'sandboxed_code_worker',
+    integrationStatus:'catalogued_not_connected',
+    runtimeReady:false,
+    mobileEmbedded:false,
+    requiresServerSideSecret:false,
+    requiresExplicitOwnerCostApproval:true,
+    mayIncurCosts:true,
+    costNote:'Open source does not make model access or worker compute free.',
+  }),
+  grok_cli: Object.freeze({
+    id:'grok_cli',
+    name:'grok-cli (community)',
+    repository:'https://github.com/superagent-ai/grok-cli',
+    license:'MIT',
+    runtime:'Bun / TypeScript terminal agent',
+    role:'Community coding agent with web/X search, sub-agents, and optional Telegram remote control',
+    integrationMode:'optional_sandboxed_code_worker',
+    integrationStatus:'catalogued_not_connected',
+    runtimeReady:false,
+    mobileEmbedded:false,
+    requiresServerSideSecret:true,
+    requiresExplicitOwnerCostApproval:true,
+    mayIncurCosts:true,
+    costNote:'Community code is open source; Grok API use and a running worker may cost money.',
+  }),
+});
+
 const DEPARTMENT_AGENT_MAP = Object.freeze({
   executive:{primary:['langgraph','crewai'],support:['pydantic_ai'],why:'Coordinate stateful plans, delegate specialist reviews, and validate structured executive reports.'},
   security:{primary:['langgraph','pydantic_ai'],support:['openhands'],why:'Run gated security-review workflows, produce structured findings, and propose fixes for review; never run offensive tests outside authorized scope.'},
-  engineering:{primary:['openhands','aider'],support:['langgraph'],why:'Use isolated coding workspaces for repository changes, with orchestration and test evidence.'},
+  engineering:{primary:['openhands','grok_build','aider'],support:['langgraph'],why:'Use isolated coding workspaces for repository changes, with orchestration and test evidence.'},
   quality:{primary:['pydantic_ai','langgraph'],support:['openhands'],why:'Validate structured acceptance criteria, track test evidence, and route failures for controlled fixes.'},
   research:{primary:['browser_use','smolagents'],support:['pydantic_ai'],why:'Collect public-source evidence, extract structured facts, and label uncertainty.'},
   product:{primary:['crewai','pydantic_ai'],support:['browser_use'],why:'Coordinate product/UX analysis, validate requirements, and research comparable public products.'},
@@ -87,7 +156,7 @@ const DEPARTMENT_AGENT_MAP = Object.freeze({
   finance:{primary:['pydantic_ai','smolagents'],support:['langgraph'],why:'Build typed budget and revenue scenarios, check assumptions, and prepare risk notes; no trading, transfers, or wallet access.'},
   legal:{primary:['browser_use','pydantic_ai'],support:['langgraph'],why:'Research official public policies and structure compliance checklists; not a substitute for licensed legal advice.'},
   operations:{primary:['crewai','langgraph'],support:['pydantic_ai'],why:'Coordinate tasks, status updates, reminders, and drafts with validation and auditability.'},
-  auren:{primary:['openhands','langgraph'],support:['browser_use','pydantic_ai'],why:'Inspect approved AUREN repository work, plan code changes, research markets, and report test/CI evidence.'},
+  auren:{primary:['openhands','grok_build','langgraph'],support:['browser_use','pydantic_ai'],why:'Inspect approved AUREN repository work, plan code changes, research markets, and report test/CI evidence.'},
 });
 
 const EXTERNAL_ACTION_TYPES = new Set([
@@ -150,6 +219,7 @@ function buildDepartmentAgentAssignment({departmentId, objective, taskType = 'pl
 
 module.exports = {
   AGENT_PROJECTS,
+  GROK_INTEGRATIONS,
   DEPARTMENT_AGENT_MAP,
   EXTERNAL_ACTION_TYPES,
   getDepartmentAgentPlan,

@@ -43,3 +43,23 @@ Sources checked:
 - Test suite covers denied and failure paths.
 - A successful state requires a real platform post ID or permalink; queued/drafted is never reported as published.
 - Pause/cancel and an auditable result record are available.
+
+
+## Grok / SpaceXAI integration decision (2026-10-27)
+
+This review inspected repository README and license/package metadata for the following candidates:
+
+| Candidate | Source | License observed | Intended NOVA role | Decision |
+|---|---|---|---|---|
+| Grok Build | https://github.com/xai-org/grok-build | Apache-2.0 | Official coding agent on a separate isolated worker | Catalogued for engineering/AUREN planning; not installed or executed |
+| Official TypeScript SDK | https://github.com/xai-org/xai-sdk-ts | Apache-2.0 | Server-side Grok API provider adapter | Defer live calls: README marks it experimental, requires Node.js >=22.13 and an API key |
+| grok-cli | https://github.com/superagent-ai/grok-cli | MIT | Optional community coding agent with web/X search and sub-agent features | Research candidate only; requires Bun and Grok API access; not an official xAI product |
+
+### Implementation boundary
+
+- This change registers candidate metadata and deterministic department routing only. It does not install third-party packages, invoke a model, launch a shell process, or claim a live Grok connection.
+- Do not embed Grok Build or grok-cli in the Flutter APK. Run coding agents only in a separate, disposable worker with repository allowlists, timeouts, restricted network access, and audit records.
+- The official SDK belongs behind a trusted backend. Never place its API key in Flutter, source control, logs, or generated artifacts.
+- No API request may be made until the owner explicitly enables the provider and confirms the cost boundary. Open-source licensing does not make inference or compute free.
+- Any code write, deployment, publishing, message sending, deletion, or spending remains subject to NOVA's existing owner-approval policy.
+- The imfaisii/grok-mcp candidate from the earlier shortlist was not included because its repository could not be verified through the connected GitHub source during this pass.
