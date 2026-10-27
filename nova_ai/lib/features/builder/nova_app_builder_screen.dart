@@ -77,6 +77,60 @@ class _NovaAppBuilderScreenState extends State<NovaAppBuilderScreen> {
     }
   }
 
+
+  Future<void> _approvePlan() async {
+    final jobId = _job?['jobId'] as String? ?? _jobId;
+    final planHash = _job?['planHash'] as String?;
+    final plan = _job?['executionPlan'];
+    if (jobId == null || planHash == null || plan is! Map ||
+        plan['status'] != 'waiting_for_isolated_runner' ||
+        plan['executable'] != false) {
+      setState(() => _message = 'لا توجد خطة مدعومة جاهزة للمراجعة والموافقة.');
+      return;
+    }
+    final approved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('موافقة على خطة البناء'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('أنت توافق على هذه الخطة المحددة فقط، وليس على النشر أو الدمج أو تغيير أسرار الإنتاج. لن يبدأ التنفيذ حتى يتصل عامل معزول موثوق.'),
+              const SizedBox(height: 12),
+              for (final step in (plan['steps'] as List? ?? const []))
+                if (step is Map)
+                  Text('• ${step['id']}: ${step['executable']} ${((step['args'] as List?) ?? const []).join(' ')}'),
+              const SizedBox(height: 12),
+              SelectableText('بصمة الخطة: $planHash'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('أوافق على هذه الخطة')),
+        ],
+      ),
+    );
+    if (approved != true || !mounted) return;
+    setState(() { _busy = true; _message = null; });
+    try {
+      await _ensureAuth();
+      final response = await FirebaseFunctions.instanceFor(region:'us-central1')
+          .httpsCallable('approveNovaBuildPlan').call(<String, dynamic>{
+        'jobId':jobId, 'planHash':planHash,
+      });
+      final data = Map<String, dynamic>.from(response.data as Map);
+      setState(() => _message = '${data['message'] ?? 'تم تسجيل الموافقة'}');
+      await _refresh();
+    } catch (error) {
+      setState(() => _message = 'تعذر تسجيل الموافقة: $error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.all(16),
@@ -116,6 +170,20 @@ class _NovaAppBuilderScreenState extends State<NovaAppBuilderScreen> {
       const SizedBox(height:12),
       FilledButton.icon(onPressed:_busy ? null : _submit, icon:const Icon(Icons.rocket_launch), label:Text(_busy?'جاري الإرسال…':'إنشاء مهمة البناء')),
       if (_jobId != null) OutlinedButton.icon(onPressed:_busy ? null : _refresh, icon:const Icon(Icons.refresh), label:const Text('تحديث حالة المهمة')),
+      if (_job != null &&
+          (_job!['executionPlan'] as Map?)?['status'] == 'waiting_for_isolated_runner' &&
+          (_job!['executionApproval'] as Map?)?['approved'] != true)
+        OutlinedButton.icon(
+          onPressed:_busy ? null : _approvePlan,
+          icon:const Icon(Icons.verified_user_outlined),
+          label:const Text('مراجعة الخطة والموافقة عليها'),
+        ),
+      if ((_job?['executionApproval'] as Map?)?['approved'] == true)
+        const ListTile(
+          leading:Icon(Icons.verified_user, color:Colors.green),
+          title:Text('تمت الموافقة على بصمة الخطة'),
+          subtitle:Text('الموافقة لا تشغّل البناء؛ ما زال يلزم عامل معزول موثوق.'),
+        ),
       if (_message != null) Padding(padding:const EdgeInsets.symmetric(vertical:10), child:Text(_message!, textDirection:TextDirection.rtl)),
       if (_job != null) ...[
         Card(child:Padding(padding:const EdgeInsets.all(12), child:Column(crossAxisAlignment:CrossAxisAlignment.start, children:[
