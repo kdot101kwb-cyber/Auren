@@ -7,7 +7,9 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: IntegrationHubScreen()));
 
     expect(find.text('مركز بناء التطبيقات في NOVA'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Flutter'), 250, scrollable: find.byType(Scrollable).first);
     expect(find.text('Flutter'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('التصميم وتجربة المستخدم'), 250, scrollable: find.byType(Scrollable).first);
     expect(find.text('التصميم وتجربة المستخدم'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'Godot');
