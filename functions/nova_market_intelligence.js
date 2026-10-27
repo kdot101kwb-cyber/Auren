@@ -58,9 +58,13 @@ function scoreMarketOpportunity(row) {
     bounded(trend) * .20 + bounded(pain) * .20 + bounded(build) * .20 +
     bounded(payment) * .15 + bounded(competition) * .10 + bounded(evidence) * .15
   ) * 10) / 10;
-  const ready = score >= 70 && sourceCount >= 2 && evidence >= 55 && build >= 60 && payment >= 50;
+  // A numeric payment score is only a placeholder until country/payment checks are verified.
+  // Never label an opportunity ready for validation unless both checks are explicitly confirmed.
+  const paymentVerified = row.paymentVerified === true;
+  const zeroCostValidated = row.zeroCostValidated === true;
+  const ready = score >= 70 && sourceCount >= 2 && evidence >= 55 && build >= 60 && payment >= 50 && paymentVerified && zeroCostValidated;
   return {score, readiness:ready ? 'ready_to_validate' : score >= 50 ? 'research_more' : 'weak_signal',
-    eligibleForZeroCostTest:ready};
+    eligibleForZeroCostTest:ready, paymentVerified, zeroCostValidated};
 }
 
 async function fetchJson(url, timeoutMs = 8000) {
@@ -108,6 +112,9 @@ async function collectTopicEvidence(topic) {
     painScore:Math.min(100,sourceCount*12),
     zeroCostBuildScore:65,
     paymentFeasibilityScore:50,
+    paymentVerified:false,
+    paymentVerificationNote:'لم يتم التحقق من قبول السودان أو وسيلة استلام الأرباح؛ تحقق يدوياً قبل التنفيذ.',
+    zeroCostValidated:false,
     competitionScore:50,
     evidenceStrength:Math.min(100,sourceCount*12),
     recommendedAction:'افحص 3 عروض حقيقية من العملاء المحتملين، أنشئ نموذجاً مجانياً صغيراً، ولا تدفع أو تشترِ أدوات قبل إثبات الطلب.',
