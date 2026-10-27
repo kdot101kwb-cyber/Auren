@@ -120,9 +120,11 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
   @override
   Widget build(BuildContext context) {
     final groups = _visibleGroups;
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: ListView(
+    return Scaffold(
+      body: SafeArea(
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Container(
@@ -209,6 +211,8 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
           const SizedBox(height: 8),
           const Text('• مفاتيح API وOAuth تحفظ بالخادم أو مدير أسرار، وليس داخل التطبيق.\n• كل تكامل يحتاج صلاحيات أقل ما يمكن واختبار اتصال واضحاً.\n• لا نشر ولا رسائل ولا شراء ولا إنفاق إعلاني دون إذن منفصل.\n• لا نعرض الخدمة على أنها متصلة إلا بعد نجاح اختبار حي موثق.\n• الأولوية العملية: GitHub + CI + سجل مهام + نتائج الاختبارات + تنزيل APK من داخل NOVA.'),
         ],
+          ),
+        ),
       ),
     );
   }
