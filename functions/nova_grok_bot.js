@@ -7,6 +7,7 @@ const {normalizeGrokInput, buildGrokInput, extractResponseText, normalizeGrokRep
 const {resolveGrokBotEngine} = require('./nova_grok_agent_registry');
 const {buildGrokSuperpowers} = require('./nova_grok_superpowers');
 const {normalizeLesson, buildLearningContext} = require('./nova_grok_learning');
+const {rankIncomeExperiments, rankGithubProjects} = require('./nova_grok_opportunity_radar');
 
 const XAI_API_KEY = defineSecret('XAI_API_KEY');
 const db = getFirestore();
@@ -110,6 +111,11 @@ exports.novaGrokBot = onCall({
     ...result,
     superpowers,
     learning: {confirmedLessonsApplied: learningContext.length, persistenceRequiresExplicitConsent: true},
+    opportunityRadar: {
+      incomeExperiments: rankIncomeExperiments({maxUpfrontCostUsd: 0, availableMinutesPerDay: 180}).slice(0, 4),
+      githubProjects: rankGithubProjects({priority: input.mode === 'research' ? 'research' : 'income'}).slice(0, 5),
+      warning: 'Ranked hypotheses and project candidates only; no income is guaranteed and project licenses, costs, security, and installation are not yet verified.',
+    },
     executionStatus: 'not_executed',
     message: result.proposedAction
       ? 'تم تجهيز مقترح فقط. لم يبدأ التنفيذ؛ يلزم ربطه بمركز المهام وموافقة المستخدم.'
