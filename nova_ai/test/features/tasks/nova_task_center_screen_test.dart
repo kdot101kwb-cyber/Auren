@@ -65,6 +65,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('المسودات المحلية: 0'), findsOneWidget);
-    expect(prefs.getStringList('nova.task_center.offline_drafts.v1'), isEmpty);
+    expect(prefs.getStringList('nova.task_center.offline_drafts.v1') ?? const <String>[], isEmpty);
   });
 }
