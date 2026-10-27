@@ -202,7 +202,7 @@ class _NovaSecretaryCenterScreenState extends State<NovaSecretaryCenterScreen> {
               controller: _bodyController,
               minLines: 4,
               maxLines: 8,
-              textDirection: TextDirection.auto,
+              textDirection: TextDirection.rtl,
               decoration: const InputDecoration(
                 labelText: 'نص الإيميل أو الرد',
                 hintText: 'اكتب المسودة هنا...',
