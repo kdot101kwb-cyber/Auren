@@ -13,6 +13,7 @@ void main() {
     expect(find.text('مركز إدارة AUREN'), findsOneWidget);
     expect(find.text('جدول اجتماع اليوم'), findsOneWidget);
     expect(find.text('الجودة ونجاح الاختبارات'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('الأمان والخصوصية'), 250, scrollable: find.byType(Scrollable).first);
     expect(find.text('الأمان والخصوصية'), findsOneWidget);
     expect(find.text('ابدأ اجتماع اليوم'), findsOneWidget);
     expect(find.text('سجل اجتماعات المجلس'), findsOneWidget);
