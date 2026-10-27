@@ -105,9 +105,9 @@ class _NovaGrokBotScreenState extends State<NovaGrokBotScreen> {
         Card(child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('\${_result!['bot'] ?? 'NOVA Grok Bot'} · \${_result!['model'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text('${_result!['bot'] ?? 'NOVA Grok Bot'} · ${_result!['model'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text('\${_result!['answer'] ?? ''}', textDirection: TextDirection.rtl),
+            Text('${_result!['answer'] ?? ''}', textDirection: TextDirection.rtl),
             if (_result!['nextSteps'] is List && (_result!['nextSteps'] as List).isNotEmpty) ...[
               const SizedBox(height: 12),
               const Text('الخطوات المقترحة', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -118,11 +118,11 @@ class _NovaGrokBotScreenState extends State<NovaGrokBotScreen> {
             ],
             if (_result!['proposedAction'] != null) ...[
               const SizedBox(height: 12),
-              Text('مقترح يحتاج موافقتك: \${_result!['proposedAction']}', textDirection: TextDirection.rtl,
+              Text('مقترح يحتاج موافقتك: ${_result!['proposedAction']}', textDirection: TextDirection.rtl,
                   style: const TextStyle(fontWeight: FontWeight.bold)),
             ],
             const SizedBox(height: 12),
-            Text('\${_result!['message'] ?? 'لم يتم تنفيذ أي إجراء خارجي.'}', textDirection: TextDirection.rtl,
+            Text('${_result!['message'] ?? 'لم يتم تنفيذ أي إجراء خارجي.'}', textDirection: TextDirection.rtl,
                 style: const TextStyle(color: Colors.white70)),
           ]),
         )),
