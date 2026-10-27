@@ -15,6 +15,7 @@ import 'features/auren/auren_management_dashboard_screen.dart';
 import 'features/creative/creative_tool_library_screen.dart';
 import 'features/game_studio/nova_game_studio_screen.dart';
 import 'features/security/nova_security_center_screen.dart';
+import 'features/leadership/nova_executive_council_screen.dart';
 import 'features/brain/nova_autonomous_brain_screen.dart';
 import 'features/opportunities/global_opportunity_radar_screen.dart';
 
@@ -151,6 +152,7 @@ class _NovaHomeState extends State<NovaHome> {
       const NovaGameStudioScreen(),
       const AurenRepositoryBrowserScreen(),
       const NovaSecurityCenterScreen(),
+      const NovaExecutiveCouncilScreen(),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -174,6 +176,7 @@ class _NovaHomeState extends State<NovaHome> {
               PopupMenuItem(value: 16, child: Text('NOVA Game Studio · إنشاء الألعاب')), 
               PopupMenuItem(value: 17, child: Text('NOVA Builder · قراءة ملفات AUREN')),
               PopupMenuItem(value: 18, child: Text('مركز الحماية من الفيروسات والاختراق')),
+              PopupMenuItem(value: 19, child: Text('مجلس الإدارة التنفيذية ورؤساء الإدارات')),
             ],
           ),
           IconButton(onPressed: () => showAboutDialog(context: context, applicationName: 'NOVA AI', applicationVersion: '0.2.0', children: const [Text('نسخة أولية قيد التحقق. بعض الأدوات تحتاج ربط خدمات وخادم آمن.')]), icon: const Icon(Icons.info_outline)),
