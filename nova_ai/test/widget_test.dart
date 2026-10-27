@@ -38,4 +38,37 @@ void main() {
     final tile = tester.widget<CheckboxListTile>(restartedCheckbox);
     expect(tile.value, isTrue);
   });
+
+
+  testWidgets('wallet ledger records a local income entry', (tester) async {
+    await tester.pumpWidget(const NovaApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('كل أقسام NOVA'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('دفتر الدخل والمصروفات'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('دفتر الدخل والمصروفات'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'مبلغ'),
+      '125.50',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'ملاحظة أو مرجع إيصال (اختياري)'),
+      'اختبار دخل',
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('تسجيل العملية'));
+    await tester.tap(find.text('تسجيل العملية'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('125.5 SDG'), findsOneWidget);
+    expect(find.text('اختبار دخل'), findsOneWidget);
+    expect(
+      (await SharedPreferences.getInstance()).getStringList('nova.wallet.ledger.v1'),
+      isNotEmpty,
+    );
+  });
 }
