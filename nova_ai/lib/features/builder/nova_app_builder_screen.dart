@@ -121,6 +121,16 @@ class _NovaAppBuilderScreenState extends State<NovaAppBuilderScreen> {
         Card(child:Padding(padding:const EdgeInsets.all(12), child:Column(crossAxisAlignment:CrossAxisAlignment.start, children:[
           Text('الحالة: ${_job!['status']} — المرحلة: ${_job!['stage']}', style:const TextStyle(fontWeight:FontWeight.bold)),
           Text('المحاولات: ${_job!['attempts'] ?? 0}/${_job!['maxAttempts'] ?? 3}'),
+          if (_job!['executionPlan'] is Map) ...[
+            const SizedBox(height:8),
+            Text('خطة العامل: ${(_job!['executionPlan'] as Map)['status'] ?? 'غير متاحة'}', style:const TextStyle(fontWeight:FontWeight.bold)),
+            if ((_job!['executionPlan'] as Map)['reason'] is String)
+              Text((_job!['executionPlan'] as Map)['reason'] as String),
+            for (final step in ((_job!['executionPlan'] as Map)['steps'] as List? ?? const []))
+              if (step is Map) Text('• ${step['id']}: ${step['executable']} ${((step['args'] as List?) ?? const []).join(' ')}'),
+            if ((_job!['executionPlan'] as Map)['executable'] == false)
+              const Text('لم يبدأ التنفيذ. لا يوجد عامل معزول متصل، ولا توجد نتيجة بناء بعد.', style:TextStyle(color:Colors.orangeAccent)),
+          ],
           if (_job!['summary'] is String) Text(_job!['summary'] as String),
           if (_job!['error'] is String) Text('الخطأ: ${_job!['error']}', style:const TextStyle(color:Colors.orangeAccent)),
           for (final check in (_job!['checks'] as List? ?? const []))
