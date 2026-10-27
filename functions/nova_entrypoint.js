@@ -5,4 +5,5 @@
 const functions = require('./index');
 Object.assign(functions, require('./nova_signal_engine'));
 Object.assign(functions, require('./nova_market_intelligence'));
+Object.assign(functions, require('./nova_wallet_catalog'));
 module.exports = functions;
