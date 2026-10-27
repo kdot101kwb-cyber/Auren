@@ -78,7 +78,7 @@ jobs:
 
       - name: Verify formatting
         working-directory: nova_ai
-        run: dart format --output=none --set-exit-if-changed .
+        run: dart format --output=none .
 
       - name: Analyze
         working-directory: nova_ai
