@@ -34,6 +34,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('حُفظت المهمة محلياً كمسودة'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('المسودات المحلية: 1'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('المسودات المحلية: 1'), findsOneWidget);
 
     final prefs = await SharedPreferences.getInstance();
@@ -47,6 +52,11 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
     await openScreen(tester);
+    await tester.scrollUntilVisible(
+      find.text('المسودات المحلية: 1'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('المسودات المحلية: 1'), findsOneWidget);
     expect(find.textContaining('Prepare a no-budget revenue plan'), findsOneWidget);
   });
@@ -66,11 +76,20 @@ void main() {
     await openScreen(tester);
     expect(find.textContaining('Delete this local draft'), findsOneWidget);
     final deleteButton = find.byTooltip('حذف المسودة');
-    await tester.ensureVisible(deleteButton);
+    await tester.scrollUntilVisible(
+      deleteButton,
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     await tester.tap(deleteButton);
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('المسودات المحلية: 0'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('المسودات المحلية: 0'), findsOneWidget);
     expect(prefs.getStringList('nova.task_center.offline_drafts.v1') ?? const <String>[], isEmpty);
   });
