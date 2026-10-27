@@ -82,9 +82,9 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: SecretaryCenterScreen()));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField).at(0), 'بريد');
-    await tester.enterText(find.byType(TextField).at(2), 'متابعة الاجتماع');
-    await tester.enterText(find.byType(TextField).at(3), 'شكراً على وقتك، سأرسل الملخص قريباً.');
+    await tester.enterText(find.byKey(const ValueKey('secretary-source')), 'بريد');
+    await tester.enterText(find.byKey(const ValueKey('secretary-subject')), 'متابعة الاجتماع');
+    await tester.enterText(find.byKey(const ValueKey('secretary-body')), 'شكراً على وقتك، سأرسل الملخص قريباً.');
     await tester.tap(find.text('حفظ مسودة على هذا الجهاز'));
     await tester.pumpAndSettle();
 
