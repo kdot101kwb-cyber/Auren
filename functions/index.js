@@ -4967,3 +4967,7 @@ Object.assign(module.exports, require('./personal_ai_life_engine'));
 
 // Global business data ingestion and source-provenance normalization.
 Object.assign(module.exports, require('./global_business_data'));
+
+
+// NOVA manual-only registry for Bravo and MyCashi wallet tracking.
+Object.assign(module.exports, require('./nova_wallet_catalog'));
