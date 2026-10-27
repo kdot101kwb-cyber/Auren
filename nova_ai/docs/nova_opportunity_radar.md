@@ -15,7 +15,7 @@ Prioritize small, testable income experiments and GitHub projects that reduce de
 
 The list is a candidate catalogue, not evidence that these projects are installed, currently license-cleared, or tested in NOVA. Re-check the exact revision, license, security advisories, dependencies, resource requirements, and recent maintenance before adoption.
 
-## Zero-budget income experiments
+9. AlphaCode (dragonked2) — coding, tests, browser/desktop workflows, and resumable sessions; project reports an MIT license and built-in free lane, but verify current revision, limits, dependencies, and security before use. It requires a supported computer/build runner and is not an Android-only agent. [Repository](https://github.com/dragonked2/alphacode).\n\n## Zero-budget income experiments
 - Original niche short content: publish a small batch, measure retention and audience signals, and only then evaluate monetization eligibility.
 - Small-business automation: make a demo that saves time, validate one customer problem, and sell a scoped pilot.
 - Niche research report: produce a source-backed sample and validate a buyer before expanding.
