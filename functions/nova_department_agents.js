@@ -42,6 +42,8 @@ const AGENT_CATALOG = Object.freeze({
   }),
 });
 
+const {routeNovaTask} = require('./nova_department_registry');
+
 const DEPARTMENT_AGENT_BINDINGS = Object.freeze({
   executive: Object.freeze({primary:'langgraph', supporting:['crewai','pydantic_ai'], profiles:['chief_of_staff','decision_brief','risk_and_cost_comparison']}),
   security: Object.freeze({primary:'pydantic_ai', supporting:['langgraph'], profiles:['security_triage','privacy_review','independent_control_check']}),
@@ -76,13 +78,16 @@ function getDepartmentAgentPlan(departmentId) {
   });
 }
 
-function buildDepartmentAgentDispatch({departmentId, taskType, objective}) {
+function buildDepartmentAgentDispatch({departmentId, taskType, objective, externalSideEffect = false}) {
   if (typeof taskType !== 'string' || !taskType.trim()) throw new TypeError('taskType is required.');
   if (typeof objective !== 'string' || !objective.trim()) throw new TypeError('objective is required.');
-  const plan = getDepartmentAgentPlan(departmentId);
+  const route = routeNovaTask({type:taskType, externalSideEffect});
+  const selectedDepartment = departmentId || route.departmentId;
+  if (route.departmentId !== selectedDepartment) throw new TypeError('Department does not match the approved task route.');
+  const plan = getDepartmentAgentPlan(selectedDepartment);
   return Object.freeze({
     schemaVersion:1,
-    departmentId,
+    departmentId:selectedDepartment,
     taskType:taskType.trim().slice(0,100),
     objective:objective.trim().slice(0,2000),
     primaryAgentId:plan.primaryAgent.id,
@@ -90,7 +95,9 @@ function buildDepartmentAgentDispatch({departmentId, taskType, objective}) {
     specialistProfiles:[...plan.specialistProfiles],
     status:'planned_not_executed',
     requiresConfiguredModelProvider:plan.modelProviderRequired,
-    requiresSandboxForCodeExecution:departmentId === 'engineering' || departmentId === 'auren' || taskType === 'github_ci_check',
+    risk:route.risk,
+    approvalRequired:route.approvalRequired,
+    requiresSandboxForCodeExecution:selectedDepartment === 'engineering' || selectedDepartment === 'auren' || taskType === 'github_ci_check',
     approvalRequiredForExternalEffects:true,
     externalActionExecuted:false,
   });
