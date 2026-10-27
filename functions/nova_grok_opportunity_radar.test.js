@@ -33,6 +33,20 @@ test('research priority boosts research tools and cost filters are honored', () 
   assert.ok(ranked.some((item) => item.id === 'firecrawl'));
 });
 
+test('adds a high-capability coding agent as an unverified candidate, not an installed tool', () => {
+  const candidate = PROJECTS.find((item) => item.id === 'alphacode-agent');
+  assert.ok(candidate);
+  assert.equal(candidate.recommendation, undefined);
+  assert.match(candidate.url, /^https:\/\/github\.com\//);
+  assert.match(candidate.risks.join(' '), /Android-only agent|computer or build runner/i);
+  const ranked = rankGithubProjects({priority: 'income'});
+  const surfaced = ranked.find((item) => item.id === 'alphacode-agent');
+  assert.ok(surfaced);
+  assert.equal(surfaced.recommendation, 'candidate-only');
+  assert.equal(surfaced.licenseVerified, false);
+  assert.equal(surfaced.testedInNOVA, false);
+});
+
 test('catalog entries have valid GitHub URLs and unique identifiers', () => {
   assert.equal(new Set(PROJECTS.map((item) => item.id)).size, PROJECTS.length);
   assert.ok(PROJECTS.every((item) => item.url.startsWith('https://github.com/')));
