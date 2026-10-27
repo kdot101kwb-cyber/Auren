@@ -4,6 +4,7 @@ const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const {defineSecret} = require('firebase-functions/params');
 const {getFirestore, FieldValue} = require('firebase-admin/firestore');
 const {normalizeGrokInput, buildGrokInput, extractResponseText, normalizeGrokReply} = require('./nova_grok_bot_core');
+const {resolveGrokBotEngine} = require('./nova_grok_agent_registry');
 
 const XAI_API_KEY = defineSecret('XAI_API_KEY');
 const db = getFirestore();
@@ -37,6 +38,11 @@ exports.novaGrokBot = onCall({
   let input;
   try { input = normalizeGrokInput(request.data || {}); }
   catch (error) { throw new HttpsError('invalid-argument', error.message || 'طلب Grok Bot غير صالح.'); }
+
+  // One unified bot, multiple catalogued engines. Fail closed until a worker is
+  // explicitly implemented, deployed, and reviewed; this callable only uses Grok API.
+  const engine = resolveGrokBotEngine('grok-api');
+  if (!engine.ok) throw new HttpsError('failed-precondition', 'محرك Grok غير متاح حالياً.');
 
   await enforceRateLimit(uid);
   const key = XAI_API_KEY.value().trim();
@@ -78,6 +84,7 @@ exports.novaGrokBot = onCall({
   await db.collection('users').doc(uid).collection('nova_grok_audit').add({
     mode: input.mode,
     model: MODEL,
+    engine: engine.engine.id,
     proposedAction: result.proposedAction !== null,
     requiresApproval: result.requiresApproval,
     executionStatus: 'not_executed',
@@ -88,6 +95,7 @@ exports.novaGrokBot = onCall({
     ok: true,
     bot: 'NOVA Grok Bot',
     model: MODEL,
+    engine: engine.engine.id,
     mode: input.mode,
     ...result,
     executionStatus: 'not_executed',
