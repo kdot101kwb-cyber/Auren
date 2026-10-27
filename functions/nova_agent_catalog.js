@@ -156,7 +156,7 @@ const DEPARTMENT_AGENT_MAP = Object.freeze({
   finance:{primary:['pydantic_ai','smolagents'],support:['langgraph'],why:'Build typed budget and revenue scenarios, check assumptions, and prepare risk notes; no trading, transfers, or wallet access.'},
   legal:{primary:['browser_use','pydantic_ai'],support:['langgraph'],why:'Research official public policies and structure compliance checklists; not a substitute for licensed legal advice.'},
   operations:{primary:['crewai','langgraph'],support:['pydantic_ai'],why:'Coordinate tasks, status updates, reminders, and drafts with validation and auditability.'},
-  auren:{primary:['openhands','grok_build','langgraph'],support:['browser_use','pydantic_ai']},why:'Inspect approved AUREN repository work, plan code changes, research markets, and report test/CI evidence.'},
+  auren:{primary:['openhands','grok_build','langgraph'],support:['browser_use','pydantic_ai'],why:'Inspect approved AUREN repository work, plan code changes, research markets, and report test/CI evidence.'},
 });
 
 const EXTERNAL_ACTION_TYPES = new Set([
