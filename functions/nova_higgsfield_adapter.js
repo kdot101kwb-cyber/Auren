@@ -7,6 +7,9 @@ function validateEndpoint(value) {
   try { url = new URL(String(value || '')); } catch (_) {
     throw new Error('HIGGSFIELD_VIDEO_ENDPOINT must be a valid HTTPS API URL.');
   }
+  if (url.protocol !== 'https:') {
+    throw new Error('HIGGSFIELD_VIDEO_ENDPOINT must use HTTPS.');
+  }
   if (url.origin !== API_ORIGIN || url.username || url.password || url.search || url.hash) {
     throw new Error('Endpoint must use the official Higgsfield API origin.');
   }

@@ -15,7 +15,10 @@ jobs:
           command: flutter --version && dart --version
       - run:
           name: Get dependencies
-          command: flutter pub get
+          command: |
+            flutter pub get
+            cd nova_ai
+            flutter pub get
       - save_cache:
           key: flutter-deps-v3-{{ .Branch }}
           paths:
@@ -58,24 +61,32 @@ jobs:
             cat flutter_format.log
             exit 0
       - run:
-          name: Analyze
+          name: Analyze AUREN and NOVA packages
           command: |
             set +e
-            flutter analyze --no-fatal-warnings --no-fatal-infos > flutter_analyze.log 2>&1
-            status=$?
-            echo "flutter_analyze_exit_code=$status" >> flutter_analyze.log
-            echo "$status" > /tmp/flutter_analyze_status
+            flutter analyze lib test --no-fatal-warnings --no-fatal-infos > flutter_analyze.log 2>&1
+            auren_status=$?
+            echo "AUREN flutter_analyze_exit_code=$auren_status" >> flutter_analyze.log
+            (cd nova_ai && flutter analyze lib test --no-fatal-warnings --no-fatal-infos) > nova_flutter_analyze.log 2>&1
+            nova_status=$?
+            echo "NOVA flutter_analyze_exit_code=$nova_status" >> nova_flutter_analyze.log
             cat flutter_analyze.log
+            cat nova_flutter_analyze.log
+            if [ "$auren_status" -ne 0 ] || [ "$nova_status" -ne 0 ]; then echo 1 > /tmp/flutter_analyze_status; else echo 0 > /tmp/flutter_analyze_status; fi
             exit 0
       - run:
-          name: Test
+          name: Test AUREN and NOVA packages
           command: |
             set +e
             flutter test > flutter_test.log 2>&1
-            status=$?
-            echo "flutter_test_exit_code=$status" >> flutter_test.log
-            echo "$status" > /tmp/flutter_test_status
+            auren_status=$?
+            echo "AUREN flutter_test_exit_code=$auren_status" >> flutter_test.log
+            (cd nova_ai && flutter test) > nova_flutter_test.log 2>&1
+            nova_status=$?
+            echo "NOVA flutter_test_exit_code=$nova_status" >> nova_flutter_test.log
             cat flutter_test.log
+            cat nova_flutter_test.log
+            if [ "$auren_status" -ne 0 ] || [ "$nova_status" -ne 0 ]; then echo 1 > /tmp/flutter_test_status; else echo 0 > /tmp/flutter_test_status; fi
             exit 0
       - run:
           name: Android build
@@ -93,6 +104,10 @@ jobs:
           path: flutter_analyze.log
       - store_artifacts:
           path: flutter_test.log
+      - store_artifacts:
+          path: nova_flutter_analyze.log
+      - store_artifacts:
+          path: nova_flutter_test.log
       - store_artifacts:
           path: flutter_android_build.log
       - run:
@@ -150,7 +165,7 @@ jobs:
           name: Install Functions dependencies
           command: |
             cd functions
-            npm install --no-audit --no-fund
+            npm install --include=dev --no-audit --no-fund
             echo "========== RESOLVED FIREBASE TEST SDK VERSIONS =========="
             npm ls firebase @firebase/rules-unit-testing
       - save_cache:
