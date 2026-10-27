@@ -15,6 +15,10 @@ void main() {
   });
 
   Future<void> openScreen(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1200, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(const MaterialApp(
       home: Scaffold(body: NovaTaskCenterScreen()),
     ));
@@ -61,7 +65,10 @@ void main() {
 
     await openScreen(tester);
     expect(find.textContaining('Delete this local draft'), findsOneWidget);
-    await tester.tap(find.byTooltip('حذف المسودة'));
+    final deleteButton = find.byTooltip('حذف المسودة');
+    await tester.ensureVisible(deleteButton);
+    await tester.pumpAndSettle();
+    await tester.tap(deleteButton);
     await tester.pumpAndSettle();
 
     expect(find.text('المسودات المحلية: 0'), findsOneWidget);
