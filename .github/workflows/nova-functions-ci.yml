@@ -5,6 +5,7 @@ on:
     branches:
       - feat/nova-ai-android-app
       - feat/nova-free-game-development-toolkit
+      - feat/nova-department-agent-adapters
     paths:
       - "functions/**"
       - "firestore.rules"
@@ -15,6 +16,7 @@ on:
     branches:
       - main
       - feat/nova-ai-android-app
+      - feat/nova-free-game-development-toolkit
     paths:
       - "functions/**"
       - "firestore.rules"
