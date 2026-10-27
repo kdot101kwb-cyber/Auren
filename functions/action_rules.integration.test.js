@@ -5,16 +5,32 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
+const {
+  doc, setDoc, getDoc, updateDoc, deleteDoc, runTransaction, getFirestore, Timestamp,
+} = require('firebase/firestore');
 
-// Load the Firebase compat Firestore service explicitly. The rules test context
-// exposes a compat Firestore instance; mixing it with a separately resolved
-// modular SDK can produce "Service firestore is not available".
-const firebase = require('firebase/compat/app');
-require('firebase/compat/firestore');
-const Timestamp = firebase.firestore.Timestamp;
-
+// Use the modular Firestore SDK from the same pinned Firebase release as
+// @firebase/rules-unit-testing. Avoid compat APIs and duplicate internal SDKs.
 function testDb(context) {
-  return context.firestore();
+  const db = getFirestore(context.getApp());
+  return {
+    doc(path) {
+      const ref = doc(db, path);
+      return {
+        _ref: ref,
+        get: () => getDoc(ref),
+        set: (data) => setDoc(ref, data),
+        update: (data) => updateDoc(ref, data),
+        delete: () => deleteDoc(ref),
+      };
+    },
+    runTransaction(updateFunction) {
+      return runTransaction(db, (transaction) => updateFunction({
+        get: (ref) => transaction.get(ref._ref),
+        update: (ref, data) => transaction.update(ref._ref, data),
+      }));
+    },
+  };
 }
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'auren-emulator';
