@@ -22,6 +22,14 @@ const AGENT_CATALOG = Object.freeze({
     role:'Repository-aware engineering agent in an isolated workspace',
     integrationMode:'optional_sandboxed_engineering_worker',
   }),
+  open_swe: Object.freeze({
+    id:'open_swe', name:'Open SWE', repository:'https://github.com/langchain-ai/open-swe',
+    license:'MIT', language:'Python',
+    role:'Software-engineering agent workflow for isolated code changes, tests, and review',
+    integrationMode:'candidate_not_benchmarked',
+    evaluationStatus:'candidate_not_benchmarked',
+    evaluationNote:'Compare against OpenHands and SWE-agent on the same NOVA repository tasks before selecting a production worker; runtime and model-provider costs must be checked.',
+  }),
   swe_agent: Object.freeze({
     id:'swe_agent', name:'SWE-agent', repository:'https://github.com/SWE-agent/SWE-agent',
     license:'MIT', language:'Python',
@@ -47,7 +55,7 @@ const {routeNovaTask} = require('./nova_department_registry');
 const DEPARTMENT_AGENT_BINDINGS = Object.freeze({
   executive: Object.freeze({primary:'langgraph', supporting:['crewai','pydantic_ai'], profiles:['chief_of_staff','decision_brief','risk_and_cost_comparison']}),
   security: Object.freeze({primary:'pydantic_ai', supporting:['langgraph'], profiles:['security_triage','privacy_review','independent_control_check']}),
-  engineering: Object.freeze({primary:'openhands', supporting:['swe_agent','langgraph'], profiles:['flutter_engineer','firebase_engineer','repository_maintenance']}),
+  engineering: Object.freeze({primary:'openhands', supporting:['swe_agent','open_swe','langgraph'], profiles:['flutter_engineer','firebase_engineer','repository_maintenance']}),
   quality: Object.freeze({primary:'swe_agent', supporting:['pydantic_ai','langgraph'], profiles:['test_planner','regression_review','evidence_validator']}),
   research: Object.freeze({primary:'smolagents', supporting:['langgraph','pydantic_ai'], profiles:['source_researcher','market_scanner','source_verifier']}),
   product: Object.freeze({primary:'crewai', supporting:['langgraph','pydantic_ai'], profiles:['product_discovery','ux_review','accessibility_review']}),
@@ -55,7 +63,7 @@ const DEPARTMENT_AGENT_BINDINGS = Object.freeze({
   finance: Object.freeze({primary:'pydantic_ai', supporting:['langgraph','smolagents'], profiles:['budget_planner','revenue_analyst','investment_risk_reviewer']}),
   legal: Object.freeze({primary:'pydantic_ai', supporting:['langgraph'], profiles:['privacy_compliance_triage','terms_review','jurisdiction_and_uncertainty_check']}),
   operations: Object.freeze({primary:'langgraph', supporting:['crewai','pydantic_ai'], profiles:['task_coordinator','communications_drafter','workflow_follow_up']}),
-  auren: Object.freeze({primary:'openhands', supporting:['swe_agent','langgraph','smolagents'], profiles:['repo_organizer','feature_planner','market_scan_and_ci_review']}),
+  auren: Object.freeze({primary:'openhands', supporting:['swe_agent','open_swe','langgraph','smolagents'], profiles:['repo_organizer','feature_planner','market_scan_and_ci_review']}),
 });
 
 function getDepartmentAgentPlan(departmentId) {
