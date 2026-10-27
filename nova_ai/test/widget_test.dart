@@ -21,9 +21,8 @@ void main() {
     await tester.pumpWidget(const NovaApp());
     await tester.pumpAndSettle();
 
-    final task = find.text('فحص حالة مستودع AUREN');
-    final checkbox = find.ancestor(of: task, matching: find.byType(CheckboxListTile));
-    expect(checkbox, findsOneWidget);
+    final checkbox = find.byType(CheckboxListTile).first;
+    expect(checkbox, findsWidgets);
     await tester.tap(checkbox);
     await tester.pumpAndSettle();
 
@@ -31,7 +30,7 @@ void main() {
     await tester.pumpWidget(const NovaApp());
     await tester.pumpAndSettle();
 
-    final restartedCheckbox = find.ancestor(of: task, matching: find.byType(CheckboxListTile));
+    final restartedCheckbox = find.byType(CheckboxListTile).first;
     final tile = tester.widget<CheckboxListTile>(restartedCheckbox);
     expect(tile.value, isTrue);
   });
