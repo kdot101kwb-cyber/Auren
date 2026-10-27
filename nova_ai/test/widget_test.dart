@@ -59,6 +59,9 @@ void main() {
       find.widgetWithText(TextField, 'ملاحظة أو مرجع إيصال (اختياري)'),
       'اختبار دخل',
     );
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('تسجيل العملية'));
     await tester.tap(find.text('تسجيل العملية'));
     await tester.pumpAndSettle();
 
