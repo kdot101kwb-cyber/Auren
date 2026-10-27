@@ -147,3 +147,4 @@ exports.scanNovaMarketIntelligenceForTest=scanNovaMarketIntelligence;
 exports.scoreMarketOpportunityForTest=scoreMarketOpportunity;
 exports.marketResearchToolsForTest=MARKET_RESEARCH_TOOLS;
 exports.marketSourceRegistryForTest=SOURCE_REGISTRY;
+exports.normalizeTopicForTest=normalizeTopic;
