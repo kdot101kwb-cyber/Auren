@@ -148,7 +148,7 @@ class _NovaHomeState extends State<NovaHome> {
               PopupMenuItem(value: 8, child: Text('مركز المهام')),
               PopupMenuItem(value: 9, child: Text('بناء التطبيقات')),
               PopupMenuItem(value: 11, child: Text('الرادار العالمي للفرص')),
-              PopupMenuItem(value: 12, child: Text('محافظ Bravo وMyCashi')),
+              PopupMenuItem(value: 12, child: Text('المحافظ: Bravo وMyCashi وTrust Wallet وPayPal')),
             ],
           ),
           IconButton(onPressed: () => showAboutDialog(context: context, applicationName: 'NOVA AI', applicationVersion: '0.2.0', children: const [Text('نسخة أولية قيد التحقق. بعض الأدوات تحتاج ربط خدمات وخادم آمن.')]), icon: const Icon(Icons.info_outline)),
