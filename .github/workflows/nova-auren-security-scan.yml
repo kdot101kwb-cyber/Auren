@@ -1,0 +1,61 @@
+name: NOVA and AUREN Security Scan
+
+on:
+  push:
+    branches:
+      - main
+      - feat/nova-ai-android-app
+      - feat/nova-free-game-development-toolkit
+    paths:
+      - "nova_ai/**"
+      - "lib/**"
+      - "functions/**"
+      - "backend/**"
+      - ".github/workflows/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - "firestore.rules"
+  pull_request:
+    branches:
+      - main
+      - feat/nova-ai-android-app
+      - feat/nova-free-game-development-toolkit
+    paths:
+      - "nova_ai/**"
+      - "lib/**"
+      - "functions/**"
+      - "backend/**"
+      - ".github/workflows/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - "firestore.rules"
+  schedule:
+    - cron: "15 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-scan-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  filesystem-security:
+    name: Dependency, secret and configuration scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Scan repository for known dependency vulnerabilities, exposed secrets and risky configuration
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: "0"
