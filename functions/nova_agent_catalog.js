@@ -32,7 +32,7 @@ const AGENT_PROJECTS = Object.freeze({
     runtime:'Python',
     role:'Browser-based public-source research and structured data collection',
     integrationMode:'sandboxed_browser_adapter',
-    costNote:'Use local/open-source mode; hosted browser infrastructure is optional and may be paid.',
+    costNote:'Use local/open-source mode; hosted browser infrastructure is optional and may cost money.',
   },
   openhands: {
     id:'openhands',
