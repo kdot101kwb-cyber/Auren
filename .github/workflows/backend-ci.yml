@@ -3,7 +3,7 @@ name: AUREN Backend CI
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, feat/nova-market-intelligence-10-sources]
   pull_request:
     branches: [main]
 
@@ -63,7 +63,7 @@ jobs:
           echo "npm_test_exit_code=${status}" >> ci-test.log
           exit ${status}
 
-      - name: Upload Functions test diagnostics
+      - name: Upload Node test diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
