@@ -92,3 +92,4 @@ void main() {
     expect(find.text('محلية فقط'), findsOneWidget);
     expect(find.textContaining('لم تُرسل لأي شخص'), findsOneWidget);
   });
+}
