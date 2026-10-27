@@ -5,34 +5,16 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
-const {
-  doc, setDoc, getDoc, updateDoc, deleteDoc, runTransaction, getFirestore, Timestamp,
-} = require('@firebase/firestore');
 
-// Explicitly use the modular Firestore API, independent of compat namespace loading.
-function compatDb(db) {
-  return {
-    doc(path) {
-      const ref = doc(db, path);
-      return {
-        _ref: ref,
-        get: () => getDoc(ref),
-        set: (data) => setDoc(ref, data),
-        update: (data) => updateDoc(ref, data),
-        delete: () => deleteDoc(ref),
-      };
-    },
-    runTransaction(updateFunction) {
-      return runTransaction(db, (transaction) => updateFunction({
-        get: (ref) => transaction.get(ref._ref),
-        update: (ref, data) => transaction.update(ref._ref, data),
-      }));
-    },
-  };
-}
+// Load the Firebase compat Firestore service explicitly. The rules test context
+// exposes a compat Firestore instance; mixing it with a separately resolved
+// modular SDK can produce "Service firestore is not available".
+const firebase = require('firebase/compat/app');
+require('firebase/compat/firestore');
+const Timestamp = firebase.firestore.Timestamp;
 
 function testDb(context) {
-  return compatDb(getFirestore(context.getApp()));
+  return context.firestore();
 }
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'auren-emulator';
@@ -221,10 +203,10 @@ test('concurrent execution claims allow exactly one winner', async () => {
 
     const claim = async () => {
       try {
-        await db.runTransaction(async (tx) => {
-          const snap = await tx.get(ref);
+        await db.runTransaction(async (transaction) => {
+          const snap = await transaction.get(ref);
           assert.equal(snap.data().status, 'approved');
-          tx.update(ref, {
+          transaction.update(ref, {
             status: 'executing',
             updatedAt: Timestamp.now(),
           });
@@ -241,7 +223,6 @@ test('concurrent execution claims allow exactly one winner', async () => {
     assert.equal(finalSnap.data().status, 'executing');
   });
 });
-
 
 async function seedSocialRequest(collection, id, data) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
