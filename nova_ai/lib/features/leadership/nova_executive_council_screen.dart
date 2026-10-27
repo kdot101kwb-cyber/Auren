@@ -119,6 +119,18 @@ class NovaExecutiveCouncilScreen extends StatelessWidget {
                   const _GovernanceRule(text: 'تحت كل رئيس فريق خبراء حسب التخصص، مع مراجعة متقاطعة عند الحاجة.'),
                   const _GovernanceRule(text: 'كل تقرير يميز بين: تم اختباره، قيد التنفيذ، مخطط، ومتعذر.'),
                   const _GovernanceRule(text: 'النشر، الإنفاق، إرسال الرسائل، تغيير الصلاحيات أو الوصول للبيانات الحساسة يحتاج موافقة صريحة.'),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () => showDialog<void>(
+                        context: context,
+                        builder: (_) => const _DepartmentIntroductionsDialog(),
+                      ),
+                      icon: const Icon(Icons.record_voice_over_outlined),
+                      label: const Text('ابدأ جلسة تعارف رؤساء الإدارات'),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -162,6 +174,72 @@ class NovaExecutiveCouncilScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DepartmentIntroductionsDialog extends StatefulWidget {
+  const _DepartmentIntroductionsDialog();
+
+  @override
+  State<_DepartmentIntroductionsDialog> createState() => _DepartmentIntroductionsDialogState();
+}
+
+class _DepartmentIntroductionsDialogState extends State<_DepartmentIntroductionsDialog> {
+  int index = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final department = NovaExecutiveCouncilScreen.departments[index];
+    final isLast = index == NovaExecutiveCouncilScreen.departments.length - 1;
+    return AlertDialog(
+      title: Text('جلسة التعارف: ${index + 1} من ${NovaExecutiveCouncilScreen.departments.length}', textDirection: TextDirection.rtl),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(department.head, textDirection: TextDirection.ltr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            const Text('من أنا؟', textDirection: TextDirection.rtl, style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('أنا ${department.head}، رئيس ${department.name}. أرفع تقاريري إلى NOVA Chief Executive AI، وهو مسؤول أمامك مباشرة.', textDirection: TextDirection.rtl),
+            const SizedBox(height: 10),
+            const Text('مهمتي', textDirection: TextDirection.rtl, style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(department.mission, textDirection: TextDirection.rtl),
+            const SizedBox(height: 10),
+            const Text('خطتي', textDirection: TextDirection.rtl, style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(department.plan, textDirection: TextDirection.rtl),
+            const SizedBox(height: 10),
+            const Text('فريق التخصصات', textDirection: TextDirection.rtl, style: TextStyle(fontWeight: FontWeight.bold)),
+            ...department.specialists.map((name) => Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text('• $name', textDirection: TextDirection.rtl),
+            )),
+            const SizedBox(height: 12),
+            const Text(
+              'تنبيه: هذا تعريف وخطة معلنة داخل التطبيق؛ لا يعني أن هذا الرئيس أو فريقه وكيل مستقل نشط قبل ربط نموذج AI وتنفيذ المهام واختبارهما.',
+              textDirection: TextDirection.rtl,
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: index == 0 ? null : () => setState(() => index--),
+          child: const Text('السابق'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (isLast) {
+              Navigator.of(context).pop();
+            } else {
+              setState(() => index++);
+            }
+          },
+          child: Text(isLast ? 'إنهاء الجلسة' : 'التالي'),
+        ),
+      ],
     );
   }
 }
