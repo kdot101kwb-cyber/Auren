@@ -12,42 +12,22 @@ void main() {
     expect(find.text('مركز إدارة AUREN'), findsOneWidget);
     expect(find.text('جدول اجتماع اليوم'), findsOneWidget);
     expect(find.text('الجودة ونجاح الاختبارات'), findsOneWidget);
-    expect(find.text('الأمان والخصوصية'), findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      find.text('النمو وجذب المستخدمين'),
-      250,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('النمو وجذب المستخدمين'), findsOneWidget);
-
-    await tester.scrollUntilVisible(
-      find.text('السوق العالمي والمنافسون'),
-      250,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('السوق العالمي والمنافسون'), findsOneWidget);
-
-    await tester.scrollUntilVisible(
-      find.text('الإدارة القانونية والحوكمة'),
-      250,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('الإدارة القانونية والحوكمة'), findsOneWidget);
-
-    await tester.scrollUntilVisible(
-      find.text('فرص واقتراحات اليوم'),
-      250,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('فرص واقتراحات اليوم'), findsOneWidget);
-
-    await tester.scrollUntilVisible(
-      find.text('ابدأ اجتماع اليوم'),
-      250,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('ابدأ اجتماع اليوم'), findsOneWidget);
+    for (final label in [
+      'الأمان والخصوصية',
+      'النمو وجذب المستخدمين',
+      'السوق العالمي والمنافسون',
+      'الإدارة القانونية والحوكمة',
+      'فرص واقتراحات اليوم',
+      'ابدأ اجتماع اليوم',
+    ]) {
+      await tester.scrollUntilVisible(
+        find.text(label),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text(label), findsOneWidget);
+    }
 
     await tester.scrollUntilVisible(
       find.textContaining('هذا لا يعمل أثناء إغلاق التطبيق'),

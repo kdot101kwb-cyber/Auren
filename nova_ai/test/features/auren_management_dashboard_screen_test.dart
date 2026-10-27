@@ -5,6 +5,13 @@ import 'package:nova_ai/features/auren/auren_management_dashboard_screen.dart';
 void main() {
   testWidgets('AUREN management dashboard exposes daily council and agenda',
       (tester) async {
+    // Render the long dashboard in a tall test viewport so this test verifies
+    // its content without depending on gesture/scrollable lookup behavior.
+    tester.view.physicalSize = const Size(1200, 5000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(
       const MaterialApp(home: AurenManagementDashboardScreen()),
     );
@@ -16,7 +23,11 @@ void main() {
     expect(find.text('الأمان والخصوصية'), findsOneWidget);
     expect(find.text('ابدأ اجتماع اليوم'), findsOneWidget);
     expect(find.text('سجل اجتماعات المجلس'), findsOneWidget);
-    expect(find.textContaining('سجل الاجتماعات يظهر بعد إعداد Firebase'), findsOneWidget);
+    expect(
+      find.textContaining('سجل الاجتماعات يظهر بعد إعداد Firebase'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('dashboard keeps the council usable when Firebase is not configured',
