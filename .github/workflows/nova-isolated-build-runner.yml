@@ -1,6 +1,12 @@
 name: NOVA Isolated Flutter Build Runner
 
 on:
+  push:
+    branches:
+      - feat/nova-free-game-development-toolkit
+    paths:
+      - '.github/workflows/nova-isolated-build-runner.yml'
+      - 'nova_ai/**'
   workflow_dispatch:
     inputs:
       plan_fingerprint:
@@ -23,11 +29,12 @@ concurrency:
 jobs:
   build:
     name: Approved Flutter validation and debug APK
-    if: ${{ inputs.confirm_build == true && (github.ref == 'refs/heads/feat/nova-free-game-development-toolkit' || github.ref == 'refs/heads/feat/nova-ai-android-app') }}
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/feat/nova-free-game-development-toolkit') || (github.event_name == 'workflow_dispatch' && inputs.confirm_build == true && (github.ref == 'refs/heads/feat/nova-free-game-development-toolkit' || github.ref == 'refs/heads/feat/nova-ai-android-app')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - name: Reject malformed plan fingerprint
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         env:
           PLAN_FINGERPRINT: ${{ inputs.plan_fingerprint }}
         run: |
@@ -35,7 +42,8 @@ jobs:
             echo "::error::Plan fingerprint must be a 64-character SHA-256 hex string."
             exit 1
           fi
-          echo "Approved plan fingerprint: $PLAN_FINGERPRINT"
+          echo "User-supplied plan fingerprint: $PLAN_FINGERPRINT"
+          echo "Note: this workflow validates the fingerprint format only; it does not query Firestore to bind it to an approval record."
 
       - name: Checkout selected branch
         uses: actions/checkout@v4
@@ -61,6 +69,8 @@ jobs:
           git rev-parse HEAD
           echo "This is a temporary GitHub-hosted runner."
           echo "No repository write token or production secrets are configured by this workflow."
+          echo "Trigger: ${{ github.event_name }}"
+          echo "Manual-dispatch fingerprint is format-checked only, not verified against Firestore."
 
       - name: Resolve Flutter dependencies
         working-directory: nova_ai
