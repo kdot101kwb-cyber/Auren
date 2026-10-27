@@ -48,7 +48,7 @@ void main() {
     await tester.pumpWidget(const NovaApp());
     await tester.pumpAndSettle();
 
-    final voiceButton = find.text('التحدث مع NOVA');
+    final voiceButton = find.byKey(const ValueKey('nova-dashboard-voice'));
     await tester.ensureVisible(voiceButton);
     await tester.tap(voiceButton);
     await tester.pumpAndSettle();
