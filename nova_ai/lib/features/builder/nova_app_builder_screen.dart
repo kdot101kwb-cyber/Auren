@@ -54,6 +54,11 @@ class _NovaAppBuilderScreenState extends State<NovaAppBuilderScreen> {
       });
       final data = Map<String, dynamic>.from(response.data as Map);
       _jobId = data['jobId'] as String?;
+      _job = <String, dynamic>{
+        'jobId':_jobId, 'status':data['status'] ?? 'queued',
+        'stage':data['stage'] ?? 'waiting_for_runner',
+        'executionPlan':data['executionPlan'], 'planHash':data['planHash'],
+      };
       _message = '${data['message'] ?? 'تم إرسال الطلب'}\nالمعرف: $_jobId';
     } catch (error) {
       _message = 'تعذر تسجيل مهمة البناء: $error';
