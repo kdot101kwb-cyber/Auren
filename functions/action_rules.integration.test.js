@@ -5,13 +5,34 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
-// RulesTestContext.firestore() uses the Firebase compat namespace in rules-unit-testing 4.x.
-require('firebase/compat/firestore');
-const firebase = require('firebase/compat/app');
-const { Timestamp } = firebase.firestore;
+const {
+  doc, setDoc, getDoc, updateDoc, deleteDoc, runTransaction, getFirestore, Timestamp,
+} = require('firebase/firestore');
 
+// Explicitly use the modular Firestore API, independent of compat namespace loading.
 function compatDb(db) {
-  return db;
+  return {
+    doc(path) {
+      const ref = doc(db, path);
+      return {
+        _ref: ref,
+        get: () => getDoc(ref),
+        set: (data) => setDoc(ref, data),
+        update: (data) => updateDoc(ref, data),
+        delete: () => deleteDoc(ref),
+      };
+    },
+    runTransaction(updateFunction) {
+      return runTransaction(db, (transaction) => updateFunction({
+        get: (ref) => transaction.get(ref._ref),
+        update: (ref, data) => transaction.update(ref._ref, data),
+      }));
+    },
+  };
+}
+
+function testDb(context) {
+  return compatDb(getFirestore(context.app));
 }
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'auren-emulator';
@@ -34,7 +55,7 @@ test.after(async () => {
 
 async function seedAction(userId, actionId, overrides = {}) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    const db = compatDb(context.firestore());
+    const db = testDb(context);
     const now = Timestamp.now();
     await db.doc(`users/${userId}/actions/${actionId}`).set({
       actionType: 'demo.create_note',
@@ -52,7 +73,8 @@ async function seedAction(userId, actionId, overrides = {}) {
 }
 
 function actionRef(userId, actionId) {
-  return compatDb(testEnv.authenticatedContext(userId).firestore()).doc(`users/${userId}/actions/${actionId}`);
+  const context = testEnv.authenticatedContext(userId);
+  return testDb(context).doc(`users/${userId}/actions/${actionId}`);
 }
 
 test('owner can read and edit only the pending draft with version +1', async () => {
@@ -149,7 +171,7 @@ test('client cannot delete an action', async () => {
 
 test('another user cannot read or update the action', async () => {
   await seedAction('rules-owner', 'cross-user');
-  const ref = compatDb(testEnv.authenticatedContext('rules-other').firestore()).doc('users/rules-owner/actions/cross-user');
+  const ref = testDb(testEnv.authenticatedContext('rules-other')).doc('users/rules-owner/actions/cross-user');
   await assertFails(ref.get());
   await assertFails(ref.update({
     payload: { text: 'cross-user tamper' },
@@ -160,7 +182,7 @@ test('another user cannot read or update the action', async () => {
 
 test('unauthenticated client cannot read or update the action', async () => {
   await seedAction('rules-user-10', 'unauth');
-  const ref = compatDb(testEnv.unauthenticatedContext().firestore()).doc('users/rules-user-10/actions/unauth');
+  const ref = testDb(testEnv.unauthenticatedContext()).doc('users/rules-user-10/actions/unauth');
   await assertFails(ref.get());
   await assertFails(ref.update({
     payload: { text: 'unauth tamper' },
@@ -170,7 +192,7 @@ test('unauthenticated client cannot read or update the action', async () => {
 });
 
 test('client cannot create action documents directly', async () => {
-  const db = compatDb(testEnv.authenticatedContext('rules-user-11').firestore());
+  const db = testDb(testEnv.authenticatedContext('rules-user-11'));
   await assertFails(db.doc('users/rules-user-11/actions/client-create').set({
     actionType: 'demo.create_note',
     title: 'Client-created',
@@ -194,7 +216,7 @@ test('concurrent execution claims allow exactly one winner', async () => {
   });
 
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    const db = compatDb(context.firestore());
+    const db = testDb(context);
     const ref = db.doc('users/rules-concurrency/actions/execution-claim');
 
     const claim = async () => {
@@ -223,7 +245,7 @@ test('concurrent execution claims allow exactly one winner', async () => {
 
 async function seedSocialRequest(collection, id, data) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    await compatDb(context.firestore()).doc(`${collection}/${id}`).set(data);
+    await testDb(context).doc(`${collection}/${id}`).set(data);
   });
 }
 
@@ -235,9 +257,9 @@ test('random connect requests: only waiting requests or involved users are reada
     uid: 'social-owner', status: 'matched', matchedWith: 'social-peer',
     displayName: 'Matched profile',
   });
-  const stranger = compatDb(testEnv.authenticatedContext('social-stranger').firestore());
-  const owner = compatDb(testEnv.authenticatedContext('social-owner').firestore());
-  const peer = compatDb(testEnv.authenticatedContext('social-peer').firestore());
+  const stranger = testDb(testEnv.authenticatedContext('social-stranger'));
+  const owner = testDb(testEnv.authenticatedContext('social-owner'));
+  const peer = testDb(testEnv.authenticatedContext('social-peer'));
 
   await assertSucceeds(stranger.doc('random_connect/waiting-public').get());
   await assertFails(stranger.doc('random_connect/matched-private').get());
@@ -252,8 +274,8 @@ test('random group requests: only waiting requests or the owner are readable', a
   await seedSocialRequest('random_group_connect', 'grouped-private', {
     uid: 'group-owner', status: 'grouped', groupSize: 4,
   });
-  const stranger = compatDb(testEnv.authenticatedContext('group-stranger').firestore());
-  const owner = compatDb(testEnv.authenticatedContext('group-owner').firestore());
+  const stranger = testDb(testEnv.authenticatedContext('group-stranger'));
+  const owner = testDb(testEnv.authenticatedContext('group-owner'));
 
   await assertSucceeds(stranger.doc('random_group_connect/group-waiting').get());
   await assertFails(stranger.doc('random_group_connect/grouped-private').get());
