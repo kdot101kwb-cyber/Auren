@@ -6,6 +6,7 @@ on:
       - feat/nova-ai-android-app
       - feat/nova-free-game-development-toolkit
       - feat/nova-department-agent-adapters
+      - feat/nova-grok-agent-catalog-v1
     paths:
       - "functions/**"
       - "firestore.rules"
