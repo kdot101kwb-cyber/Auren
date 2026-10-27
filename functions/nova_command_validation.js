@@ -29,4 +29,20 @@ function normalizeNovaTaskInput(data, ErrorType = Error) {
   };
 }
 
-module.exports = {normalizeNovaTaskInput, ALLOWED_TYPES, APPROVAL_TYPES};
+function evaluateNovaTaskRateLimit(rate, nowMs = Date.now()) {
+  const now = new Date(nowMs);
+  const minuteBucket = now.toISOString().slice(0, 16);
+  const dayBucket = now.toISOString().slice(0, 10);
+  const minuteCount = rate?.minuteBucket === minuteBucket ? Number(rate?.minuteCount) || 0 : 0;
+  const dayCount = rate?.dayBucket === dayBucket ? Number(rate?.dayCount) || 0 : 0;
+  return {
+    allowed: minuteCount < 10 && dayCount < 100,
+    minuteBucket,
+    minuteCount: minuteCount + 1,
+    dayBucket,
+    dayCount: dayCount + 1,
+    limits: {perMinute: 10, perUtcDay: 100},
+  };
+}
+
+module.exports = {normalizeNovaTaskInput, evaluateNovaTaskRateLimit, ALLOWED_TYPES, APPROVAL_TYPES};
