@@ -179,6 +179,7 @@ const globalOpportunityCatalogue = <GlobalOpportunity>[
 String normalizeRadarText(String value) {
   final lower = value.toLowerCase().trim();
   return lower
+      .replaceAll(RegExp(r'[؟،؛٪…ـ]'), ' ')
       .replaceAll(RegExp(r'[\u064B-\u065F\u0670]'), '')
       .replaceAll('أ', 'ا')
       .replaceAll('إ', 'ا')
