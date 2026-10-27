@@ -43,6 +43,20 @@ void main() {
     expect(tile.value, isTrue);
   });
 
+  testWidgets('dashboard opens NOVA foreground voice assistant', (tester) async {
+    await tester.pumpWidget(const NovaApp());
+    await tester.pumpAndSettle();
+
+    final voiceButton = find.text('التحدث مع NOVA');
+    await tester.ensureVisible(voiceButton);
+    await tester.tap(voiceButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('NOVA Voice'), findsOneWidget);
+    expect(find.text('أنا NOVA'), findsOneWidget);
+    expect(find.text('أو اكتب أمرك'), findsOneWidget);
+  });
+
   testWidgets('creative tool library shows 90 tools and filters by category', (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: CreativeToolLibraryScreen(onOpenAurenWorkspace: () {})),
