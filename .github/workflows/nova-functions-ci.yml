@@ -70,7 +70,7 @@ jobs:
         run: npm install --global firebase-tools
       - name: Install rules test dependencies
         working-directory: functions
-        run: npm install --no-audit --no-fund firebase
+        run: npm install --no-audit --no-fund firebase @firebase/rules-unit-testing
       - name: Compile rules and run authorization integration tests in isolated emulator
         run: >-
           firebase emulators:exec --only firestore --project demo-auren-rules
