@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   AGENT_PROJECTS,
+  GROK_INTEGRATIONS,
   DEPARTMENT_AGENT_MAP,
   getDepartmentAgentPlan,
   getAllDepartmentAgentPlans,
@@ -27,6 +28,34 @@ test('catalog makes zero-cost boundaries clear without claiming runtime is free'
   for (const project of Object.values(AGENT_PROJECTS)) {
     assert.ok(project.license);
     assert.ok(project.costNote.includes('may cost money'));
+  }
+});
+
+test('Grok integration candidates have verified source metadata but remain disconnected and cost-gated', () => {
+  assert.deepEqual(Object.keys(GROK_INTEGRATIONS).sort(), ['grok_build','grok_cli','xai_sdk_ts']);
+  for (const integration of Object.values(GROK_INTEGRATIONS)) {
+    const url = new URL(integration.repository);
+    assert.equal(url.protocol, 'https:');
+    assert.equal(url.hostname, 'github.com');
+    assert.ok(integration.license);
+    assert.equal(integration.integrationStatus, 'catalogued_not_connected');
+    assert.equal(integration.runtimeReady, false);
+    assert.equal(integration.mobileEmbedded, false);
+    assert.equal(integration.requiresExplicitOwnerCostApproval, true);
+    assert.equal(integration.mayIncurCosts, true);
+  }
+  assert.equal(GROK_INTEGRATIONS.xai_sdk_ts.requiresServerSideSecret, true);
+  assert.equal(GROK_INTEGRATIONS.xai_sdk_ts.experimental, true);
+  assert.equal(GROK_INTEGRATIONS.grok_build.license, 'Apache-2.0');
+  assert.equal(GROK_INTEGRATIONS.grok_cli.license, 'MIT');
+});
+
+test('engineering and AUREN plans include Grok Build only as a candidate, not a live runtime', () => {
+  for (const departmentId of ['engineering','auren']) {
+    const plan = getDepartmentAgentPlan(departmentId);
+    assert.ok(plan.primaryAgents.some((agent) => agent.id === 'grok_build'));
+    assert.equal(plan.runtimeReady, false);
+    assert.equal(plan.mayExecuteExternalAction, false);
   }
 });
 
