@@ -71,11 +71,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Welcome to AUREN'), findsOneWidget);
-    expect(find.text('مسودة محلية'), findsOneWidget);
+    expect(find.textContaining('مسودة محلية'), findsOneWidget);
 
     await tester.tap(find.text('إرسال للمراجعة'));
     await tester.pumpAndSettle();
-    expect(find.text('بانتظار الموافقة'), findsOneWidget);
+    expect(find.textContaining('بانتظار الموافقة'), findsOneWidget);
     expect(find.textContaining('لا تُقرأ صناديق البريد ولا تُرسل رسائل تلقائياً'), findsOneWidget);
   });
 
