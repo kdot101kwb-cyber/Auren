@@ -9,77 +9,88 @@ class NovaExecutiveCouncilScreen extends StatelessWidget {
     _Department(
       name: 'الإدارة التنفيذية والاستراتيجية',
       head: 'NOVA Chief Executive AI',
-      mission: 'المسؤول المباشر أمامك: يجمع تقارير الإدارات، يرتب الأولويات، يعرض الخلافات والتوصيات، ويتابع القرارات التي توافق عليها.',
+      mission: 'المسؤول المباشر أمامك: يجمع تقارير الإدارات، يرتب الأولويات، يعرض الخلافات والتوصيات، ويتابع القرارات التي توافق عليها.',,
+      plan: 'تجميع تقارير الإدارات يومياً؛ ترتيب أهم 3 أولويات؛ عرض البدائل والتكلفة والوقت والمخاطر؛ ثم طلب قرارك وتسجيل النتيجة.'
       specialists: ['التخطيط الاستراتيجي', 'إدارة المشاريع والأولويات', 'قياس النتائج والمخاطر'],
       icon: Icons.account_balance,
     ),
     _Department(
       name: 'إدارة الأمن السيبراني والسلامة',
       head: 'AI Chief Security Officer',
-      mission: 'يراجع أمن التطبيقات والخادم والحسابات والخصوصية، ويقود الاستجابة للحوادث واختبارات الدفاع المصرح بها.',
+      mission: 'يراجع أمن التطبيقات والخادم والحسابات والخصوصية، ويقود الاستجابة للحوادث واختبارات الدفاع المصرح بها.',,
+      plan: 'جرد المخاطر؛ مراجعة الصلاحيات والأسرار والقواعد؛ فرز الثغرات حسب الخطورة؛ متابعة إصلاحات موثقة وإعادة الاختبار.'
       specialists: ['أمن التطبيقات والكود', 'Firebase والخادم', 'الخصوصية وحماية البيانات', 'سلامة الملفات والجهاز', 'الاستجابة للحوادث'],
       icon: Icons.security,
     ),
     _Department(
       name: 'إدارة التطوير والهندسة',
       head: 'AI Chief Technology Officer',
-      mission: 'يخطط للهندسة ويقود مراجعة الكود وإصلاح العيوب وتكامل الأنظمة.',
+      mission: 'يخطط للهندسة ويقود مراجعة الكود وإصلاح العيوب وتكامل الأنظمة.',,
+      plan: 'مراجعة بنية المشروع؛ تقسيم العمل إلى تغييرات صغيرة؛ تنفيذ إصلاحات قابلة للمراجعة؛ متابعة البناء والاختبارات قبل اقتراح الدمج.'
       specialists: ['Flutter وAndroid', 'الخادم وواجهات API', 'قواعد البيانات والمزامنة', 'البناء والإصدارات'],
       icon: Icons.code,
     ),
     _Department(
       name: 'إدارة الجودة والاختبارات',
       head: 'AI Quality Director',
-      mission: 'يتحقق من المتطلبات والاختبارات والتوافق، ولا يعلن نجاح ميزة دون أدلة اختبار.',
+      mission: 'يتحقق من المتطلبات والاختبارات والتوافق، ولا يعلن نجاح ميزة دون أدلة اختبار.',,
+      plan: 'إنشاء مصفوفة متطلبات واختبارات؛ إعادة إنتاج العيوب؛ التحقق من نجاح CI؛ منع إعلان أي إنجاز بلا دليل.'
       specialists: ['اختبارات الوحدة والتكامل', 'اختبارات الواجهات', 'مراجعة CI وسجلات الفشل', 'اختبارات الأداء والإتاحة'],
       icon: Icons.fact_check_outlined,
     ),
     _Department(
       name: 'إدارة البحث والذكاء الاصطناعي',
       head: 'AI Research Director',
-      mission: 'يقارن النماذج والأدوات، ويقيس الجودة والتكلفة والخصوصية قبل اقتراح اعتماد أي خدمة.',
+      mission: 'يقارن النماذج والأدوات، ويقيس الجودة والتكلفة والخصوصية قبل اقتراح اعتماد أي خدمة.',,
+      plan: 'البحث في المصادر الحديثة؛ مقارنة الأدوات والنماذج والتكلفة؛ التحقق من الادعاءات؛ تقديم توصية مع المصادر ودرجة الثقة.'
       specialists: ['تقييم النماذج', 'الوكلاء وتنسيق المهام', 'العمل دون إنترنت', 'تقييم المصادر والدقة'],
       icon: Icons.psychology_outlined,
     ),
     _Department(
       name: 'إدارة المنتج وتجربة المستخدم',
       head: 'AI Product Director',
-      mission: 'يربط احتياجاتك بخطة المنتج، ويضمن الوضوح وسهولة الاستخدام وإمكانية الوصول.',
+      mission: 'يربط احتياجاتك بخطة المنتج، ويضمن الوضوح وسهولة الاستخدام وإمكانية الوصول.',,
+      plan: 'جمع احتياجات المستخدم؛ ترتيبها حسب القيمة والجهد؛ مراجعة سهولة الاستخدام والإتاحة؛ اقتراح تجربة قابلة للقياس.'
       specialists: ['أبحاث المستخدمين', 'تصميم UX/UI', 'إدارة المتطلبات', 'اللغة والتوطين'],
       icon: Icons.design_services_outlined,
     ),
     _Department(
       name: 'إدارة التسويق والنمو',
       head: 'AI Growth Director',
-      mission: 'يبحث عن الجمهور والفرص ويقترح تجارب نمو قابلة للقياس دون نشر أو إنفاق غير مصرح به.',
+      mission: 'يبحث عن الجمهور والفرص ويقترح تجارب نمو قابلة للقياس دون نشر أو إنفاق غير مصرح به.',,
+      plan: 'تحديد الجمهور والقنوات؛ تحليل المنافسين والاتجاهات؛ إعداد تجارب محتوى ونمو؛ قياس النتائج دون نشر آلي غير مصرح به.'
       specialists: ['تحليل السوق والمنافسين', 'استراتيجية المحتوى', 'النمو والتحليلات', 'الشراكات والمجتمعات'],
       icon: Icons.trending_up,
     ),
     _Department(
       name: 'الإدارة المالية والإيرادات',
       head: 'AI Finance Director',
-      mission: 'يبني التوقعات والميزانيات وسيناريوهات الدخل، ويفصل بين التقديرات والأموال المحققة فعلياً.',
+      mission: 'يبني التوقعات والميزانيات وسيناريوهات الدخل، ويفصل بين التقديرات والأموال المحققة فعلياً.',,
+      plan: 'حصر مصادر الدخل والتكاليف؛ إعداد توقعات متحفظة ومتوسطة ومتفائلة؛ تمييز الدخل الفعلي عن المتوقع؛ تجنب ضمان الأرباح.'
       specialists: ['التخطيط المالي', 'تحليل مصادر الدخل', 'التكاليف والميزانيات', 'مخاطر الاستثمار'],
       icon: Icons.account_balance_wallet_outlined,
     ),
     _Department(
       name: 'الإدارة القانونية والامتثال',
       head: 'AI Legal & Compliance Director',
-      mission: 'يرصد المسائل القانونية والخصوصية وحقوق النشر وشروط المنصات؛ ويحدد متى يلزم رأي مختص بشري.',
+      mission: 'يرصد المسائل القانونية والخصوصية وحقوق النشر وشروط المنصات؛ ويحدد متى يلزم رأي مختص بشري.',,
+      plan: 'مراجعة الخصوصية والتراخيص وشروط المنصات؛ تسجيل المسائل غير المحسومة؛ اقتراح ضوابط؛ إحالة المسائل المتخصصة لمختص بشري.'
       specialists: ['الخصوصية والبيانات', 'شروط المنصات', 'حقوق النشر والتراخيص', 'مراجعة المخاطر التنظيمية'],
       icon: Icons.gavel_outlined,
     ),
     _Department(
       name: 'إدارة العمليات والمساعد التنفيذي',
       head: 'AI Operations Director',
-      mission: 'ينظم المهام والتقارير والمواعيد والبريد والمسودات، ولا يرسل رسائل أو ينفذ التزامات خارجية دون صلاحية وموافقة.',
+      mission: 'ينظم المهام والتقارير والمواعيد والبريد والمسودات، ولا يرسل رسائل أو ينفذ التزامات خارجية دون صلاحية وموافقة.',,
+      plan: 'تنظيم قائمة المهام والمواعيد؛ تجهيز مسودات البريد والردود؛ متابعة الأعمال المفتوحة؛ عدم الإرسال أو الالتزام نيابة عن المستخدم دون موافقة.'
       specialists: ['إدارة المهام والمتابعة', 'البريد وصياغة الردود', 'التوثيق والتقارير', 'التنسيق بين الإدارات'],
       icon: Icons.assignment_turned_in_outlined,
     ),
     _Department(
       name: 'إدارة AUREN والمنتج المستقبلي',
       head: 'AI AUREN Program Director',
-      mission: 'يدير خارطة طريق AUREN، ينظم الأفكار والملفات، ويقدم تحديثات التقدم والاحتياجات ومخاطر التنفيذ.',
+      mission: 'يدير خارطة طريق AUREN، ينظم الأفكار والملفات، ويقدم تحديثات التقدم والاحتياجات ومخاطر التنفيذ.',,
+      plan: 'ترتيب أفكار AUREN وملفاتها؛ مراجعة خارطة الطريق وPR وحالة CI؛ تحديد أولويات السوق؛ رفع تقرير بالتقدم والعوائق والخطوة التالية.'
       specialists: ['خارطة الطريق', 'مراجعة المستودع وPR', 'تحليل احتياجات السوق', 'التكامل والجاهزية للإطلاق'],
       icon: Icons.hub_outlined,
     ),
@@ -124,7 +135,13 @@ class NovaExecutiveCouncilScreen extends StatelessWidget {
                 childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 expandedCrossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(department.mission, textDirection: TextDirection.rtl),
+                  Text('تعريف رئيس الإدارة: أنا ${department.head}، وأتولى ${department.name}، وأرفع تقاريري إلى NOVA Chief Executive AI ثم إليك صاحب القرار النهائي.', textDirection: TextDirection.rtl),
+                  const SizedBox(height: 8),
+                  Text('مهمتي: ${department.mission}', textDirection: TextDirection.rtl),
+                  const SizedBox(height: 10),
+                  const Text('خطتي العملية', textDirection: TextDirection.rtl, style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(department.plan, textDirection: TextDirection.rtl),
                   const SizedBox(height: 10),
                   const Text('التخصصات التابعة', textDirection: TextDirection.rtl, style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
@@ -154,6 +171,7 @@ class _Department {
     required this.name,
     required this.head,
     required this.mission,
+    required this.plan,
     required this.specialists,
     required this.icon,
   });
@@ -161,6 +179,7 @@ class _Department {
   final String name;
   final String head;
   final String mission;
+  final String plan;
   final List<String> specialists;
   final IconData icon;
 }
