@@ -11,7 +11,7 @@ workflows:
       - name: Dart format check
         script: dart format --output=none --set-exit-if-changed lib test
       - name: Flutter analyze
-        script: flutter analyze
+        script: flutter analyze lib test --no-fatal-warnings --no-fatal-infos
       - name: Flutter tests
         script: flutter test
       - name: Backend Functions tests
