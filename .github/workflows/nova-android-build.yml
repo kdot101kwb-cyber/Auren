@@ -49,13 +49,13 @@ jobs:
           if "android.permission.RECORD_AUDIO" not in content:
               content = content.replace(
                   "<application",
-                  '    <uses-permission android:name="android.permission.RECORD_AUDIO" />\\n'
-                  '    <uses-permission android:name="android.permission.INTERNET" />\\n'
-                  '    <queries>\\n'
-                  '        <intent>\\n'
-                  '            <action android:name="android.speech.RecognitionService" />\\n'
-                  '        </intent>\\n'
-                  '    </queries>\\n'
+                  '    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n'
+                  '    <uses-permission android:name="android.permission.INTERNET" />\n'
+                  '    <queries>\n'
+                  '        <intent>\n'
+                  '            <action android:name="android.speech.RecognitionService" />\n'
+                  '        </intent>\n'
+                  '    </queries>\n'
                   '    <application',
                   1,
               )
