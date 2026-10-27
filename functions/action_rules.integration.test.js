@@ -7,7 +7,7 @@ const path = require('node:path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
 const {
   doc, setDoc, getDoc, updateDoc, deleteDoc, runTransaction, getFirestore, Timestamp,
-} = require('firebase/firestore');
+} = require('@firebase/firestore');
 
 // Explicitly use the modular Firestore API, independent of compat namespace loading.
 function compatDb(db) {
