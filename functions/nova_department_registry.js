@@ -20,6 +20,9 @@ const TASK_ROUTES = Object.freeze({
   content_draft:'growth', social_content_draft:'growth', image_generation:'product',
   video_generation:'growth', social_publish:'growth', github_ci_check:'engineering',
   integration_health:'quality', finance_report:'finance', security_review:'security',
+  send_email:'operations', send_message:'operations', spend_money:'finance',
+  investment_execution:'finance', deploy_production:'engineering',
+  delete_data:'security', change_permissions:'security',
 });
 const HIGH_RISK_TYPES = new Set(['image_generation','video_generation','social_publish','send_email','send_message','spend_money','change_permissions','deploy_production','delete_data','investment_execution']);
 const EXTERNAL_SIDE_EFFECTS = new Set(['social_publish','send_email','send_message','spend_money','change_permissions','deploy_production','delete_data','investment_execution']);
