@@ -51,11 +51,11 @@ void main() {
 
     expect(find.text('دفتر الدخل والمصروفات'), findsOneWidget);
     await tester.enterText(
-      find.widgetWithText(TextField, 'مبلغ'),
+      find.byType(TextField).at(0),
       '125.50',
     );
     await tester.enterText(
-      find.widgetWithText(TextField, 'ملاحظة أو مرجع إيصال (اختياري)'),
+      find.byType(TextField).at(3),
       'اختبار دخل',
     );
     await tester.testTextInput.receiveAction(TextInputAction.done);
