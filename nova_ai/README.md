@@ -77,3 +77,13 @@ flutter build apk --debug
 
 AUREN repository: https://github.com/kdot101kwb-cyber/Auren
 Roadmap: https://github.com/kdot101kwb-cyber/Auren/issues/282
+
+## NOVA Grok Bot (unified assistant)
+
+The NOVA agents page now includes one Grok Bot interface for chat, research, coding guidance, planning, and content planning. Its backend callable is registered through `nova_entrypoint.js` and uses the server-side xAI Responses API; the API key is never shipped to Flutter.
+
+- Configure the Firebase Secret Manager value `XAI_API_KEY` before deployment. The provider may charge for API usage; this feature is not guaranteed free and remains disabled until the secret is configured.
+- The callable requires Firebase Authentication and App Check, applies a per-user rate limit, sends `store: false`, and records only minimal audit metadata rather than the user's prompt/context.
+- This initial integration proposes actions but does not execute external side effects or write to GitHub. Any future executor must connect through NOVA's task/approval policy and require explicit approval at execution time.
+- Modes: chat, research, coding guidance, planning, and content planning. The UI does not imply that repository inspection, builds, or tests happened unless a separate trusted tool actually performed them.
+- Run `node --check nova_grok_bot.js` and `node --test nova_grok_bot_core.test.js` from `functions/`.
