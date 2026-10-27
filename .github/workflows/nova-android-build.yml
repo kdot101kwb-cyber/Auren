@@ -2,10 +2,15 @@ name: NOVA Android Build
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - feat/nova-ai-android-app
   push:
     branches:
       - main
       - feat/nova-ai-android-app
+      - feat/nova-voice-assistant-foundation
+      - feat/nova-executive-secretary
     paths:
       - 'nova_ai/**'
       - '.github/workflows/nova-android-build.yml'
@@ -37,6 +42,30 @@ jobs:
 
       - name: Generate Android host files
         run: flutter create --platforms=android --org com.kwb86 --project-name nova_ai .
+
+      - name: Configure Android speech recognition permissions
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          content = path.read_text()
+          if "android.permission.RECORD_AUDIO" not in content:
+              content = content.replace(
+                  "<application",
+                  '    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n'
+                  '    <uses-permission android:name="android.permission.INTERNET" />\n'
+                  '    <queries>\n'
+                  '        <intent>\n'
+                  '            <action android:name="android.speech.RecognitionService" />\n'
+                  '        </intent>\n'
+                  '    </queries>\n'
+                  '    <application',
+                  1,
+              )
+              path.write_text(content)
+          print("Configured microphone permission and speech recognition service query.")
+          PY
 
       - name: Install dependencies
         run: flutter pub get

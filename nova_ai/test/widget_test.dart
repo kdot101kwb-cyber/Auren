@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nova_ai/main.dart';
 import 'package:nova_ai/features/creative/creative_tool_library_screen.dart';
+import 'package:nova_ai/features/secretary/secretary_center_screen.dart';
 
 void main() {
   setUp(() {
@@ -43,6 +44,21 @@ void main() {
     expect(tile.value, isTrue);
   });
 
+  testWidgets('dashboard opens NOVA foreground voice assistant', (tester) async {
+    await tester.pumpWidget(const NovaApp());
+    await tester.pumpAndSettle();
+
+    final voiceButton = find.byKey(const ValueKey('nova-dashboard-voice'));
+    await tester.scrollUntilVisible(voiceButton, 250, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    await tester.tap(voiceButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('NOVA Voice'), findsOneWidget);
+    expect(find.text('أنا NOVA'), findsOneWidget);
+    expect(find.text('أو اكتب أمرك'), findsOneWidget);
+  });
+
   testWidgets('creative tool library shows 90 tools and filters by category', (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: CreativeToolLibraryScreen(onOpenAurenWorkspace: () {})),
@@ -55,5 +71,37 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Godot'), findsOneWidget);
     expect(find.text('Shotcut'), findsNothing);
+  });
+
+  test('secretary risk classifier escalates sensitive topics', () {
+    expect(classifySecretaryRisk('Can you send the payment confirmation?'), SecretaryRisk.reviewRequired);
+    expect(classifySecretaryRisk('Please confirm our meeting tomorrow'), SecretaryRisk.low);
+    expect(classifySecretaryRisk('هذه شكوى عن استرداد المبلغ'), SecretaryRisk.reviewRequired);
+  });
+
+  testWidgets('secretary center saves local drafts without sending', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: SecretaryCenterScreen()));
+    await tester.pumpAndSettle();
+
+    final sourceField = find.byKey(const ValueKey('secretary-source'));
+    await tester.ensureVisible(sourceField);
+    await tester.pumpAndSettle();
+    await tester.enterText(sourceField, 'بريد');
+
+    final subjectField = find.byKey(const ValueKey('secretary-subject'));
+    await tester.ensureVisible(subjectField);
+    await tester.pumpAndSettle();
+    await tester.enterText(subjectField, 'متابعة الاجتماع');
+
+    final bodyField = find.byKey(const ValueKey('secretary-body'));
+    await tester.ensureVisible(bodyField);
+    await tester.pumpAndSettle();
+    await tester.enterText(bodyField, 'شكراً على وقتك، سأرسل الملخص قريباً.');
+    await tester.tap(find.text('حفظ مسودة على هذا الجهاز'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('متابعة الاجتماع'), findsWidgets);
+    expect(find.text('محلية فقط'), findsOneWidget);
+    expect(find.textContaining('لم تُرسل لأي شخص'), findsOneWidget);
   });
 }
