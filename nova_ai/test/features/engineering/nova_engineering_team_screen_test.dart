@@ -26,6 +26,7 @@ void main() {
     expect(find.text('مهندس Flutter والواجهة'), findsWidgets);
     expect(find.text('مهندس البناء والإصدار'), findsWidgets);
     expect(find.text('بوابة موافقة المالك'), findsOneWidget);
+    expect(find.text('نسخ موجز المهمة ومعايير القبول'), findsOneWidget);
   });
 
   testWidgets('empty goal shows validation message', (tester) async {
