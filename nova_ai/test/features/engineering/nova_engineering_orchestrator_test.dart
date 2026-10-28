@@ -32,6 +32,17 @@ void main() {
     expect(assignment.roles, contains(NovaEngineeringRole.codeReviewer));
   });
 
+  test('Arabic speed wording does not trigger a false high-risk classification', () {
+    final assignment = orchestrator.plan('تسريع التطبيق وتحسين الأداء');
+    expect(assignment.risk, NovaEngineeringRisk.low);
+    expect(assignment.requiresHumanApproval, isTrue);
+  });
+
+  test('explicit Arabic secret wording is classified as high risk', () {
+    final assignment = orchestrator.plan('راجع الأسرار والمفتاح السري');
+    expect(assignment.risk, NovaEngineeringRisk.high);
+  });
+
   test('rejects an empty goal', () {
     expect(() => orchestrator.plan('  '), throwsArgumentError);
   });
