@@ -151,6 +151,6 @@ class NovaEngineeringQueuedTask {
         status: json['status'] as String,
         createdAt: json['createdAt'] as String,
         requiresHumanApproval: json['requiresHumanApproval'] as bool,
-        acceptanceCriteria: (json['acceptanceCriteria'] as List<dynamic>).cast<String>(),
+        acceptanceCriteria: (json['acceptanceCriteria'] as List<dynamic>? ?? const <dynamic>[]).cast<String>(),
       );
 }
