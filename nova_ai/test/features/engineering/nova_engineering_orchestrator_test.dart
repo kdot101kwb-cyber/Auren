@@ -43,6 +43,17 @@ void main() {
     expect(assignment.risk, NovaEngineeringRisk.high);
   });
 
+  test('Arabic diacritics and alef variants do not bypass risk detection', () {
+    final assignment = orchestrator.plan('تَغْيِير صَلاحِيّات الحساب');
+    expect(assignment.risk, NovaEngineeringRisk.high);
+    expect(assignment.requiresHumanApproval, isTrue);
+  });
+
+  test('Arabic delete and send requests are high risk', () {
+    expect(orchestrator.plan('احذف الحساب').risk, NovaEngineeringRisk.high);
+    expect(orchestrator.plan('إرسال رسالة للعملاء').risk, NovaEngineeringRisk.high);
+  });
+
   test('rejects an empty goal', () {
     expect(() => orchestrator.plan('  '), throwsArgumentError);
   });
