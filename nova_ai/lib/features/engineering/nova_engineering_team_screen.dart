@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 
 import 'nova_engineering_orchestrator.dart';
+import 'nova_engineering_task_queue.dart';
 
 class NovaEngineeringTeamScreen extends StatefulWidget {
   const NovaEngineeringTeamScreen({super.key});
@@ -13,9 +14,27 @@ class NovaEngineeringTeamScreen extends StatefulWidget {
 
 class _NovaEngineeringTeamScreenState extends State<NovaEngineeringTeamScreen> {
   static const _orchestrator = NovaEngineeringOrchestrator();
+  final _taskQueue = NovaEngineeringTaskQueue();
+  List<NovaEngineeringQueuedTask> _queuedTasks = const [];
+  bool _queueLoading = true;
   final _goalController = TextEditingController();
   NovaEngineeringAssignment? _assignment;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadQueue();
+  }
+
+  Future<void> _loadQueue() async {
+    final tasks = await _taskQueue.load();
+    if (!mounted) return;
+    setState(() {
+      _queuedTasks = tasks;
+      _queueLoading = false;
+    });
+  }
 
   @override
   void dispose() {
@@ -23,17 +42,27 @@ class _NovaEngineeringTeamScreenState extends State<NovaEngineeringTeamScreen> {
     super.dispose();
   }
 
-  void _planTask() {
+  Future<void> _planTask() async {
     try {
       final assignment = _orchestrator.plan(_goalController.text);
       setState(() {
         _assignment = assignment;
         _error = null;
       });
+      final saved = await _taskQueue.enqueue(assignment);
+      if (!mounted) return;
+      setState(() {
+        _queuedTasks = [saved, ..._queuedTasks].take(100).toList();
+      });
     } on ArgumentError {
       setState(() {
         _assignment = null;
         _error = 'اكتب المهمة التي تريد من فريق NOVA التخطيط لها.';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'تعذر حفظ المهمة محلياً؛ لم يتم تشغيل أي تنفيذ.';
       });
     }
   }
@@ -61,6 +90,15 @@ class _NovaEngineeringTeamScreenState extends State<NovaEngineeringTeamScreen> {
       const SnackBar(content: Text('نُسخ موجز المهمة إلى الحافظة. لم يبدأ التنفيذ الفعلي.')),
     );
   }
+
+  String _taskStatusLabel(String status) => switch (status) {
+        'planned' => 'خطة محفوظة',
+        'awaitingApproval' => 'بانتظار الموافقة',
+        'approved' => 'موافق عليها للتنفيذ',
+        'completed' => 'مكتملة',
+        'blocked' => 'متوقفة',
+        _ => 'غير معروفة',
+      };
 
   String _riskLabel(NovaEngineeringRisk risk) => switch (risk) {
         NovaEngineeringRisk.low => 'منخفض',
@@ -184,6 +222,32 @@ class _NovaEngineeringTeamScreenState extends State<NovaEngineeringTeamScreen> {
               ),
             ),
           ],
+          const SizedBox(height: 20),
+          const Text('طابور المهام المحفوظة على الجهاز',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          if (_queueLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (_queuedTasks.isEmpty)
+            const Card(
+              child: ListTile(
+                leading: Icon(Icons.inbox_outlined),
+                title: Text('لا توجد مهام محفوظة بعد'),
+                subtitle: Text('خطط لمهمة لحفظها محلياً ومراجعتها لاحقاً.'),
+              ),
+            )
+          else
+            ..._queuedTasks.map((task) => Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.assignment_outlined),
+                    title: Text(task.goal),
+                    subtitle: Text(
+                      'الحالة: ${_taskStatusLabel(task.status)} • المخاطر: ${task.risk == 'high' ? 'مرتفعة' : task.risk == 'medium' ? 'متوسطة' : 'منخفضة'}'
+                      '\nموافقة المالك مطلوبة: ${task.requiresHumanApproval ? 'نعم' : 'لا'}',
+                    ),
+                    isThreeLine: true,
+                  ),
+                )),
           const SizedBox(height: 20),
           const Text('الأقسام الهندسية', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
