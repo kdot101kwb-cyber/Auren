@@ -219,6 +219,8 @@ class _NovaHomeState extends State<NovaHome> {
     const SizedBox(height: 8),
     FilledButton.icon(onPressed: () => setState(() => tab = 15), icon: const Icon(Icons.public), label: const Text('فتح الرادار العالمي متعدد اللغات')),
     const SizedBox(height: 8),
+    FilledButton.icon(onPressed: () => setState(() => tab = 16), icon: const Icon(Icons.engineering_outlined), label: const Text('فتح فريق مهندسي NOVA')),
+    const SizedBox(height: 8),
     FilledButton.icon(onPressed: openAurenManagementDashboard, icon: const Icon(Icons.account_balance), label: const Text('فتح لوحة إدارة AUREN ومجلس الإدارة')),
     const SizedBox(height: 18),
     const Text('خطة العمل التالية', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
