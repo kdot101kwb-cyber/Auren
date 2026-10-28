@@ -1,17 +1,22 @@
 # NOVA Multi-Brand Social Network v1
 
 ## Goal
-Design one private NOVA control plane that can manage up to five distinct brands per supported platform, with Arabic and English content, different editorial identities, reusable original assets, scheduling, analytics, and owner-controlled publishing.
+Design one private NOVA control plane that can manage up to ten distinct brands per supported platform, with Arabic and English content, different editorial identities, reusable original assets, scheduling, analytics, and owner-controlled publishing.
 
 This is a capacity target, not a claim that every platform currently permits or approves five connected accounts. Each platform adapter must expose its own account eligibility, API permissions, rate limits, and publishing capabilities.
 
 ## Initial brand portfolio
-These are proposed editorial lanes; names and handles remain unclaimed until the owner chooses and registers them.
+These are ten proposed editorial lanes; names and handles remain unclaimed until the owner chooses and registers them.
 1. Comedy & sarcasm — original memes, jokes, sketches, relatable situations.
 2. Strange stories & mysteries — explainers and curious stories; fact-check claims before publication.
 3. AI, technology & future — tools, experiments, practical AI and tech news.
 4. Everyday life & relationships — relatable situations, light humor and useful observations without targeted harassment.
 5. Games, challenges & audience participation — original quizzes, prompts, polls where supported, and community challenges.
+6. Animals & nature — amusing animal moments, nature facts, and responsibly sourced educational content.
+7. Science & discoveries — explainers about science, space, and verified discoveries.
+8. Food & simple recipes — practical food ideas, kitchen humor, and clearly labelled recipe content.
+9. Motivation & personal growth — realistic encouragement, learning habits, and practical self-improvement.
+10. Global culture & curiosities — cultural facts, language curiosities, and respectful international discoveries.
 
 Each brand has its own identity record, tone guide, prohibited topics, visual system, language strategy, content calendar, account links, and performance history. Do not copy Asa7be or another creator's name, logo, posts, or distinctive work.
 
@@ -24,7 +29,7 @@ Each brand has its own identity record, tone guide, prohibited topics, visual sy
 
 ## Account capacity model
 - Platform registry: Facebook Pages, Instagram professional accounts, TikTok, YouTube, X, and future adapters.
-- Capacity target: five account slots per platform, with stable account IDs, brand assignment, connection status, granted scopes, supported content types, last verification time, and explicit publishing state.
+- Capacity target: ten account slots per platform, with stable account IDs, brand assignment, connection status, granted scopes, supported content types, last verification time, and explicit publishing state.
 - A brand may link to multiple platforms; a platform account must be assigned intentionally to a brand.
 - Do not store passwords or long-lived OAuth secrets in Flutter, SharedPreferences, repository files, or client logs. Tokens belong in a protected server-side secret store.
 - Never claim an account is connected until OAuth/official API identity and permissions have been checked.
@@ -65,8 +70,8 @@ Build the control plane, local drafts, brand profiles, policy rules, and dry-run
 
 ## Delivery sequence
 1. Inspect actual NOVA Flutter project and current CI; keep the current Comedy Studio PR unmerged until reviewed.
-2. Add brand registry and five initial brand profiles, with editable names and identity guides.
-3. Add platform/account registry and show five slots per platform without pretending to connect them.
+2. Add brand registry and ten initial brand profiles, with editable names and identity guides.
+3. Add platform/account registry and show ten slots per platform without pretending to connect them.
 4. Add bilingual content objects and brand-specific calendars.
 5. Add local queue + dry-run platform adapter and policy/approval center.
 6. Add one official connector at a time, starting with the platform whose permissions and free-tier requirements are verified.
@@ -74,7 +79,7 @@ Build the control plane, local drafts, brand profiles, policy rules, and dry-run
 8. Test Flutter format/analyze/tests/build and backend tests; report actual CI outcomes.
 
 ## Acceptance criteria
-- Five brands can be configured independently.
+- Ten brands can be configured independently.
 - Each brand supports Arabic, English, or both.
 - Platform account slots can be represented without fake connection states.
 - Drafts and schedules identify brand, platform, language, and content variant.
