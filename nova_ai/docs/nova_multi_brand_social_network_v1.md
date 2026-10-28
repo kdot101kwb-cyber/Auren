@@ -82,3 +82,43 @@ Build the control plane, local drafts, brand profiles, policy rules, and dry-run
 - Duplicate jobs are idempotent; retries are bounded; the global stop switch blocks new jobs.
 - Published state requires verifiable platform receipt.
 - UI communicates blockers honestly and remains useful in draft-only mode.
+## Specialist departments (required)
+The five brands are the editorial portfolio; these five specialist departments are shared services across all brands. They cooperate through one auditable workflow, and each task carries a brand ID, platform, language, source links, rights status, and approval state.
+
+### 1. Trend Hunter
+- Monitor permitted public trend signals, search demand, platform trend surfaces and credible sources where access is available.
+- Score each idea on momentum, audience fit, originality, language/region fit, production effort, rights risk, policy risk and monetization relevance.
+- Show evidence, timestamp, source and confidence; label hypotheses as hypotheses, not facts.
+- Do not scrape private accounts, bypass access controls, or promise virality.
+
+### 2. Comedy Department
+- Generate original jokes, memes, captions and sketch concepts in the selected Arabic dialect or English style.
+- Allow dialect choices such as Sudanese Arabic, Modern Standard Arabic, Egyptian, Gulf, Levantine, or English; make dialect configurable per brand and audience.
+- Use cultural context and localization rather than direct translation; keep a distinct joke/caption version per language when useful.
+- Avoid copying another page's wording, characters, branding, or recognizable creative assets.
+
+### 3. Production Department
+- Prepare image concepts, meme layouts, short-video scripts/storyboards, shot lists, subtitles, titles, hooks, descriptions and platform-specific exports.
+- Track asset provenance, creator/source, licenses, music/audio rights, font/template rights and permitted usage.
+- Separate planned outputs from actually rendered media; the system must not mark an image/video as produced until the file exists and basic validation passes.
+- Generate variants for each platform's current format and accessibility needs when supported by available tools.
+
+### 4. Growth & Revenue Department
+- Measure permitted impressions, views, watch time, retention, engagement, follows and link/conversion metrics when each platform exposes them.
+- Compare results by brand, platform, language/dialect, format, hook and publication age; use small, documented experiments.
+- Explore eligible monetization routes and document eligibility, country availability, thresholds, payout methods, fees and current evidence before recommending them.
+- Do not promise earnings or treat views as income; distinguish observed results, estimates and unverified opportunities.
+
+### 5. Quality & Safety Department
+- Review originality, language quality, factual claims, defamation/targeted harassment, privacy, sensitive topics, platform policies and audience suitability.
+- Check image/video/music/font/template rights and source licenses before approving publication; request owner review when rights are unclear.
+- Flag manipulated media, impersonation, misleading claims, copyright risk, and unsafe content; return rejected items with actionable reasons.
+- Keep an audit trail of checks, reviewer/rule versions, warnings, approval decisions and any overrides.
+
+## Shared workflow and handoffs
+Trend Hunter proposes and scores ideas -> Comedy develops original concept/copy -> Production prepares media and platform variants -> Quality & Safety checks language, claims, rights and policy -> Growth & Revenue sets measurement goals and reviews performance -> findings feed back into the next trend and content decisions.
+
+Quality & Safety is a hard gate for scheduled or automatic publishing. Growth & Revenue can recommend experiments but cannot override safety, rights, platform restrictions or owner permissions. Owner pause/stop controls take precedence over all departments.
+
+## Department status truthfulness
+Until each module is implemented and tested in the actual NOVA codebase, these departments are specifications rather than live autonomous agents. Trend monitoring requires an actual data source; production requires a verified media-generation/export path; analytics and monetization require authorized data and eligibility evidence. The dashboard must display each module's real state (planned, local-only, connected, verified, blocked, or failed), never a simulated success.
