@@ -128,8 +128,8 @@ class NovaEngineeringOrchestrator {
 
     final highRiskTerms = [
       'payment', 'transfer', 'publish', 'deploy', 'delete', 'secret',
-      'credential', 'production', 'payment', 'نشر', 'حذف', 'دفع',
-      'تحويل', 'إنتاج', 'مفتاح', 'سر',
+      'credential', 'production', 'نشر', 'حذف', 'دفع',
+      'تحويل', 'إنتاج', 'مفتاح سري', 'أسرار', 'كلمة مرور',
     ];
     final mediumRiskTerms = [
       'firebase', 'auth', 'permission', 'database', 'firestore',
