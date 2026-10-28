@@ -93,6 +93,19 @@ class NovaEngineeringOrchestrator {
     ),
   ];
 
+  /// Normalizes common Arabic spelling variants so diacritics and alef forms
+  /// cannot accidentally bypass the risk-label checks.
+  static String _normalizeRiskText(String value) => value
+      .toLowerCase()
+      .replaceAll(RegExp(r'[\u064B-\u065F\u0670]'), '')
+      .replaceAll(RegExp(r'[أإآٱ]'), 'ا')
+      .replaceAll('ى', 'ي')
+      .replaceAll('ؤ', 'و')
+      .replaceAll('ئ', 'ي')
+      .replaceAll('ـ', ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+
   NovaEngineeringAssignment plan(String rawGoal) {
     final goal = rawGoal.trim();
     if (goal.isEmpty) {
@@ -126,17 +139,20 @@ class NovaEngineeringOrchestrator {
       }
     }
 
+    final riskText = _normalizeRiskText(goal);
     final highRiskTerms = [
       'payment', 'transfer', 'publish', 'deploy', 'delete', 'secret',
-      'credential', 'production', 'نشر', 'حذف', 'دفع',
-      'تحويل', 'إنتاج', 'مفتاح سري', 'أسرار', 'كلمة مرور',
+      'credential', 'production', 'send message', 'send email', 'purchase',
+      'نشر', 'حذف', 'دفع', 'تحويل', 'انتاج', 'مفتاح سري', 'اسرار',
+      'كلمة مرور', 'ارسال', 'ارسل', 'رفع', 'شراء', 'مسح', 'حذف حساب',
+      'تغيير صلاحيات', 'نشر التطبيق', 'دمج',
     ];
     final mediumRiskTerms = [
       'firebase', 'auth', 'permission', 'database', 'firestore',
-      'قاعدة بيانات', 'صلاحيات', 'حساب',
+      'قاعدة بيانات', 'صلاحيات', 'حساب', 'تسجيل دخول',
     ];
-    final highRisk = highRiskTerms.any(normalized.contains);
-    final mediumRisk = mediumRiskTerms.any(normalized.contains);
+    final highRisk = highRiskTerms.any(riskText.contains);
+    final mediumRisk = mediumRiskTerms.any(riskText.contains);
 
     return NovaEngineeringAssignment(
       goal: goal,
@@ -146,8 +162,7 @@ class NovaEngineeringOrchestrator {
           : mediumRisk
               ? NovaEngineeringRisk.medium
               : NovaEngineeringRisk.low,
-      // All repository writes, deploys, publishing, payments and destructive
-      // actions stay behind explicit owner approval, regardless of risk score.
+      // Every external action remains approval-gated, regardless of risk score.
       requiresHumanApproval: true,
       reason: highRisk
           ? 'طلب عالي الحساسية: يلزم فحص الخطة والفرق والاختبارات وموافقة المالك قبل التنفيذ.'
