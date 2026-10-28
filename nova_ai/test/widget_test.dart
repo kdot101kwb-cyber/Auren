@@ -51,11 +51,11 @@ void main() {
 
     expect(find.text('دفتر الدخل والمصروفات'), findsOneWidget);
     await tester.enterText(
-      find.widgetWithText(TextField, 'مبلغ'),
+      find.byKey(const ValueKey('nova-finance-amount')),
       '125.50',
     );
     await tester.enterText(
-      find.widgetWithText(TextField, 'ملاحظة أو مرجع إيصال (اختياري)'),
+      find.byKey(const ValueKey('nova-finance-note')),
       'اختبار دخل',
     );
     await tester.testTextInput.receiveAction(TextInputAction.done);
@@ -67,7 +67,7 @@ void main() {
     expect(find.textContaining('125.5 SDG'), findsOneWidget);
     expect(find.text('اختبار دخل'), findsOneWidget);
     expect(
-      (await SharedPreferences.getInstance()).getStringList('nova.wallet.ledger.v1'),
+      (await SharedPreferences.getInstance()).getStringList('nova.finance.transactions.v2'),
       isNotEmpty,
     );
   });

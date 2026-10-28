@@ -1,9 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 
-const _ledgerStorageKey = 'nova.wallet.ledger.v1';
+import 'nova_finance_models.dart';
+import 'nova_finance_repository.dart';
+
 const _ledgerAccent = Color(0xFF9B87FF);
 
 class NovaWalletLedgerScreen extends StatefulWidget {
@@ -14,20 +14,21 @@ class NovaWalletLedgerScreen extends StatefulWidget {
 }
 
 class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
-  static const _wallets = <String, String>{
-    'bravo': 'Bravo',
-    'mycashi': 'MyCashi',
-    'trust_wallet': 'Trust Wallet',
-    'paypal': 'PayPal',
-  };
-
+  final NovaFinanceRepository _repository = SharedPreferencesNovaFinanceRepository();
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
-  String _wallet = 'bravo';
+  final _referenceController = TextEditingController();
+  final _counterpartyController = TextEditingController();
+
+  String _wallet = NovaFinanceRegistry.providers.first.id;
   String _type = 'income';
-  String _currency = 'SDG';
+  String _currency = NovaFinanceRegistry.providers.first.defaultCurrency;
+  String _category = 'services';
   bool _loading = true;
-  List<_LedgerEntry> _entries = [];
+  List<NovaFinanceTransaction> _entries = [];
+
+  NovaFinanceProvider get _selectedProvider =>
+      NovaFinanceRegistry.provider(_wallet)!;
 
   @override
   void initState() {
@@ -39,40 +40,27 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
   void dispose() {
     _amountController.dispose();
     _noteController.dispose();
+    _referenceController.dispose();
+    _counterpartyController.dispose();
     super.dispose();
   }
 
-  String _defaultCurrency(String wallet) => switch (wallet) {
-        'bravo' || 'mycashi' => 'SDG',
-        'paypal' => 'USD',
-        _ => 'USDT',
-      };
-
   void _onWalletChanged(String? value) {
     if (value == null) return;
+    final provider = NovaFinanceRegistry.provider(value);
+    if (provider == null) return;
     setState(() {
       _wallet = value;
-      _currency = _defaultCurrency(value);
+      _currency = provider.defaultCurrency;
     });
   }
 
   Future<void> _loadEntries() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getStringList(_ledgerStorageKey) ?? <String>[];
-      final parsed = <_LedgerEntry>[];
-      for (final item in raw) {
-        try {
-          parsed.add(_LedgerEntry.fromJson(
-            jsonDecode(item) as Map<String, dynamic>,
-          ));
-        } catch (_) {
-          // Ignore malformed legacy entries rather than breaking the screen.
-        }
-      }
+      final entries = await _repository.loadTransactions();
       if (!mounted) return;
       setState(() {
-        _entries = parsed..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        _entries = entries;
         _loading = false;
       });
     } catch (_) {
@@ -80,42 +68,38 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
     }
   }
 
-  Future<bool> _persistEntries(List<_LedgerEntry> entries) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final values = entries.map((e) => jsonEncode(e.toJson())).toList();
-      return await prefs.setStringList(_ledgerStorageKey, values);
-    } catch (_) {
-      return false;
-    }
-  }
-
   Future<void> _addEntry() async {
     final rawAmount = _amountController.text.trim().replaceAll(',', '');
     final amount = double.tryParse(rawAmount);
-    if (amount == null || !amount.isFinite || amount <= 0) {
+    if (amount == null || !amount.isFinite || amount <= 0 || amount > 1e12) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('أدخل مبلغاً أكبر من صفر.')),
+        const SnackBar(content: Text('أدخل مبلغاً صالحاً أكبر من صفر.')),
       );
       return;
     }
-    final note = _noteController.text.trim();
-    final entry = _LedgerEntry(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
+    final now = DateTime.now();
+    final entry = NovaFinanceTransaction(
+      id: now.microsecondsSinceEpoch.toString(),
       walletId: _wallet,
       type: _type,
       amount: amount,
       currency: _currency,
-      note: note,
-      createdAt: DateTime.now(),
+      categoryId: _category,
+      note: _noteController.text.trim(),
+      reference: _referenceController.text.trim(),
+      counterparty: _counterpartyController.text.trim(),
+      occurredAt: now,
+      createdAt: now,
+      status: 'recorded_by_user',
+      providerVerified: false,
     );
     final next = [entry, ..._entries]
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final saved = await _persistEntries(next);
+      ..sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
+    final saved = await _repository.saveTransactions(next);
     if (!mounted) return;
     if (!saved) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر حفظ العملية محلياً. لم تُضف للسجل.')),
+        const SnackBar(content: Text('تعذر حفظ العملية على الجهاز.')),
       );
       return;
     }
@@ -123,15 +107,17 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
       _entries = next;
       _amountController.clear();
       _noteController.clear();
+      _referenceController.clear();
+      _counterpartyController.clear();
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('سُجلت العملية محلياً فقط؛ لم يحدث تحويل مالي.')),
+      const SnackBar(content: Text('تم تسجيل العملية محلياً؛ لم يحدث تحويل مالي.')),
     );
   }
 
-  Future<void> _deleteEntry(_LedgerEntry entry) async {
+  Future<void> _deleteEntry(NovaFinanceTransaction entry) async {
     final next = _entries.where((e) => e.id != entry.id).toList();
-    final saved = await _persistEntries(next);
+    final saved = await _repository.saveTransactions(next);
     if (!mounted) return;
     if (!saved) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -142,25 +128,53 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
     setState(() => _entries = next);
   }
 
+  Future<void> _exportJson() async {
+    try {
+      final json = await _repository.exportJson();
+      await Clipboard.setData(ClipboardData(text: json));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('نُسخت نسخة JSON احتياطية إلى الحافظة. احفظها في مكان آمن.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر تجهيز النسخة الاحتياطية.')),
+      );
+    }
+  }
+
   String _money(double value) =>
       value.toStringAsFixed(value == value.truncateToDouble() ? 0 : 2);
 
-  Map<String, double> _totalsFor(String wallet, String type) {
+  String _categoryName(String id) {
+    for (final category in NovaFinanceRegistry.categories) {
+      if (category.id == id) return category.name;
+    }
+    return 'أخرى';
+  }
+
+  Map<String, double> _totalsFor(String type, {bool currentMonthOnly = false}) {
+    final now = DateTime.now();
     final totals = <String, double>{};
-    for (final entry in _entries.where(
-      (e) => e.walletId == wallet && e.type == type,
-    )) {
+    for (final entry in _entries.where((e) =>
+        e.walletId == _wallet &&
+        e.type == type &&
+        (!currentMonthOnly ||
+            (e.occurredAt.year == now.year && e.occurredAt.month == now.month)))) {
       totals.update(entry.currency, (value) => value + entry.amount,
           ifAbsent: () => entry.amount);
     }
     return totals;
   }
 
-  Widget _summaryCard(String title, String type, IconData icon) {
-    final totals = _totalsFor(_wallet, type);
-    final text = totals.isEmpty
-        ? 'لا توجد عمليات'
-        : totals.entries.map((e) => '${_money(e.value)} ${e.key}').join(' • ');
+  String _formatTotals(Map<String, double> totals) => totals.isEmpty
+      ? '0'
+      : totals.entries.map((e) => '${_money(e.value)} ${e.key}').join(' • ');
+
+  Widget _summaryCard(String title, String type, IconData icon,
+      {bool month = false}) {
+    final totals = _totalsFor(type, currentMonthOnly: month);
     return Expanded(
       child: Card(
         child: Padding(
@@ -172,7 +186,8 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
               const SizedBox(height: 8),
               Text(title, style: Theme.of(context).textTheme.bodySmall),
               const SizedBox(height: 5),
-              Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(_formatTotals(totals),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
         ),
@@ -185,7 +200,16 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
     final visibleEntries =
         _entries.where((entry) => entry.walletId == _wallet).toList();
     return Scaffold(
-      appBar: AppBar(title: const Text('دفتر الدخل والمصروفات')),
+      appBar: AppBar(
+        title: const Text('دفتر الدخل والمصروفات'),
+        actions: [
+          IconButton(
+            tooltip: 'نسخ نسخة احتياطية JSON',
+            onPressed: _exportJson,
+            icon: const Icon(Icons.download_outlined),
+          ),
+        ],
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -195,7 +219,7 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
                   child: Padding(
                     padding: EdgeInsets.all(14),
                     child: Text(
-                      'سجل شخصي محلي للمحافظ الأربع. هذه القيود لا تقرأ أرصدة الحسابات ولا تنفذ حوالات، ولا تُرسل إلى خادم. اختر العملة الصحيحة لكل عملية ولا تجمع عملات مختلفة في رقم واحد.',
+                      'النواة المالية قابلة للتوسع: مزوّدات وتصنيفات وحقول قابلة للإضافة. البيانات الحالية يدوية ومحلية؛ ليست أرصدة أو معاملات مؤكدة من مزوّد خدمة.',
                     ),
                   ),
                 ),
@@ -206,10 +230,10 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
                     labelText: 'المحفظة',
                     border: OutlineInputBorder(),
                   ),
-                  items: _wallets.entries
-                      .map((e) => DropdownMenuItem(
-                            value: e.key,
-                            child: Text(e.value),
+                  items: NovaFinanceRegistry.providers
+                      .map((provider) => DropdownMenuItem(
+                            value: provider.id,
+                            child: Text(provider.name),
                           ))
                       .toList(),
                   onChanged: _onWalletChanged,
@@ -223,7 +247,10 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
                         title: const Text('دخل'),
                         value: 'income',
                         groupValue: _type,
-                        onChanged: (v) => setState(() => _type = v ?? 'income'),
+                        onChanged: (v) => setState(() {
+                          _type = v ?? 'income';
+                          _category = _type == 'income' ? 'services' : 'other';
+                        }),
                       ),
                     ),
                     Expanded(
@@ -232,12 +259,16 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
                         title: const Text('مصروف'),
                         value: 'expense',
                         groupValue: _type,
-                        onChanged: (v) => setState(() => _type = v ?? 'expense'),
+                        onChanged: (v) => setState(() {
+                          _type = v ?? 'expense';
+                          _category = _type == 'expense' ? 'food' : 'services';
+                        }),
                       ),
                     ),
                   ],
                 ),
                 TextField(
+                  key: const ValueKey('nova-finance-amount'),
                   controller: _amountController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(
@@ -252,7 +283,7 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
                     labelText: 'العملة',
                     border: OutlineInputBorder(),
                   ),
-                  items: const ['SDG', 'USD', 'USDT', 'EUR', 'SAR']
+                  items: _selectedProvider.supportedCurrencies
                       .map((currency) => DropdownMenuItem(
                             value: currency,
                             child: Text(currency),
@@ -263,12 +294,49 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
                   },
                 ),
                 const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: _category,
+                  decoration: const InputDecoration(
+                    labelText: 'التصنيف',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: NovaFinanceRegistry.categories
+                      .where((category) =>
+                          category.appliesTo == 'both' ||
+                          category.appliesTo == _type)
+                      .map((category) => DropdownMenuItem(
+                            value: category.id,
+                            child: Text(category.name),
+                          ))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) setState(() => _category = v);
+                  },
+                ),
+                const SizedBox(height: 10),
                 TextField(
-                  controller: _noteController,
+                  controller: _counterpartyController,
+                  maxLength: 80,
+                  decoration: const InputDecoration(
+                    labelText: 'الجهة أو العميل (اختياري)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                TextField(
+                  controller: _referenceController,
                   maxLength: 120,
                   decoration: const InputDecoration(
-                    labelText: 'ملاحظة أو مرجع إيصال (اختياري)',
-                    hintText: 'مثال: دخل من خدمة تصميم',
+                    labelText: 'مرجع إيصال أو رقم عملية (اختياري)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  key: const ValueKey('nova-finance-note'),
+                  controller: _noteController,
+                  maxLength: 250,
+                  decoration: const InputDecoration(
+                    labelText: 'ملاحظة (اختياري)',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -281,13 +349,19 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    _summaryCard('إجمالي الدخل', 'income', Icons.south_west),
-                    _summaryCard('إجمالي المصروف', 'expense', Icons.north_east),
+                    _summaryCard('الدخل الكلي', 'income', Icons.south_west),
+                    _summaryCard('المصروف الكلي', 'expense', Icons.north_east),
+                  ],
+                ),
+                Row(
+                  children: [
+                    _summaryCard('دخل الشهر', 'income', Icons.calendar_month, month: true),
+                    _summaryCard('مصروف الشهر', 'expense', Icons.event_busy, month: true),
                   ],
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'سجل ${_wallets[_wallet]}',
+                  'سجل ${_selectedProvider.name}',
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 if (visibleEntries.isEmpty)
@@ -302,17 +376,18 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
                         backgroundColor: entry.type == 'income'
                             ? const Color(0xFF1D4937)
                             : const Color(0xFF4A2C35),
-                        child: Icon(
-                          entry.type == 'income'
-                              ? Icons.south_west
-                              : Icons.north_east,
-                        ),
+                        child: Icon(entry.type == 'income'
+                            ? Icons.south_west
+                            : Icons.north_east),
                       ),
                       title: Text(
                         '${entry.type == 'income' ? 'دخل' : 'مصروف'} • ${_money(entry.amount)} ${entry.currency}',
                       ),
                       subtitle: Text(
-                        '${entry.note.isEmpty ? 'بدون ملاحظة' : entry.note}\n${entry.createdAt.toLocal().toString().substring(0, 16)}',
+                        '${_categoryName(entry.categoryId)} • ${entry.note.isEmpty ? 'بدون ملاحظة' : entry.note}\n'
+                        '${entry.reference.isEmpty ? '' : 'مرجع: ${entry.reference} • '}'
+                        '${entry.counterparty.isEmpty ? '' : 'الجهة: ${entry.counterparty} • '}'
+                        '${entry.occurredAt.toLocal().toString().substring(0, 16)}',
                         textDirection: TextDirection.rtl,
                       ),
                       isThreeLine: true,
@@ -327,44 +402,4 @@ class _NovaWalletLedgerScreenState extends State<NovaWalletLedgerScreen> {
             ),
     );
   }
-}
-
-class _LedgerEntry {
-  final String id;
-  final String walletId;
-  final String type;
-  final double amount;
-  final String currency;
-  final String note;
-  final DateTime createdAt;
-
-  const _LedgerEntry({
-    required this.id,
-    required this.walletId,
-    required this.type,
-    required this.amount,
-    required this.currency,
-    required this.note,
-    required this.createdAt,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'walletId': walletId,
-        'type': type,
-        'amount': amount,
-        'currency': currency,
-        'note': note,
-        'createdAt': createdAt.toIso8601String(),
-      };
-
-  factory _LedgerEntry.fromJson(Map<String, dynamic> json) => _LedgerEntry(
-        id: json['id'] as String,
-        walletId: json['walletId'] as String,
-        type: json['type'] as String,
-        amount: (json['amount'] as num).toDouble(),
-        currency: json['currency'] as String,
-        note: json['note'] as String? ?? '',
-        createdAt: DateTime.parse(json['createdAt'] as String),
-      );
 }
