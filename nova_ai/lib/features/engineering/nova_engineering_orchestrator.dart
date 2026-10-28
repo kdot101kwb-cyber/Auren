@@ -144,7 +144,7 @@ class NovaEngineeringOrchestrator {
       'payment', 'transfer', 'publish', 'deploy', 'delete', 'secret',
       'credential', 'production', 'send message', 'send email', 'purchase',
       'نشر', 'حذف', 'دفع', 'تحويل', 'انتاج', 'مفتاح سري', 'اسرار',
-      'كلمة مرور', 'ارسال', 'ارسل', 'رفع', 'شراء', 'مسح', 'حذف حساب',
+      'كلمة مرور', 'ارسال', 'ارسل', 'رفع', 'شراء', 'مسح', 'احذف', 'حذف حساب', 'غير صلاحيات',
       'تغيير صلاحيات', 'نشر التطبيق', 'دمج',
     ];
     final mediumRiskTerms = [
