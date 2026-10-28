@@ -37,6 +37,30 @@ class _NovaEngineeringTeamScreenState extends State<NovaEngineeringTeamScreen> {
     }
   }
 
+  Future<void> _copyPlan(NovaEngineeringAssignment assignment) async {
+    final roleNames = assignment.roles.map((role) {
+      return NovaEngineeringOrchestrator.departments
+          .firstWhere((department) => department.role == role)
+          .name;
+    });
+    final brief = [
+      'NOVA — موجز المهمة الهندسية',
+      '',
+      'المهمة: ${assignment.goal}',
+      'مستوى المخاطر: ${_riskLabel(assignment.risk)}',
+      'الأدوار: ${roleNames.join('، ')}',
+      '',
+      'بوابة الموافقة: مطلوبة قبل أي تعديل فعلي أو تشغيل أوامر أو نشر أو دمج.',
+      'معايير القبول: فحص الملفات الفعلية، تنفيذ تغييرات محدودة، تشغيل الاختبارات المناسبة، إرفاق النتائج، ومراجعة الفرق.',
+      'الحالة: خطة فقط؛ لم يتم تنفيذ الكود ولم يتم التحقق من نجاح الاختبارات.',
+    ].join('\\n');
+    await Clipboard.setData(ClipboardData(text: brief));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('نُسخ موجز المهمة إلى الحافظة. لم يبدأ التنفيذ الفعلي.')),
+    );
+  }
+
   String _riskLabel(NovaEngineeringRisk risk) => switch (risk) {
         NovaEngineeringRisk.low => 'منخفض',
         NovaEngineeringRisk.medium => 'متوسط',
@@ -142,6 +166,12 @@ class _NovaEngineeringTeamScreenState extends State<NovaEngineeringTeamScreen> {
                 ),
               );
             }),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => _copyPlan(assignment),
+              icon: const Icon(Icons.copy_all_outlined),
+              label: const Text('نسخ موجز المهمة ومعايير القبول'),
+            ),
             const SizedBox(height: 8),
             const Card(
               child: ListTile(
