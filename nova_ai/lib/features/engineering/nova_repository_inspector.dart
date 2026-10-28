@@ -55,7 +55,7 @@ class NovaRepositoryInspector {
       throw const NovaRepositoryInspectionException('نوع الملف أو صيغة الاستجابة غير مدعومة.');
     }
 
-    final bytes = base64.decode((decoded['content'] as String).replaceAll(RegExp(r'\\s'), ''));
+    final bytes = base64.decode((decoded['content'] as String).replaceAll(RegExp(r'\s'), ''));
     if (bytes.length > maxFileBytes) {
       throw const NovaRepositoryInspectionException('الملف أكبر من الحد المسموح للمعاينة (300 KiB).');
     }
