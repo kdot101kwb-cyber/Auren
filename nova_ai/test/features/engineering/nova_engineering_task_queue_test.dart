@@ -24,6 +24,8 @@ void main() {
     expect(loaded.single.roles, contains(NovaEngineeringRole.flutterUi.name));
     expect(loaded.single.status, NovaEngineeringTaskStatus.planned.name);
     expect(loaded.single.requiresHumanApproval, isTrue);
+    expect(loaded.single.acceptanceCriteria, contains('فحص الملفات الفعلية وتحديد نطاق التغيير قبل التعديل.'));
+    expect(loaded.single.acceptanceCriteria, contains('التحقق من نتيجة بناء Android/CI إن كانت البيئة متاحة.'));
   });
 
   test('status updates are persisted and unknown task ids are rejected', () async {
