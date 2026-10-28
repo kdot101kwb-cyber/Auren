@@ -3,6 +3,7 @@ import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 
 import 'nova_engineering_orchestrator.dart';
 import 'nova_engineering_task_queue.dart';
+import 'nova_repository_inspector_screen.dart';
 
 class NovaEngineeringTeamScreen extends StatefulWidget {
   const NovaEngineeringTeamScreen({super.key});
@@ -161,6 +162,16 @@ class _NovaEngineeringTeamScreenState extends State<NovaEngineeringTeamScreen> {
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const NovaRepositoryInspectorScreen(),
+              ),
+            ),
+            icon: const Icon(Icons.source_outlined),
+            label: const Text('فحص ملفات AUREN الفعلية (قراءة فقط)'),
           ),
           const SizedBox(height: 16),
           TextField(
