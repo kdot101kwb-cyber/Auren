@@ -5,27 +5,28 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
-const {
-  doc, setDoc, getDoc, updateDoc, deleteDoc, runTransaction, getFirestore, Timestamp,
-} = require('firebase/firestore');
+const firebase = require('firebase/compat/app');
+require('firebase/compat/firestore');
+const Timestamp = firebase.firestore.Timestamp;
 
-// Use the modular Firestore SDK from the same pinned Firebase release as
-// @firebase/rules-unit-testing. Avoid compat APIs and duplicate internal SDKs.
+// Rules Unit Testing v3 exposes the compat Firestore instance on each context.
+// Using context.firestore() avoids looking up an unregistered modular component
+// on context.getApp(), which caused "Service firestore is not available".
 function testDb(context) {
-  const db = getFirestore(context.getApp());
+  const db = context.firestore();
   return {
     doc(path) {
-      const ref = doc(db, path);
+      const ref = db.doc(path);
       return {
         _ref: ref,
-        get: () => getDoc(ref),
-        set: (data) => setDoc(ref, data),
-        update: (data) => updateDoc(ref, data),
-        delete: () => deleteDoc(ref),
+        get: () => ref.get(),
+        set: (data) => ref.set(data),
+        update: (data) => ref.update(data),
+        delete: () => ref.delete(),
       };
     },
     runTransaction(updateFunction) {
-      return runTransaction(db, (transaction) => updateFunction({
+      return db.runTransaction((transaction) => updateFunction({
         get: (ref) => transaction.get(ref._ref),
         update: (ref, data) => transaction.update(ref._ref, data),
       }));
