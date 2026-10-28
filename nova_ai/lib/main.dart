@@ -10,6 +10,7 @@ import 'features/debate/nova_debate_screen.dart';
 import 'features/revenue/nova_revenue_engine_screen.dart';
 import 'features/opportunities/global_opportunity_radar_screen.dart';
 import 'features/auren_workspace/nova_auren_workspace_screen.dart';
+import 'features/comedy/nova_comedy_studio_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -132,6 +133,7 @@ class _NovaHomeState extends State<NovaHome> {
       const NovaRevenueEngineScreen(),
       const GlobalOpportunityRadarScreen(),
       NovaAurenWorkspaceScreen(onOpenBuilder: () => setState(() => tab = 9)),
+      const NovaComedyStudioScreen(),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -149,6 +151,7 @@ class _NovaHomeState extends State<NovaHome> {
               PopupMenuItem(value: 9, child: Text('بناء التطبيقات')),
               PopupMenuItem(value: 11, child: Text('الرادار العالمي للفرص')),
               PopupMenuItem(value: 12, child: Text('مساحة NOVA الخاصة بـ AUREN')),
+              PopupMenuItem(value: 13, child: Text('NOVA Comedy Studio')),
             ],
           ),
           IconButton(onPressed: () => showAboutDialog(context: context, applicationName: 'NOVA AI', applicationVersion: '0.2.0', children: const [Text('نسخة أولية قيد التحقق. بعض الأدوات تحتاج ربط خدمات وخادم آمن.')]), icon: const Icon(Icons.info_outline)),
