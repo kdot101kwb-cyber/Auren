@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nova_ai/features/engineering/nova_engineering_team_screen.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
   testWidgets('engineering team screen lists departments', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: NovaEngineeringTeamScreen()));
 
