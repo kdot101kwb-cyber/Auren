@@ -201,5 +201,54 @@ Brief -> Idea Demon generates divergent concepts -> Trend Alchemist and Fact & S
 - Keep a human approval gate for account connections, first live posts, sensitive topics, unclear rights, spending, and irreversible actions.
 - Measure creativity with diversity, originality checks, brand fit, factuality, production feasibility and audience results—not by how shocking a concept sounds.
 
+## NOVA Creative Chaos Engine — expanded creative system
+This layer extends the 25-agent roster with creative strategy, production, growth, and coordination capabilities. These are proposed agent roles and workflows, not a claim that separate live AI models or autonomous services already exist. They may initially be implemented as deterministic workflows that call available tools only when configured.
+
+### Additional specialist roles (26–41)
+26. **Dream Engine** — expand a brief into many genuinely different creative directions, remove near-duplicates, and select a manageable shortlist based on brand fit, originality, feasibility, and review results. Output count is configurable and limited by available resources.
+27. **Council of Chaos** — stage a structured debate among proposer, skeptic, editor, feasibility reviewer, and safety reviewer; return a decision with evidence, dissent and unresolved questions.
+28. **What-If Reactor** — combine distant themes (e.g., science + sports + comedy) into distinct brand-appropriate concepts without confusing fact with fiction.
+29. **Idea Evolution Lab** — preserve version history and rationale as ideas are revised, including why variants were rejected and which evidence changed the decision.
+30. **One Idea, Many Worlds** — adapt a core idea into platform-appropriate formats such as short video, meme, carousel, story, longer script and separate Arabic/English versions; every adaptation must be meaningfully localized.
+31. **Character Forge** — create original character bibles with stable names, visual traits, voice, behavior, continuity and rights/provenance notes for recurring series.
+32. **Auto-Edit Director** — prepare edit decision lists, shot order, subtitle timing, pacing and audio instructions; mark a media file as created only after the output exists and validation succeeds.
+33. **Thumbnail War Room** — produce distinct thumbnail/title briefs and assess clarity, relevance and truthfulness; use real controlled experiments when analytics are available.
+34. **Global Signal Hunter** — discover trends and audience questions only through permitted sources; attach source, timestamp, region, confidence and expiry to every time-sensitive claim.
+35. **Viral Pattern Detective** — compare successful content patterns using authorized metrics and publication-age context; report uncertainty and never promise virality.
+36. **Opportunity-to-Content** — translate a verified user need or emerging tool into a content series and, where appropriate, a testable product/service hypothesis with costs and risks.
+37. **Growth Hacker Lab** — design small experiments on format, language, hook and timing; avoid spam, fake engagement, engagement bait that violates platform rules, and unsupported conclusions.
+38. **Cross-Brand Collaboration Network** — suggest collaborations across brands while preserving their separate identities, account assignments and approval requirements.
+39. **Content Court** — provide independent factuality, originality, rights, language, privacy, cultural-context and platform-policy reviews; unresolved high-risk findings block scheduling.
+40. **Experiment Memory** — store verified outcomes, failures, hypotheses and confidence; prevent a single result from being treated as a universal rule.
+41. **Factory Orchestrator** — allocate tasks by capability, priority, deadlines and budget; suppress duplicate work, cap retries and concurrent tasks, detect loops and honor the global stop switch.
+
+### Required Council of Chaos protocol
+- The proposer creates a brief and at least three distinct approaches when resources permit.
+- The skeptic identifies weak assumptions, audience mismatch, derivative elements and likely failure modes.
+- The source/fact reviewer verifies claims and flags unknowns.
+- The producer estimates the actual assets, tools, time and permissions needed.
+- The safety/rights reviewer can block the workflow; no creative agent can overrule this gate.
+- The final selector records the chosen approach, rejected alternatives, evidence, confidence and owner-review requirement.
+- If evidence is insufficient, the correct outcome is a labelled hypothesis or a request for research—not invented certainty.
+
+### Production-ready content package
+For each approved draft, prepare a package with: brand ID; platform and format; target language/region; audience need; multiple title/hook candidates; script/caption; shot list or image brief; subtitle/accessibility plan; thumbnail brief; call to action where appropriate; source links and fact checks; asset provenance and rights status; policy-review result; production checklist; and experiment hypothesis.
+Distinguish clearly between an instruction/brief, a generated asset, a validated file, a scheduled job and a verified published post. Never mark a later stage complete merely because an earlier stage exists.
+
+### Creativity, cost and control constraints
+- Optimize for diversity, originality, audience value, brand fit, factuality, feasibility and measured outcomes—not shock value alone.
+- Generate many ideas in bounded batches; enforce task budgets, deadlines, concurrency limits, duplicate detection and finite retries.
+- Prefer local deterministic operations and available free-tier tools first. Before any external model/API is enabled, record provider, free-tier limits, privacy/data handling, cost risk and fallback. Never silently incur charges.
+- Keep private account credentials and OAuth secrets out of the app client, local draft preferences, logs and repository.
+- Owner approval remains required for account connection, the first live post per account/platform, unclear content rights, sensitive topics, spending and irreversible actions. All account-level and global stop controls take precedence.
+- Do not scrape private sources, impersonate people, manufacture engagement, evade rate limits, copy copyrighted media without rights, or fabricate trend/performance data.
+
+### Staged implementation
+1. **Stage A — registry and dry-run:** define role schemas, task states, agent capability registry, deterministic handoffs, event logs and stop switch; no network calls required.
+2. **Stage B — creative package:** add brief-to-ideas-to-review-to-content-package workflow, bilingual variants and local persistence; test duplicate suppression, failure handling and accurate state reporting.
+3. **Stage C — tools:** integrate one approved model or media tool at a time after checking free-tier availability, privacy, cost, and output validation.
+4. **Stage D — measured learning:** connect authorized analytics, run controlled experiments, and store evidence-backed lessons.
+5. **Stage E — guarded publishing:** only after official adapter verification, valid scopes, policy checks, dry-run tests and an owner-approved test post.
+
 ## Department status truthfulness
 Until each module is implemented and tested in the actual NOVA codebase, these departments are specifications rather than live autonomous agents. Trend monitoring requires an actual data source; production requires a verified media-generation/export path; analytics and monetization require authorized data and eligibility evidence. The dashboard must display each module's real state (planned, local-only, connected, verified, blocked, or failed), never a simulated success.
