@@ -5,9 +5,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
-const firebase = require('firebase/compat/app');
+require('firebase/compat/app');
 require('firebase/compat/firestore');
-const Timestamp = firebase.firestore.Timestamp;
+const { Timestamp } = require('firebase/firestore');
 
 // Rules Unit Testing v3 exposes the compat Firestore instance on each context.
 // Using context.firestore() avoids looking up an unregistered modular component
