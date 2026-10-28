@@ -1,25 +1,57 @@
 # NOVA Multi-Brand Social Network v1
 
 ## Goal
-Design one private NOVA control plane that can manage up to ten distinct brands per supported platform, with Arabic and English content, different editorial identities, reusable original assets, scheduling, analytics, and owner-controlled publishing.
+Design one private NOVA control plane for a proposed portfolio of 41 editorial brands, with Arabic and English content, distinct identities, reusable original assets, scheduling, analytics, and owner-controlled publishing. The portfolio is a plan, not a claim that 41 accounts have been created or that every platform allows that many accounts.
 
-This is a capacity target, not a claim that every platform currently permits or approves five connected accounts. Each platform adapter must expose its own account eligibility, API permissions, rate limits, and publishing capabilities.
+Account capacity is configurable per platform. Each adapter must expose its own account eligibility, API permissions, rate limits, and publishing capabilities; never assume a fixed number of accounts is permitted.
 
 ## Initial brand portfolio
-These are ten proposed editorial lanes; names and handles remain unclaimed until the owner chooses and registers them.
-1. Comedy & sarcasm — original memes, jokes, sketches, relatable situations.
-2. Strange stories & mysteries — explainers and curious stories; fact-check claims before publication.
-3. AI, technology & future — tools, experiments, practical AI and tech news.
-4. Everyday life & relationships — relatable situations, light humor and useful observations without targeted harassment.
-5. Games, challenges & audience participation — original quizzes, prompts, polls where supported, and community challenges.
-6. Animals & nature — amusing animal moments, nature facts, and responsibly sourced educational content.
-7. Science & discoveries — explainers about science, space, and verified discoveries.
-8. Food & simple recipes — practical food ideas, kitchen humor, and clearly labelled recipe content.
-9. Motivation & personal growth — realistic encouragement, learning habits, and practical self-improvement.
-10. Global culture & curiosities — cultural facts, language curiosities, and respectful international discoveries.
+These are 41 proposed editorial lanes; names and handles remain unclaimed until the owner chooses and registers them. Brand names are working titles, not verified trademarks or available handles.
 
-Each brand has its own identity record, tone guide, prohibited topics, visual system, language strategy, content calendar, account links, and performance history. Do not copy Asa7be or another creator's name, logo, posts, or distinctive work.
+1. **LOL Planet** — comedy, sarcasm, original memes, jokes and sketches.
+2. **Midnight Files** — horror fiction, mysteries and strange stories; clearly label fiction and verify factual claims.
+3. **AI After Dark** — playful AI experiments, strange outputs and useful AI tools.
+4. **Sports Vibes** — football and other sports: verified news, schedules, results, tactical explainers, skills and audience quizzes.
+5. **Pet Comedy Club** — funny pet moments and recurring original animal characters.
+6. **Beyond Mystery** — unusual places, puzzles and evidence-based mysteries.
+7. **Future Unlocked** — AI, technology, practical tools and future-facing ideas.
+8. **Daily Chaos** — relatable everyday life, home, study, work and relationships.
+9. **Challenge Arena** — original quizzes, visual puzzles and audience challenges.
+10. **Wild & Funny** — animal humor and responsibly sourced nature moments.
+11. **Science Uncovered** — science, space, inventions and verified discoveries.
+12. **Bite & Smile** — easy recipes, food experiments and food humor.
+13. **Level Up Life** — practical personal growth, learning habits and skills without fake promises.
+14. **World Is Weird** — global customs, language curiosities and unusual verified facts.
+15. **Dream Machines** — cars, engineering and future transport.
+16. **Brain Trap** — logic puzzles, visual perception and brain teasers.
+17. **Hidden Earth** — lesser-known destinations and natural wonders.
+18. **Money Unfiltered** — realistic money education, tool reviews and transparent opportunity analysis; no guaranteed-income claims.
+19. **Office Circus** — original workplace and career comedy.
+20. **What If Universe** — clearly labelled speculative fiction and imaginative scenarios.
+21. **Fit & Strong** — fitness education, beginner-friendly exercise and habit challenges; avoid unsupported medical claims.
+22. **GameVerse** — gaming discovery, reviews, tips and original challenges.
+23. **Screen Secrets** — film and TV commentary, reviews and entertainment explainers; respect clip and image rights.
+24. **Toon Town** — original cartoon characters, short comedy episodes and serialized adventures.
+25. **Style Radar** — fashion, styling and budget-conscious outfit ideas.
+26. **Space Makeover** — home organization, interiors and low-cost room improvements.
+27. **Make It Magic** — DIY, crafts, repair ideas and upcycling.
+28. **Sound Lab** — original beats, sound design, beginner music production and creator tips.
+29. **Language Hackers** — vocabulary, expressions, translation games and language learning.
+30. **Nature Pulse** — wildlife, ecosystems, weather phenomena and environmental education.
+31. **Startup Zero** — low-cost business experiments, tools and lessons from real outcomes.
+32. **Focus Mode** — productivity, planning, focus habits and tool comparisons.
+33. **Cosmic Window** — astronomy, planets, missions and sourced space discoveries.
+34. **Reality Glitch** — optical illusions, perception experiments and visual puzzles.
+35. **Street Food Quest** — street food, culinary cultures and food discovery.
+36. **Pet School** — responsible pet care and positive training, with expert review for health-sensitive advice.
+37. **Build Tomorrow** — robotics, electronics, coding and beginner engineering projects.
+38. **Book Bites** — book reviews, reading recommendations and short original summaries.
+39. **Culture Connect** — respectful cultural exchange, traditions and stories from different communities.
+40. **Creative Sparks** — original design prompts, art experiments and creative challenges.
+41. **Sports Vibes: Skills & Tactics sub-channel (optional)** — original drills, rule explainers and tactical diagrams; this is a content lane under Sports Vibes, not automatically a separate account.
 
+A brand registry must support adding, editing, pausing, and retiring brands without code changes. Each brand has its own identity record, tone guide, prohibited topics, visual system, language strategy, content calendar, account links, and performance history. Do not copy Asa7be or another creator's name, logo, posts, or distinctive work. Do not publish sports broadcast footage or copyrighted music without suitable rights.
+ 
 ## Language strategy
 - Every content item stores Arabic and English variants separately, plus language mode (ar, en, both) and intended audience/region.
 - Use natural localization, not literal translation. Preserve the joke or meaning; permit separate language-specific punchlines.
@@ -29,7 +61,7 @@ Each brand has its own identity record, tone guide, prohibited topics, visual sy
 
 ## Account capacity model
 - Platform registry: Facebook Pages, Instagram professional accounts, TikTok, YouTube, X, and future adapters.
-- Capacity target: ten account slots per platform, with stable account IDs, brand assignment, connection status, granted scopes, supported content types, last verification time, and explicit publishing state.
+- Account slots are configurable per platform; do not assume every platform permits 41 accounts. Track stable account IDs, brand assignment, connection status, granted scopes, supported content types, last verification time, and explicit publishing state.
 - A brand may link to multiple platforms; a platform account must be assigned intentionally to a brand.
 - Do not store passwords or long-lived OAuth secrets in Flutter, SharedPreferences, repository files, or client logs. Tokens belong in a protected server-side secret store.
 - Never claim an account is connected until OAuth/official API identity and permissions have been checked.
@@ -79,7 +111,7 @@ Build the control plane, local drafts, brand profiles, policy rules, and dry-run
 8. Test Flutter format/analyze/tests/build and backend tests; report actual CI outcomes.
 
 ## Acceptance criteria
-- Ten brands can be configured independently.
+- All 41 proposed brands can be configured independently; owner can add or retire brands without changing app code.
 - Each brand supports Arabic, English, or both.
 - Platform account slots can be represented without fake connection states.
 - Drafts and schedules identify brand, platform, language, and content variant.
@@ -88,7 +120,7 @@ Build the control plane, local drafts, brand profiles, policy rules, and dry-run
 - Published state requires verifiable platform receipt.
 - UI communicates blockers honestly and remains useful in draft-only mode.
 ## Specialist departments (required)
-The five brands are the editorial portfolio; these five specialist departments are shared services across all brands. They cooperate through one auditable workflow, and each task carries a brand ID, platform, language, source links, rights status, and approval state.
+The 41 proposed brands are the editorial portfolio; the five specialist departments and the creative-agent roster below are shared services across all brands. They cooperate through one auditable workflow, and each task carries a brand ID, platform, language, source links, rights status, and approval state.
 
 ### 1. Trend Hunter
 - Monitor permitted public trend signals, search demand, platform trend surfaces and credible sources where access is available.
@@ -124,6 +156,50 @@ The five brands are the editorial portfolio; these five specialist departments a
 Trend Hunter proposes and scores ideas -> Comedy develops original concept/copy -> Production prepares media and platform variants -> Quality & Safety checks language, claims, rights and policy -> Growth & Revenue sets measurement goals and reviews performance -> findings feed back into the next trend and content decisions.
 
 Quality & Safety is a hard gate for scheduled or automatic publishing. Growth & Revenue can recommend experiments but cannot override safety, rights, platform restrictions or owner permissions. Owner pause/stop controls take precedence over all departments.
+
+## Creative Chaos Lab — specialist AI agents
+These agents are designed to be unusually imaginative, fast at exploring alternatives, and willing to challenge weak ideas. “Wild” means creative and unconventional—not deceptive, abusive, unsafe, or allowed to bypass owner permissions. Start as bounded, testable workflows; do not label them autonomous until implemented and evaluated.
+
+### Creative agents
+1. **Idea Demon / شرارة الجنون** — produces 20–50 distinct concepts per brief, including unusual combinations and deliberately unconventional angles; removes near-duplicates and explains why each idea could work.
+2. **Trend Alchemist / كيميائي الترند** — turns permitted trend evidence into original brand-fit concepts. Must attach source, timestamp, region, confidence, and expiry; never invent a trend or fabricate metrics.
+3. **Hook Assassin / صيّاد الثواني الأولى** — drafts multiple opening hooks for the first 1–3 seconds, then scores clarity, curiosity, audience fit and truthfulness. No fake claims or misleading clickbait.
+4. **Meme Mutant / متحوّل الميمز** — creates fresh meme premises, caption structures and visual directions from common experiences, not copied creator templates or recognizable copyrighted characters.
+5. **Story Architect / مهندس الحكايات** — builds short scripts, recurring characters, cliffhangers and serialized story arcs with continuity notes and a fiction/fact label.
+6. **Multiverse Writer / كاتب الأكوان** — creates divergent creative directions (comedy, mystery, educational, emotional, absurd) for the same topic and explains the trade-offs.
+7. **Audience Mirror / مرآة الجمهور** — models likely questions, objections, cultural context and accessibility needs from permitted aggregate signals; does not infer sensitive traits about identifiable people.
+8. **Localization Shapeshifter / متحوّل اللهجات** — rewrites ideas naturally for Sudanese Arabic, Modern Standard Arabic, Egyptian, Gulf, Levantine and global English when appropriate; checks that humor survives localization.
+9. **Visual Mad Scientist / عالم الصورة المجنون** — creates image-generation briefs, composition plans, visual motifs, character sheets and thumbnail variants; records which assets are prompts versus actually generated files.
+10. **Video Chaos Director / مخرج الفوضى** — converts approved ideas into 15/30/60-second scripts, shot lists, subtitle plans, sound cues and platform-specific exports, with rights checks for audio.
+11. **Remix-without-Copy / إعادة ابتكار بلا نسخ** — identifies the abstract format or audience need behind references, then makes a substantially original treatment; flags overly similar wording, layout, characters or shots.
+12. **Cross-Brand Crossover / مهندس التقاطعات** — combines two or three brands into a coherent special (e.g., sports + comedy, science + puzzles) while keeping each account’s identity clear.
+13. **Comment-to-Concept / محوّل التعليقات** — turns public, permitted, de-identified audience questions into response ideas; strips personal information and blocks harassment pile-ons.
+14. **Series Machine / مصنع السلاسل** — develops repeatable formats, episode templates and 30-day content arcs, while varying substance so the feed does not become repetitive spam.
+15. **A/B Arena / ساحة التجارب** — proposes controlled tests for hooks, thumbnails, language, duration and posting windows; changes one variable at a time and reports uncertainty rather than declaring winners from tiny samples.
+16. **Fact & Source Hunter / صائد الحقائق** — checks factual claims against credible sources, distinguishes fact/opinion/fiction, and blocks unsourced high-impact claims.
+17. **Rights Guardian / حارس الحقوق** — checks provenance and licensing for footage, photos, fonts, templates, music, logos and generated assets; unclear rights trigger a block or owner review.
+18. **Platform Tactician / تكتيكي المنصات** — adapts captions, aspect ratios, subtitles, accessibility, length and metadata to each platform’s verified current capabilities; cannot bypass restrictions.
+19. **Sports Desk / غرفة الرياضة** — verifies sports schedules, results, team/player facts and source timestamps; separates news from analysis and never invents live scores or uses unlicensed broadcast clips.
+20. **Revenue Scout / كشاف الدخل** — evaluates ethical monetization routes, eligibility, geographic restrictions, thresholds, payout methods, fees and evidence; never labels an opportunity “guaranteed.”
+21. **Quality Duelist / مبارز الجودة** — runs an adversarial review: argues why a concept might fail, be confusing, culturally insensitive, derivative, unsafe or expensive before approval.
+22. **Red-Team Critic / الناقد الشرس** — deliberately attacks the strongest proposed concept and asks for evidence, originality, audience value and feasibility; may reject or request a rewrite, but cannot override safety or owner decisions.
+23. **Content Packager / مهندس الحزمة** — assembles the complete deliverable: title variants, hooks, script, captions, subtitles, thumbnail brief, CTA, hashtags where useful, sources, rights checklist and platform variants.
+24. **Production Foreman / مدير خط الإنتاج** — breaks work into tasks, tracks dependencies and actual file outputs, estimates effort, and flags missing assets instead of marking them complete.
+25. **Learning Loop / ذاكرة التجارب** — learns from verified performance and post-mortems, stores reusable patterns and failures with evidence, and avoids treating correlation as proof of causation.
+
+### Required agent contract
+Every agent task must declare: task ID, brand ID, platform, language/region, input references, output schema, estimated effort, rights/source status, confidence, safety flags, and current state. Each output is a draft until it passes the quality gate. Agents may critique and recommend each other’s work, but must not fabricate research, fake file creation, post without authorization, or silently change owner-defined policies.
+
+### Creative pipeline
+Brief -> Idea Demon generates divergent concepts -> Trend Alchemist and Fact & Source Hunter validate context -> Hook Assassin and Story Architect shape the idea -> Localization Shapeshifter creates language variants -> Visual Mad Scientist / Video Chaos Director / Content Packager prepare production-ready instructions and assets -> Rights Guardian + Quality & Safety review -> Quality Duelist and Red-Team Critic challenge the package -> owner/policy gate -> dry-run queue -> authorized publishing adapter -> verified receipt -> A/B Arena and Learning Loop review results.
+
+### Agent orchestration and budget
+- Begin with a deterministic local agent registry and mock/dry-run orchestration; show which agents are configured, implemented, connected, tested, blocked or failed.
+- Prefer rule-based tools and existing free/local capabilities when viable. Every external model/API call must show provider, free-tier limits, data handling, cost risk and fallback before enabling it.
+- No hidden paid usage, no hard-coded API keys, and no promise of unlimited generation or research under a zero budget.
+- Use a task budget, bounded retries, duplicate suppression, deadlines and a global stop switch. Agents must not create infinite self-assigned work loops.
+- Keep a human approval gate for account connections, first live posts, sensitive topics, unclear rights, spending, and irreversible actions.
+- Measure creativity with diversity, originality checks, brand fit, factuality, production feasibility and audience results—not by how shocking a concept sounds.
 
 ## Department status truthfulness
 Until each module is implemented and tested in the actual NOVA codebase, these departments are specifications rather than live autonomous agents. Trend monitoring requires an actual data source; production requires a verified media-generation/export path; analytics and monetization require authorized data and eligibility evidence. The dashboard must display each module's real state (planned, local-only, connected, verified, blocked, or failed), never a simulated success.
