@@ -37,9 +37,9 @@ void main() {
     });
     final inspector = NovaRepositoryInspector(client: client);
 
-    expect(() => inspector.inspect('../README.md'), throwsArgumentError);
-    expect(() => inspector.inspect('nova_ai/../../README.md'), throwsArgumentError);
-    expect(() => inspector.inspect('.github/workflows/ci.yml'), throwsArgumentError);
+    await expectLater(inspector.inspect('../README.md'), throwsArgumentError);
+    await expectLater(inspector.inspect('nova_ai/../../README.md'), throwsArgumentError);
+    await expectLater(inspector.inspect('.github/workflows/ci.yml'), throwsArgumentError);
     expect(requests, 0);
     client.close();
   });
