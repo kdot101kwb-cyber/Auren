@@ -27,6 +27,21 @@ class _NovaEngineeringTeamScreenState extends State<NovaEngineeringTeamScreen> {
     _loadQueue();
   }
 
+  Future<void> _setTaskStatus(
+    NovaEngineeringQueuedTask task,
+    NovaEngineeringTaskStatus status,
+  ) async {
+    final updated = await _taskQueue.updateStatus(task.id, status);
+    if (!mounted) return;
+    if (!updated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر تحديث حالة المهمة.')),
+      );
+      return;
+    }
+    await _loadQueue();
+  }
+
   Future<void> _loadQueue() async {
     final tasks = await _taskQueue.load();
     if (!mounted) return;
@@ -238,14 +253,47 @@ class _NovaEngineeringTeamScreenState extends State<NovaEngineeringTeamScreen> {
             )
           else
             ..._queuedTasks.map((task) => Card(
-                  child: ListTile(
+                  child: ExpansionTile(
                     leading: const Icon(Icons.assignment_outlined),
                     title: Text(task.goal),
                     subtitle: Text(
                       'الحالة: ${_taskStatusLabel(task.status)} • المخاطر: ${task.risk == 'high' ? 'مرتفعة' : task.risk == 'medium' ? 'متوسطة' : 'منخفضة'}'
                       '\nموافقة المالك مطلوبة: ${task.requiresHumanApproval ? 'نعم' : 'لا'}',
                     ),
-                    isThreeLine: true,
+                    childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    children: [
+                      const Align(
+                        alignment: Alignment.centerRight,
+                        child: Text('معايير القبول', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      ...task.acceptanceCriteria.map((criterion) => ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.checklist_outlined),
+                            title: Text(criterion),
+                          )),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          OutlinedButton(
+                            onPressed: task.status == NovaEngineeringTaskStatus.awaitingApproval.name
+                                ? null
+                                : () => _setTaskStatus(task, NovaEngineeringTaskStatus.awaitingApproval),
+                            child: const Text('إرسال للمراجعة'),
+                          ),
+                          OutlinedButton(
+                            onPressed: task.status == NovaEngineeringTaskStatus.blocked.name
+                                ? null
+                                : () => _setTaskStatus(task, NovaEngineeringTaskStatus.blocked),
+                            child: const Text('إيقاف المهمة'),
+                          ),
+                        ],
+                      ),
+                      const Text(
+                        'تغيير الحالة لا يشغّل الكود ولا يمنح إذناً بالتنفيذ أو الدمج.',
+                        textAlign: TextAlign.right,
+                      ),
+                    ],
                   ),
                 )),
           const SizedBox(height: 20),
