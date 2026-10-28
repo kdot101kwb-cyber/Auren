@@ -45,6 +45,7 @@ class NovaEngineeringTaskQueue {
       status: NovaEngineeringTaskStatus.planned.name,
       createdAt: DateTime.now().toUtc().toIso8601String(),
       requiresHumanApproval: assignment.requiresHumanApproval,
+      acceptanceCriteria: _criteriaFor(assignment),
     );
     final updated = [task, ...existing].take(100).toList(growable: false);
     await store.setString(
@@ -52,6 +53,28 @@ class NovaEngineeringTaskQueue {
       jsonEncode(updated.map((item) => item.toJson()).toList()),
     );
     return task;
+  }
+
+  List<String> _criteriaFor(NovaEngineeringAssignment assignment) {
+    final criteria = <String>[
+      'فحص الملفات الفعلية وتحديد نطاق التغيير قبل التعديل.',
+      'تقديم فرق واضح يشرح كل تغيير مقترح.',
+      'تشغيل الاختبارات المناسبة وإرفاق النتيجة الفعلية.',
+      'مراجعة الأمان وعدم دمج التغيير دون موافقة المالك.',
+    ];
+    if (assignment.roles.contains(NovaEngineeringRole.flutterUi)) {
+      criteria.add('التحقق من حالات الواجهة الأساسية وإمكانية الوصول.');
+    }
+    if (assignment.roles.contains(NovaEngineeringRole.backendApi)) {
+      criteria.add('التحقق من معالجة الأخطاء وحدود الصلاحيات في API.');
+    }
+    if (assignment.roles.contains(NovaEngineeringRole.buildRelease)) {
+      criteria.add('التحقق من نتيجة بناء Android/CI إن كانت البيئة متاحة.');
+    }
+    if (assignment.roles.contains(NovaEngineeringRole.security)) {
+      criteria.add('فحص الأسرار والصلاحيات والمدخلات الحساسة.');
+    }
+    return criteria;
   }
 
   Future<bool> updateStatus(String id, NovaEngineeringTaskStatus status) async {
@@ -84,6 +107,7 @@ class NovaEngineeringQueuedTask {
     required this.status,
     required this.createdAt,
     required this.requiresHumanApproval,
+    required this.acceptanceCriteria,
   });
 
   final String id;
@@ -93,6 +117,7 @@ class NovaEngineeringQueuedTask {
   final String status;
   final String createdAt;
   final bool requiresHumanApproval;
+  final List<String> acceptanceCriteria;
 
   NovaEngineeringQueuedTask copyWith({String? status}) =>
       NovaEngineeringQueuedTask(
@@ -103,6 +128,7 @@ class NovaEngineeringQueuedTask {
         status: status ?? this.status,
         createdAt: createdAt,
         requiresHumanApproval: requiresHumanApproval,
+        acceptanceCriteria: acceptanceCriteria,
       );
 
   Map<String, dynamic> toJson() => {
@@ -113,6 +139,7 @@ class NovaEngineeringQueuedTask {
         'status': status,
         'createdAt': createdAt,
         'requiresHumanApproval': requiresHumanApproval,
+        'acceptanceCriteria': acceptanceCriteria,
       };
 
   factory NovaEngineeringQueuedTask.fromJson(Map<String, dynamic> json) =>
@@ -124,5 +151,6 @@ class NovaEngineeringQueuedTask {
         status: json['status'] as String,
         createdAt: json['createdAt'] as String,
         requiresHumanApproval: json['requiresHumanApproval'] as bool,
+        acceptanceCriteria: (json['acceptanceCriteria'] as List<dynamic>).cast<String>(),
       );
 }
