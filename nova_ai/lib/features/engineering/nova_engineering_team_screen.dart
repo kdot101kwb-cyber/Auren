@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 
 import 'nova_engineering_orchestrator.dart';
 
@@ -53,7 +54,7 @@ class _NovaEngineeringTeamScreenState extends State<NovaEngineeringTeamScreen> {
       'بوابة الموافقة: مطلوبة قبل أي تعديل فعلي أو تشغيل أوامر أو نشر أو دمج.',
       'معايير القبول: فحص الملفات الفعلية، تنفيذ تغييرات محدودة، تشغيل الاختبارات المناسبة، إرفاق النتائج، ومراجعة الفرق.',
       'الحالة: خطة فقط؛ لم يتم تنفيذ الكود ولم يتم التحقق من نجاح الاختبارات.',
-    ].join('\\n');
+    ].join('\n');
     await Clipboard.setData(ClipboardData(text: brief));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
