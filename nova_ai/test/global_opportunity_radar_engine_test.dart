@@ -118,6 +118,36 @@ void main() {
       expect(result.map((e) => e.id), ['a']);
     });
 
+    test('prepares an editable content proposal and Sudan/payment checks', () {
+      final lead = GlobalOpportunityLead(
+        id: 'content-1', title: 'Social Media Content Writer',
+        description: 'Write short social media posts and scripts',
+        company: 'Example Studio', country: 'Worldwide', category: 'Content',
+        source: 'Test', url: 'https://example.com/job', language: 'English',
+        salary: '', remote: true,
+      );
+      final pack = prepareOpportunityWorkPack(lead);
+      expect(pack.proposalDraft, contains('Example Studio'));
+      expect(pack.sampleTask, contains('عينة'));
+      expect(pack.preparationPlan, contains('مسودة'));
+      expect(pack.checksBeforeApplying.any((item) => item.contains('السودان')), isTrue);
+      expect(pack.checksBeforeApplying.any((item) => item.contains('رسوماً')), isTrue);
+      expect(pack.toPlainText(), contains('ملف تحضير فرصة'));
+    });
+
+    test('prepares data work sample without implying customer data access', () {
+      final lead = GlobalOpportunityLead(
+        id: 'data-1', title: 'AI Data Annotation',
+        description: 'Label and categorize data for AI evaluation',
+        company: '', country: 'Location not stated', category: 'AI & Data',
+        source: 'Test', url: 'https://example.com/job', language: '',
+        salary: '', remote: true,
+      );
+      final pack = prepareOpportunityWorkPack(lead);
+      expect(pack.sampleTask, contains('بيانات اصطناعية'));
+      expect(pack.checksBeforeApplying.any((item) => item.contains('السودان')), isTrue);
+    });
+
     test('suggests practical NOVA assistance without claiming autonomous completion', () {
       final lead = GlobalOpportunityLead(
         id: 'ai-content-1', title: 'Arabic Social Media Content Writer',
