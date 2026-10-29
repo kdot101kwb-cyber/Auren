@@ -43,4 +43,20 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('nova.comedy_studio.queue.v1'), isNull);
   });
+  testWidgets('selects and persists the chosen brand ID', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: NovaComedyStudioScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.textContaining('AI After Dark').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('AI After Dark').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(1), 'A real AI tip');
+    await tester.tap(find.text('حفظ المسودة محلياً'));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    final queue = jsonDecode(prefs.getString('nova.comedy_studio.queue.v1')!) as List<dynamic>;
+    expect(queue.single['brand'], 'ai_after_dark');
+  });
 }
