@@ -1,39 +1,46 @@
 # NOVA Research Connectors — integration contract
 
-Status: adapter foundation only. No external provider is enabled by this change.
+Status: public job-search adapter implemented; CI verification is in progress. This does not yet claim that live providers were exercised in production or that a complete web-wide search UI is wired.
 
 ## Purpose
-Provide a small, provider-neutral Flutter contract so NOVA can later use Agent-Reach and complementary research tools without coupling the UI to Python services or exposing API keys in the APK.
+Provide a small provider-neutral contract for multi-source research while keeping authenticated provider credentials out of the Flutter APK.
 
-## Selected roles
-- **Agent-Reach:** candidate for access to supported public web/platform sources; validate its actual connectors and current setup requirements before deployment.
-- **Jina Reader:** optional page-to-text reader for a URL already discovered.
-- **GPT Researcher:** optional backend workflow for multi-source reports; not required for the first integration.
-- **Crawl4AI or Firecrawl:** defer until tests show the first two connectors cannot meet extraction needs. Avoid running two crawlers for the same job.
-- **DeerFlow:** defer; its multi-agent orchestration is unnecessary for the first reliable connector.
+## Enabled adapter
+- **Remotive public remote-jobs API:** query-based remote job listings.
+- **Arbeitnow public job-board API:** public listings filtered locally against query terms.
+- Both adapters are read-only and do not require API keys in the mobile client. Each response is timed out, parsed defensively, and restricted to HTTPS result links on the expected source host.
+- If one source is unavailable, results from the other source can still be returned. If both fail, the adapter reports source unavailability rather than pretending that an empty response means success.
+
+## Deferred candidates
+- **Agent-Reach:** assess specific supported connectors and deployment requirements before enabling.
+- **Jina Reader:** optional page-to-text extraction for a URL already discovered.
+- **GPT Researcher:** optional backend workflow for larger multi-source reports.
+- **Crawl4AI / Firecrawl / DeerFlow:** defer until measured needs justify the additional deployment and operating burden.
 
 ## Data flow
-1. Flutter submits a bounded query to an authenticated backend.
-2. Backend selects an explicitly enabled connector and applies timeout, response-size limits, rate limits, and secret redaction.
-3. Connector returns title, HTTPS URL, snippet, source identifier and timestamps.
-4. Flutter normalizes results, drops unsafe URLs and duplicates, and displays citations.
-5. NOVA treats page text as untrusted evidence, never as instructions. Any action such as applying, posting, writing to GitHub, or spending money requires a separate permission gate.
+1. ResearchService.publicOpportunitySources() creates the public job-search adapter.
+2. ResearchQuery validates and bounds the query and requested result count.
+3. The adapter queries both public APIs with a timeout and checks response size/status.
+4. normalizeResearchResults rejects unusable or unsafe results, removes duplicate URLs, and caps the output.
+5. The UI should display the source and listing URL as evidence; eligibility, pay, and availability must not be inferred when the listing does not state them.
+6. NOVA treats returned page text as untrusted data, never as instructions. Applying, posting, writing to GitHub, or spending money requires a separate permission gate.
 
-## Contract implemented
-- `ResearchQuery`: trims and bounds query text and result count.
-- `ResearchResult`: source-backed record with HTTPS URL validation.
-- `ResearchConnector`: typed interface for future adapters.
-- `normalizeResearchResults`: removes unusable records, deduplicates URLs and caps output.
+## Implemented
+- ResearchQuery: validates query text and result count.
+- ResearchResult: validates HTTPS URLs and source identifiers.
+- ResearchConnector: provider-neutral interface.
+- ResearchService: isolates connector failures and reports attempted/successful sources.
+- PublicOpportunityResearchConnector: public Remotive and Arbeitnow job-source adapter.
+- Unit tests for result aggregation, URL validation, source failures, healthy empty results, query bounds, and response-size limits.
 
-## Not implemented yet
-- No Agent-Reach/Jina/GPT Researcher HTTP endpoint.
-- No provider credentials, network requests, scraping or live market claims.
-- No changes to existing Opportunity Radar providers.
-- No autonomous GitHub writes, posting, account creation or job applications.
+## Not yet claimed
+- No live production endpoint test has been performed as part of these unit tests; mock HTTP tests validate request handling and parsing.
+- This adapter is focused on public job listings, not a universal search across every website, social platform, language, or market.
+- No authenticated/paid provider credentials, scraping browser, or general-purpose research-agent endpoint is enabled.
+- The adapter does not apply for jobs, publish content, create accounts, or write to GitHub.
 
-## Next verification gates
-1. Run `flutter pub get`, `flutter analyze`, and `flutter test` from `nova_ai/`.
-2. Review the CI result on this branch.
-3. Add a backend connector only after identifying the deployed backend and its auth/rules.
-4. Add integration tests using a fake connector before enabling any real network source.
-5. Keep this branch unmerged until the repository owner reviews the diff and CI.
+## Verification gates
+1. flutter pub get, flutter analyze, and flutter test pass for nova_ai/.
+2. The latest nova_flutter_ci succeeds on this branch.
+3. Inspect the latest commit's full CI status and investigate failures rather than assuming pending checks are green.
+4. Keep the PR unmerged until the repository owner reviews the changes.
