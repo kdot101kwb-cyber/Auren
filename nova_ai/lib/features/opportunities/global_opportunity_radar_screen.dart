@@ -91,10 +91,11 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
       final arbeitnowRequest = _fetchArbeitnow(all);
       final himalayasQuery = rawQuery.isNotEmpty ? rawQuery : (localized.isNotEmpty ? localized : 'remote work');
       final himalayasRequest = _fetchHimalayas(himalayasQuery, all);
+      final jobicyRequest = _fetchJobicy(himalayasQuery, all);
       for (final query in queries.take(3)) {
         await _fetchRemotive(query, all);
       }
-      await Future.wait([arbeitnowRequest, himalayasRequest]);
+      await Future.wait([arbeitnowRequest, himalayasRequest, jobicyRequest]);
       final ranked = rankGlobalLeads(all, query: rawQuery, country: _country, region: _region);
       if (!mounted) return;
       setState(() {
@@ -141,6 +142,30 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
       final jobs = payload is Map && payload['jobs'] is List ? payload['jobs'] as List : const [];
       into.addAll(jobs.whereType<Map>().map((item) => parseRemotiveLead(Map<String, dynamic>.from(item))).whereType<GlobalOpportunityLead>());
     } catch (_) { _sourceWarnings.add('Remotive غير متاح حالياً'); }
+  }
+
+  Future<void> _fetchJobicy(String query, List<GlobalOpportunityLead> into) async {
+    try {
+      final params = <String, String>{'count': '40'};
+      if (query.trim().length >= 3) params['tag'] = query.trim().substring(0, query.trim().length > 50 ? 50 : query.trim().length);
+      final response = await http.get(
+        Uri.https('jobicy.com', '/api/jobs', params),
+        headers: const {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode != 200) {
+        _sourceWarnings.add('Jobicy: HTTP ' + response.statusCode.toString());
+        return;
+      }
+      final payload = jsonDecode(response.body);
+      final jobs = payload is Map && payload['jobs'] is List ? payload['jobs'] as List : const [];
+      into.addAll(
+        jobs.whereType<Map>()
+          .map((item) => parseJobicyLead(Map<String, dynamic>.from(item)))
+          .whereType<GlobalOpportunityLead>(),
+      );
+    } catch (_) {
+      _sourceWarnings.add('Jobicy غير متاح حالياً');
+    }
   }
 
   Future<void> _fetchHimalayas(String query, List<GlobalOpportunityLead> into) async {
@@ -243,7 +268,7 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
       if (shown.isEmpty && !_busy) const Padding(padding: EdgeInsets.symmetric(vertical: 26), child: Center(child: Text('لا توجد نتائج معروضة. اضغط «ابحث عالمياً» أو افتح المحفوظة.'))),
       ...shown.map(_leadCard),
       const SizedBox(height: 12),
-      const Text('المصادر الحالية: Remotive وArbeitnow وHimalayas. بيانات Himalayas تخضع لشروط المصدر، ويُعرض رابط التقديم كما ورد من واجهته مع إظهار إسناد المصدر. البحث يستخدم كلمات مفتاحية متعددة اللغات، لكنه ليس ترجمة آلية شاملة لكل لغة ولا قاعدة وظائف تغطي كل دول العالم. لا يتم إرسال طلبات توظيف أو إنشاء حسابات أو دفع أي رسوم تلقائياً.', style: TextStyle(color: Colors.white70)),
+      const Text('المصادر الحالية: Remotive وArbeitnow وHimalayas وJobicy. بيانات Himalayas تخضع لشروط المصدر، ويُعرض رابط التقديم كما ورد من واجهته مع إظهار إسناد المصدر. البحث يستخدم كلمات مفتاحية متعددة اللغات، لكنه ليس ترجمة آلية شاملة لكل لغة ولا قاعدة وظائف تغطي كل دول العالم. لا يتم إرسال طلبات توظيف أو إنشاء حسابات أو دفع أي رسوم تلقائياً.', style: TextStyle(color: Colors.white70)),
     ]);
   }
 
