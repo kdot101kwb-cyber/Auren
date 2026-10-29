@@ -37,6 +37,14 @@ void main() {
     await tester.pumpWidget(const NovaApp());
     await tester.pumpAndSettle();
 
+    // The dashboard task is inside a lazily built ListView; bring it into view
+    // again after rebuilding the app before looking up its CheckboxListTile.
+    await tester.scrollUntilVisible(
+      task,
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     final restartedCheckbox = find.ancestor(of: task, matching: find.byType(CheckboxListTile));
     final tile = tester.widget<CheckboxListTile>(restartedCheckbox);
     expect(tile.value, isTrue);
