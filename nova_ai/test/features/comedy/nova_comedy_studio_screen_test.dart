@@ -59,4 +59,46 @@ void main() {
     final queue = jsonDecode(prefs.getString('nova.comedy_studio.queue.v1')!) as List<dynamic>;
     expect(queue.single['brand'], 'ai_after_dark');
   });
+  testWidgets('records and persists observed content results', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: NovaComedyStudioScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(1), 'Original AI tip');
+    await tester.tap(find.text('حفظ المسودة محلياً'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('تسجيل النتائج الفعلية'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'YouTube Shorts');
+    await tester.enterText(find.byType(TextFormField).at(1), '1250');
+    await tester.enterText(find.byType(TextFormField).at(2), '84');
+    await tester.enterText(find.byType(TextFormField).at(3), '47.5');
+    await tester.enterText(find.byType(TextFormField).at(4), '2.25');
+    await tester.tap(find.text('حفظ النتائج'));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    final queue = jsonDecode(prefs.getString('nova.comedy_studio.queue.v1')!) as List<dynamic>;
+    expect(queue.single['platform'], 'YouTube Shorts');
+    expect(queue.single['views'], 1250);
+    expect(queue.single['engagements'], 84);
+    expect(queue.single['retentionPercent'], 47.5);
+    expect(queue.single['revenueUsd'], 2.25);
+  });
+
+  testWidgets('rejects retention percentages outside zero to one hundred', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: NovaComedyStudioScreen()));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(1), 'Draft');
+    await tester.tap(find.text('حفظ المسودة محلياً'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('تسجيل النتائج الفعلية'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(3), '140');
+    await tester.tap(find.text('حفظ النتائج'));
+    await tester.pumpAndSettle();
+    expect(find.text('أدخل نسبة بين 0 و100'), findsOneWidget);
+  });
+
 }
