@@ -32,7 +32,8 @@ class NovaDebateResultView extends StatelessWidget {
         ? (result['missingEvidence'] as List).map((e) => e.toString()).toList()
         : <String>[];
 
-    return Column(
+    return SingleChildScrollView(
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Card(
@@ -97,7 +98,7 @@ class NovaDebateResultView extends StatelessWidget {
           ),
         ),
       ],
-    );
+    ));
   }
 
   String _heading(Map<String, dynamic> item, String key) => _text(item[key]);
