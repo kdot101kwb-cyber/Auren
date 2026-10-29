@@ -118,6 +118,19 @@ void main() {
       expect(result.map((e) => e.id), ['a']);
     });
 
+    test('suggests practical NOVA assistance without claiming autonomous completion', () {
+      final lead = GlobalOpportunityLead(
+        id: 'ai-content-1', title: 'Arabic Social Media Content Writer',
+        description: 'Create social media content and short video scripts',
+        company: 'Example', country: 'Worldwide', category: 'Content',
+        source: 'Test', url: 'https://example.com/job', language: 'Arabic',
+        salary: '', remote: true,
+      );
+      final plan = novaExecutionPlanForLead(lead);
+      expect(plan.any((step) => step.contains('مسودة محتوى')), isTrue);
+      expect(plan.any((step) => step.contains('ليست تلقائية')), isTrue);
+    });
+
     test('flags unknown Sudan eligibility, missing pay, and payout method', () {
       final lead = GlobalOpportunityLead(
         id: 'check-1', title: 'Remote assistant', description: '',
