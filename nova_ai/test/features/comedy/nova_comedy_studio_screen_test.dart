@@ -11,7 +11,7 @@ void main() {
   });
 
   Finder contentField(String label) => find.byWidgetPredicate(
-        (widget) => widget is TextField && widget.decoration?.labelText == label,
+        (widget) => widget is TextField && widget.decoration.labelText == label,
       );
 
   Future<void> revealTarget(WidgetTester tester, Finder target) async {
