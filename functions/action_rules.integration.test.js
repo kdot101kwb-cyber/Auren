@@ -4,34 +4,17 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, runTransaction, Timestamp } = require('firebase/firestore');
+const { Timestamp } = require('firebase/firestore');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'auren-emulator';
 let testEnv;
 
-// Keep the existing test intent while using the modular Firestore SDK expected by
-// rules-unit-testing v3. Its legacy compatFirestore(context) calls require compat apps,
-// but the test environment exposes a modular app in this dependency combination.
+// rules-unit-testing v3 provides the correctly initialized Firestore instance
+// through context.firestore(). Creating a second modular instance from context.app
+// fails because this context does not expose a default Firebase app.
 function compatFirestore(context) {
-  const db = getFirestore(context.app);
-  const wrapRef = (path) => {
-    const ref = doc(db, path);
-    return {
-      _ref: ref,
-      get: () => getDoc(ref),
-      set: (data) => setDoc(ref, data),
-      update: (data) => updateDoc(ref, data),
-      delete: () => deleteDoc(ref),
-    };
-  };
-  return {
-    doc: wrapRef,
-    runTransaction: (callback) => runTransaction(db, (transaction) => callback({
-      get: (ref) => transaction.get(ref._ref),
-      update: (ref, data) => transaction.update(ref._ref, data),
-    })),
-  };
+  return context.firestore();
 }
 
 test.before(async () => {
@@ -237,7 +220,6 @@ test('concurrent execution claims allow exactly one winner', async () => {
   });
 });
 
-
 async function seedSocialRequest(collection, id, data) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     await compatFirestore(context).doc(`${collection}/${id}`).set(data);
@@ -298,4 +280,3 @@ test('NOVA debate history is readable only by its owner and remains server-write
     executionStarted: true,
   }));
 });
-
