@@ -238,7 +238,7 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
           Icon(Icons.public, color: _radarAccent, size: 32), SizedBox(height: 10),
           Text('NOVA Global Opportunity Radar', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           SizedBox(height: 8),
-          Text('ابحث عالمياً عن وظائف عن بُعد وفرص العمل الحر والترجمة والبيانات والمحتوى عبر مصادر عامة متعددة اللغات.'),
+          Text('ابحث عن فرص يمكن لـ NOVA مساعدتك في تجهيز العمل لها، مثل المحتوى والترجمة والبيانات والأتمتة. الرادار لا يكتفي بتصنيف الوظيفة؛ يوضح كيف يمكن لـ NOVA المساعدة وما الذي يحتاج موافقتك.'),
           SizedBox(height: 8),
           Text('النتائج ليست ضمان قبول أو دفع. قد لا تسمح الوظيفة بالتقديم من السودان؛ تحقق من البلد ووسيلة السحب في المصدر الأصلي.', style: TextStyle(color: Colors.white70)),
         ]),
@@ -268,7 +268,7 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
       if (shown.isEmpty && !_busy) const Padding(padding: EdgeInsets.symmetric(vertical: 26), child: Center(child: Text('لا توجد نتائج معروضة. اضغط «ابحث عالمياً» أو افتح المحفوظة.'))),
       ...shown.map(_leadCard),
       const SizedBox(height: 12),
-      const Text('المصادر الحالية: Remotive وArbeitnow وHimalayas وJobicy. بيانات Himalayas تخضع لشروط المصدر، ويُعرض رابط التقديم كما ورد من واجهته مع إظهار إسناد المصدر. البحث يستخدم كلمات مفتاحية متعددة اللغات، لكنه ليس ترجمة آلية شاملة لكل لغة ولا قاعدة وظائف تغطي كل دول العالم. لا يتم إرسال طلبات توظيف أو إنشاء حسابات أو دفع أي رسوم تلقائياً.', style: TextStyle(color: Colors.white70)),
+      const Text('المصادر الحالية: Remotive وArbeitnow وHimalayas وJobicy. بيانات Himalayas تخضع لشروط المصدر، ويُعرض رابط التقديم كما ورد من واجهته مع إظهار إسناد المصدر. البحث يستخدم كلمات مفتاحية متعددة اللغات، لكنه ليس ترجمة آلية شاملة لكل لغة ولا قاعدة وظائف تغطي كل دول العالم. هدف الرادار هو العثور على أعمال يمكن لـ NOVA مساعدتك في تنفيذها وتجهيز مخرجاتها. لا يضمن أن NOVA يستطيع تنفيذ كل مهمة وحده، ولا يرسل طلبات أو يسلّم عملاً أو يدفع رسوماً تلقائياً.', style: TextStyle(color: Colors.white70)),
     ]);
   }
 
@@ -323,6 +323,27 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
                   child: Text('• ' + warning, style: const TextStyle(fontSize: 12)),
                 ),
               ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: _radarAccent.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: _radarAccent.withValues(alpha: 0.25)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('كيف يمكن لـ NOVA مساعدتك في هذه الفرصة؟', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              ...novaExecutionPlanForLead(lead).map((step) => Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Text('• ' + step, style: const TextStyle(fontSize: 12)),
+              )),
             ],
           ),
         ),
