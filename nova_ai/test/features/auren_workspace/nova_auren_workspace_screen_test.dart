@@ -30,10 +30,21 @@ void main() {
     await tester.pumpAndSettle();
 
     final savedTitle = find.text('إضافة مزامنة منخفضة البيانات');
-    await tester.ensureVisible(savedTitle);
+    await tester.scrollUntilVisible(
+      savedTitle,
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     expect(savedTitle, findsOneWidget);
-    expect(find.text('دراسة خيارات التخزين والعمل دون اتصال.'), findsOneWidget);
+    final savedDetails = find.text('دراسة خيارات التخزين والعمل دون اتصال.');
+    await tester.scrollUntilVisible(
+      savedDetails,
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(savedDetails, findsOneWidget);
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('nova.auren.workspace.items.v1'), contains('إضافة مزامنة منخفضة البيانات'));
   });
