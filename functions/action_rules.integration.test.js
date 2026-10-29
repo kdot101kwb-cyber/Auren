@@ -6,8 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 require('firebase/compat/app');
 require('firebase/compat/firestore');
-const firebase = require('firebase/compat/app');
-const Timestamp = firebase.firestore.Timestamp;
+const { Timestamp } = require('firebase/firestore');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'auren-emulator';
@@ -39,7 +38,7 @@ function actionRef(context, userId, actionId) {
 
 async function seedAction(userId, actionId, overrides = {}) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    const now = firebase.firestore.Timestamp.now();
+    const now = Timestamp.now();
     await dbFor(context).doc(`users/${userId}/actions/${actionId}`).set({
       actionType: 'demo.create_note',
       title: 'Create note',
