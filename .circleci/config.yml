@@ -144,8 +144,8 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - functions-node-v3-
-            - functions-node-v3
+            - functions-node-v4-
+            - functions-node-v4
       - run:
           name: Install Functions dependencies
           command: |
@@ -154,7 +154,7 @@ jobs:
             echo "========== RESOLVED FIREBASE TEST SDK VERSIONS =========="
             npm ls firebase @firebase/rules-unit-testing
       - save_cache:
-          key: functions-node-v3-{{ .Branch }}
+          key: functions-node-v4-{{ .Branch }}
           paths:
             - functions/node_modules
       - run:
