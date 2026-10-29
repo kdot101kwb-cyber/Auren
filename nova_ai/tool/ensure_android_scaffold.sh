@@ -23,6 +23,6 @@ fi
 
 echo "Android scaffold missing. Generating Android platform files inside NOVA only: ${NOVA_ROOT}"
 cd "${NOVA_ROOT}"
-flutter create --platforms=android --project-name nova_ai .
+flutter create --platforms=android --org com.auren --project-name nova_ai .
 test -f "${NOVA_ROOT}/android/app/build.gradle" || test -f "${NOVA_ROOT}/android/app/build.gradle.kts"
 echo "NOVA Android scaffold generated and verified."
