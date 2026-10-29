@@ -7,6 +7,8 @@ import 'global_opportunity_radar_engine.dart';
 
 const _radarAccent = Color(0xFF7DE2D1);
 const _savedKey = 'nova.global_opportunity_radar.saved.v1';
+const _remotiveDayKey = 'nova.global_opportunity_radar.remotive_day.v1';
+const _remotiveCountKey = 'nova.global_opportunity_radar.remotive_count.v1';
 
 class NovaGlobalOpportunityRadarScreen extends StatefulWidget {
   const NovaGlobalOpportunityRadarScreen({super.key});
@@ -101,6 +103,19 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
 
   Future<void> _fetchRemotive(String query, List<GlobalOpportunityLead> into) async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final today = DateTime.now().toUtc().toIso8601String().substring(0, 10);
+      final savedDay = prefs.getString(_remotiveDayKey);
+      if (savedDay != today) {
+        await prefs.setString(_remotiveDayKey, today);
+        await prefs.setInt(_remotiveCountKey, 0);
+      }
+      final count = prefs.getInt(_remotiveCountKey) ?? 0;
+      if (count >= 4) {
+        _sourceWarnings.add('Remotive: وصل التطبيق إلى حد 4 طلبات يومياً على هذا الجهاز؛ جرّب غداً.');
+        return;
+      }
+      await prefs.setInt(_remotiveCountKey, count + 1);
       final uri = Uri.https('remotive.com', '/api/remote-jobs', {'search': query, 'limit': '40'});
       final response = await http.get(uri).timeout(const Duration(seconds: 12));
       if (response.statusCode != 200) { _sourceWarnings.add('Remotive: HTTP ' + response.statusCode.toString()); return; }
