@@ -158,8 +158,8 @@ List<GlobalOpportunityLead> rankGlobalLeads(
 
 GlobalOpportunityLead? parseRemotiveLead(Map<String, dynamic> json) {
   final title = (json['title'] ?? '').toString().trim();
-  final url = (json['url'] ?? '').toString().trim();
-  if (title.isEmpty || !url.startsWith('https://')) return null;
+  final url = _trustedListingUrl(json['url'], const {'remotive.com'});
+  if (title.isEmpty || url == null) return null;
   return GlobalOpportunityLead(
     id: 'remotive:${json['id'] ?? url}',
     title: title,
@@ -178,8 +178,8 @@ GlobalOpportunityLead? parseRemotiveLead(Map<String, dynamic> json) {
 
 GlobalOpportunityLead? parseArbeitnowLead(Map<String, dynamic> json) {
   final title = (json['title'] ?? '').toString().trim();
-  final url = (json['url'] ?? '').toString().trim();
-  if (title.isEmpty || !url.startsWith('https://')) return null;
+  final url = _trustedListingUrl(json['url'], const {'arbeitnow.com'});
+  if (title.isEmpty || url == null) return null;
   final tags = (json['tags'] is List ? json['tags'] as List : const [])
       .map((e) => e.toString()).join(', ');
   return GlobalOpportunityLead(
@@ -196,6 +196,16 @@ GlobalOpportunityLead? parseArbeitnowLead(Map<String, dynamic> json) {
     remote: json['remote'] == true,
     publishedAt: DateTime.tryParse((json['created_at'] ?? '').toString()),
   );
+}
+
+String? _trustedListingUrl(Object? value, Set<String> allowedHosts) {
+  final raw = value?.toString().trim() ?? '';
+  final uri = Uri.tryParse(raw);
+  if (uri == null || uri.scheme.toLowerCase() != 'https' ||
+      uri.host.isEmpty || uri.userInfo.isNotEmpty) return null;
+  final host = uri.host.toLowerCase();
+  final trusted = allowedHosts.any((domain) => host == domain || host.endsWith('.$domain'));
+  return trusted ? uri.toString() : null;
 }
 
 String _stripHtml(String value) => value
