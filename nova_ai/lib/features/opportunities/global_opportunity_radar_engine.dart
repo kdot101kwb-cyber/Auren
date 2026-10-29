@@ -175,6 +175,47 @@ List<String> opportunityVerificationWarnings(GlobalOpportunityLead lead) {
   return List.unmodifiable(warnings);
 }
 
+/// Parses the public Himalayas Jobs API response while retaining its
+/// required attribution and application-link semantics.
+GlobalOpportunityLead? parseHimalayasLead(Map<String, dynamic> json) {
+  final title = (json['title'] ?? '').toString().trim();
+  final url = (json['applicationLink'] ?? '').toString().trim();
+  if (title.isEmpty) return null;
+  final uri = Uri.tryParse(url);
+  if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return null;
+  final restrictions = json['locationRestrictions'];
+  final country = restrictions is List && restrictions.isNotEmpty
+      ? restrictions.map((item) => item.toString()).join(', ')
+      : 'Worldwide (no location restrictions listed)';
+  final minSalary = json['minSalary'];
+  final maxSalary = json['maxSalary'];
+  final currency = (json['currency'] ?? '').toString().trim();
+  final period = (json['salaryPeriod'] ?? 'annual').toString().trim();
+  final salary = minSalary != null && maxSalary != null
+      ? '${currency.isEmpty ? '' : '$currency '}$minSalary–$maxSalary / $period'
+      : '';
+  final categories = json['categories'] is List
+      ? (json['categories'] as List).map((item) => item.toString()).join(', ')
+      : '';
+  final publishedAt = json['pubDate'] is num
+      ? DateTime.fromMillisecondsSinceEpoch((json['pubDate'] as num).toInt() * 1000, isUtc: true)
+      : DateTime.tryParse((json['pubDate'] ?? '').toString());
+  return GlobalOpportunityLead(
+    id: 'himalayas:${json['guid'] ?? url}',
+    title: title,
+    description: _stripHtml((json['description'] ?? json['excerpt'] ?? '').toString()),
+    company: (json['companyName'] ?? '').toString(),
+    country: country,
+    category: categories,
+    source: 'Himalayas · himalayas.app',
+    url: url,
+    language: (json['employmentType'] ?? 'Not stated').toString(),
+    salary: salary,
+    remote: true,
+    publishedAt: publishedAt,
+  );
+}
+
 GlobalOpportunityLead? parseRemotiveLead(Map<String, dynamic> json) {
   final title = (json['title'] ?? '').toString().trim();
   final url = (json['url'] ?? '').toString().trim();
