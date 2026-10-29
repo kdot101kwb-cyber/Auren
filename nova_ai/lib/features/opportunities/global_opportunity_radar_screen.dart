@@ -219,6 +219,29 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
           if (lead.salary.isNotEmpty) Chip(label: Text(lead.salary, overflow: TextOverflow.ellipsis)),
         ]),
         if (lead.category.isNotEmpty) Text('المجال: ' + lead.category),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.amber.withValues(alpha: 0.08),
+            border: Border.all(color: Colors.amber.withValues(alpha: 0.35)),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('تحقق قبل التقديم', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber)),
+              const SizedBox(height: 4),
+              ...opportunityVerificationWarnings(lead).map(
+                (warning) => Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: Text('• ' + warning, style: const TextStyle(fontSize: 12)),
+                ),
+              ),
+            ],
+          ),
+        ),
         if (lead.description.isNotEmpty) ...[const SizedBox(height: 6), Text(lead.description, maxLines: 4, overflow: TextOverflow.ellipsis)],
         const SizedBox(height: 8),
         Row(children: [
