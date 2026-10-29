@@ -108,7 +108,7 @@ test('client cannot update an action after it leaves pending or delete an action
     approvedPayloadHash: 'server-hash', approvalExpiresAt: Timestamp.now(), idempotencyKey: 'server-key',
   });
   const ref = actionRef(testEnv.authenticatedContext('rules-user-6'), 'rules-user-6', 'approved-action');
-  await assertFails(updateDoc(ref, { payload: { text: 'tampered' }, draftVersion: 1, updatedAt: Timestamp.now() }));
+  await assertFails(ref.update({ payload: { text: 'tampered' }, draftVersion: 1, updatedAt: Timestamp.now() }));
   await assertFails(ref.delete());
 });
 
