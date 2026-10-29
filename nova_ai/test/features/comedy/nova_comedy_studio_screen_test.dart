@@ -33,6 +33,19 @@ void main() {
     await revealTarget(tester, find.text('حفظ المسودة محلياً'));
   }
 
+  Future<void> revealResultsButton(WidgetTester tester) async {
+    await revealTarget(tester, find.text('تسجيل النتائج الفعلية'));
+  }
+
+  Future<void> revealText(WidgetTester tester, String value) async {
+    await revealTarget(tester, find.text(value));
+  }
+
+  Finder dropdownWithLabel(String label) => find.byWidgetPredicate(
+        (widget) => widget is DropdownButtonFormField<String> &&
+            widget.decoration?.labelText == label,
+      );
+
   testWidgets('saves bilingual original content as a local draft', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
@@ -98,6 +111,7 @@ void main() {
     await tester.tap(find.text('حفظ المسودة محلياً'));
     await tester.pumpAndSettle();
 
+    await revealResultsButton(tester);
     await tester.tap(find.text('تسجيل النتائج الفعلية'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).at(0), 'YouTube Shorts');
@@ -125,6 +139,7 @@ void main() {
     await revealSaveButton(tester);
     await tester.tap(find.text('حفظ المسودة محلياً'));
     await tester.pumpAndSettle();
+    await revealResultsButton(tester);
     await tester.tap(find.text('تسجيل النتائج الفعلية'));
     await tester.pumpAndSettle();
 
@@ -144,23 +159,29 @@ void main() {
     await tester.tap(find.text('حفظ المسودة محلياً'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(DropdownButtonFormField<String>).first);
+    await tester.ensureVisible(dropdownWithLabel('علامة المحتوى'));
+    await tester.pumpAndSettle();
+    await tester.tap(dropdownWithLabel('علامة المحتوى'));
     await tester.pumpAndSettle();
     await tester.tap(find.textContaining('AI After Dark').last);
     await tester.pumpAndSettle();
+    await revealTextField(tester, 'English caption');
     await tester.enterText(contentField('English caption'), 'AI only phrase');
+    await revealSaveButton(tester);
     await tester.tap(find.text('حفظ المسودة محلياً'));
     await tester.pumpAndSettle();
 
-    expect(find.text('LOL only phrase'), findsOneWidget);
-    expect(find.text('AI only phrase'), findsOneWidget);
+    await revealText(tester, 'LOL only phrase');
+    await revealText(tester, 'AI only phrase');
 
-    await tester.tap(find.text('تصفية حسب العلامة'));
+    await tester.ensureVisible(dropdownWithLabel('تصفية حسب العلامة'));
+    await tester.pumpAndSettle();
+    await tester.tap(dropdownWithLabel('تصفية حسب العلامة'));
     await tester.pumpAndSettle();
     await tester.tap(find.textContaining('AI After Dark').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('AI only phrase'), findsOneWidget);
+    await revealText(tester, 'AI only phrase');
     expect(find.text('LOL only phrase'), findsNothing);
 
     final prefs = await SharedPreferences.getInstance();
