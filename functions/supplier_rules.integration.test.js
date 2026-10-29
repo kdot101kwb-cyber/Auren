@@ -4,8 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const firebase = require('firebase/compat/app');
-require('firebase/compat/firestore');
+const { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, Timestamp } = require('firebase/firestore');
 
 const {
   initializeTestEnvironment,
@@ -35,7 +34,7 @@ function comparison(ownerId, offers = []) {
   return {
     ownerId,
     offers,
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   };
 }
 
@@ -69,17 +68,31 @@ function rfqDraft(ownerId) {
     delivery: 'يُحدّد لاحقاً',
     contact: '',
     draft: 'Please provide a quotation.',
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
+  };
+}
+
+function compatDb(db) {
+  return {
+    doc(pathname) {
+      const ref = doc(db, pathname);
+      return {
+        get: () => getDoc(ref),
+        set: (data) => setDoc(ref, data),
+        update: (data) => updateDoc(ref, data),
+        delete: () => deleteDoc(ref),
+      };
+    },
   };
 }
 
 function userDb(uid) {
-  return testEnv.authenticatedContext(uid).firestore();
+  return compatDb(getFirestore(testEnv.authenticatedContext(uid).getApp()));
 }
 
 async function seed(pathname, data) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    await context.firestore().doc(pathname).set(data);
+    await setDoc(doc(getFirestore(context.getApp()), pathname), data);
   });
 }
 
@@ -90,7 +103,7 @@ test('comparison owner can create, read, update, and delete the active draft', a
   await assertSucceeds(ref.get());
   await assertSucceeds(ref.update({
     offers: [validOffer('offer-2')],
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
   await assertSucceeds(ref.delete());
 });
@@ -104,7 +117,7 @@ test('another user cannot read, create, modify, or delete a supplier comparison'
   await assertFails(otherRef.set(comparison('supplier-attacker', [validOffer()])));
   await assertFails(otherRef.update({
     offers: [validOffer('tampered')],
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
   await assertFails(otherRef.delete());
 });
@@ -135,7 +148,7 @@ test('RFQ owner can create, read, modify, and delete the active draft', async ()
   await assertSucceeds(ref.get());
   await assertSucceeds(ref.update({
     product: 'Organic cotton T-shirts',
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
   await assertSucceeds(ref.delete());
 });
@@ -149,7 +162,7 @@ test('another user cannot read, create, modify, or delete an RFQ draft', async (
   await assertFails(otherRef.set(rfqDraft('rfq-attacker')));
   await assertFails(otherRef.update({
     product: 'Tampered product',
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
   await assertFails(otherRef.delete());
 });
