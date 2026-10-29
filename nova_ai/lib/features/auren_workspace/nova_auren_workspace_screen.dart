@@ -169,7 +169,7 @@ class _NovaAurenWorkspaceScreenState extends State<NovaAurenWorkspaceScreen> {
             border: OutlineInputBorder())),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _kind,
+          initialValue: _kind,
           decoration: const InputDecoration(labelText: 'نوع العنصر', border: OutlineInputBorder()),
           items: _kinds.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
           onChanged: (v) { if (v != null) setState(() => _kind = v); },
@@ -208,7 +208,7 @@ class _NovaAurenWorkspaceScreenState extends State<NovaAurenWorkspaceScreen> {
                   textDirection: TextDirection.rtl,
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 5),
-                Text((_kinds[kind] ?? kind) + ' • ' + (_statuses[current] ?? current),
+                Text('${_kinds[kind] ?? kind} • ${_statuses[current] ?? current}',
                   textDirection: TextDirection.rtl,
                   style: const TextStyle(color: Colors.white70)),
                 if ((item['details'] as String? ?? '').isNotEmpty) ...[
@@ -217,7 +217,7 @@ class _NovaAurenWorkspaceScreenState extends State<NovaAurenWorkspaceScreen> {
                 ],
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _statuses.containsKey(current) ? current : 'captured',
+                  initialValue: _statuses.containsKey(current) ? current : 'captured',
                   decoration: const InputDecoration(labelText: 'حالة العنصر',
                     border: OutlineInputBorder(), isDense: true),
                   items: _statuses.entries.map((e) =>

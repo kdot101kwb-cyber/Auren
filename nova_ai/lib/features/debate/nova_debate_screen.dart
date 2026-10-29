@@ -106,7 +106,7 @@ class _NovaDebateScreenState extends State<NovaDebateScreen> {
           const Text('بوابة التنفيذ', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           const Text('الخطة بانتظار موافقتك. لم يتم تنفيذ أي أمر أو تغيير. الموافقة لا تعني أن منفّذ المهام متصل أو أن تغييرات نُشرت.'),
-          if (debateId != null) SelectableText('معرّف السجل: ' + debateId!),
+          if (debateId != null) SelectableText('معرّف السجل: $debateId'),
           if (debateId != null && !approved) ...[
             const SizedBox(height: 10),
             FilledButton.icon(onPressed: approving ? null : approve,

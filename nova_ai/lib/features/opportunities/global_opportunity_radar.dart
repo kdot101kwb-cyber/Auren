@@ -184,6 +184,7 @@ String normalizeRadarText(String value) {
       .replaceAll('إ', 'ا')
       .replaceAll('آ', 'ا')
       .replaceAll('ى', 'ي')
+      .replaceAll(RegExp(r'[؟،؛٫٬ـ]'), ' ')
       .replaceAll(RegExp(r'[^a-z0-9\u00C0-\u024F\u0370-\u052F\u0600-\u06FF\u0900-\u097F\u4E00-\u9FFF]+'), ' ')
       .trim();
 }

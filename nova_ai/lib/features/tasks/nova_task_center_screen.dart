@@ -133,7 +133,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
       ))),
       const SizedBox(height: 12),
       DropdownButtonFormField<String>(
-        value: _type,
+        initialValue: _type,
         decoration: const InputDecoration(labelText: 'نوع المهمة', border: OutlineInputBorder()),
         items: const [
           DropdownMenuItem(value: 'chat', child: Text('محادثة / إجابة')),

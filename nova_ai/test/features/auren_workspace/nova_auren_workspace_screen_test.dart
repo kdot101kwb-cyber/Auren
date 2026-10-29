@@ -10,7 +10,7 @@ void main() {
 
   testWidgets('workspace records and displays a private AUREN idea', (tester) async {
     await tester.pumpWidget(MaterialApp(
-      home: NovaAurenWorkspaceScreen(onOpenBuilder: () {}),
+      home: Scaffold(body: NovaAurenWorkspaceScreen(onOpenBuilder: () {})),
     ));
     await tester.pumpAndSettle();
 
@@ -26,7 +26,11 @@ void main() {
     await tester.tap(find.text('حفظ في مساحة AUREN'));
     await tester.pumpAndSettle();
 
+    await tester.drag(find.byType(ListView).first, const Offset(0, -1400));
+    await tester.pumpAndSettle();
     expect(find.text('إضافة مزامنة منخفضة البيانات'), findsOneWidget);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -600));
+    await tester.pumpAndSettle();
     expect(find.text('دراسة خيارات التخزين والعمل دون اتصال.'), findsOneWidget);
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('nova.auren.workspace.items.v1'), contains('إضافة مزامنة منخفضة البيانات'));
@@ -35,7 +39,7 @@ void main() {
   testWidgets('workspace builder shortcut invokes callback', (tester) async {
     var opened = false;
     await tester.pumpWidget(MaterialApp(
-      home: NovaAurenWorkspaceScreen(onOpenBuilder: () => opened = true),
+      home: Scaffold(body: NovaAurenWorkspaceScreen(onOpenBuilder: () => opened = true)),
     ));
     await tester.pumpAndSettle();
 
