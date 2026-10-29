@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
@@ -210,6 +211,41 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
     } catch (_) { if (mounted) setState(() => _status = 'تعذر حفظ الفرصة على الجهاز.'); }
   }
 
+  Future<void> _showWorkPack(GlobalOpportunityLead lead) async {
+    final pack = prepareOpportunityWorkPack(lead);
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('ملف تحضير الفرصة'),
+        content: SizedBox(
+          width: 560,
+          child: SingleChildScrollView(
+            child: SelectableText(pack.toPlainText(), textDirection: TextDirection.rtl),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('إغلاق'),
+          ),
+          FilledButton.icon(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: pack.toPlainText()));
+              if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم نسخ مسودة ملف التحضير؛ راجعها قبل الاستخدام.')),
+                );
+              }
+            },
+            icon: const Icon(Icons.copy),
+            label: const Text('نسخ الملف'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _openLead(GlobalOpportunityLead lead) async {
     final uri = Uri.tryParse(lead.url);
     if (uri == null || uri.scheme != 'https' || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
@@ -348,6 +384,15 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
           ),
         ),
         if (lead.description.isNotEmpty) ...[const SizedBox(height: 6), Text(lead.description, maxLines: 4, overflow: TextOverflow.ellipsis)],
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => _showWorkPack(lead),
+            icon: const Icon(Icons.auto_awesome),
+            label: const Text('جهّز ملف العمل والعرض'),
+          ),
+        ),
         const SizedBox(height: 8),
         Row(children: [
           Expanded(child: Text(lead.publishedAt == null ? 'تاريخ النشر غير موضح' : 'نُشرت: ' + lead.publishedAt!.toLocal().toString().split(' ').first, style: const TextStyle(color: Colors.white70, fontSize: 12))),
