@@ -11,7 +11,7 @@ void main() {
   });
 
   testWidgets('saves bilingual original content as a local draft', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: NovaComedyStudioScreen()));
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).at(0), 'لما تقول خمس دقائق وتختفي ساعة');
@@ -32,7 +32,7 @@ void main() {
   });
 
   testWidgets('does not claim a Facebook page is connected or publish automatically', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: NovaComedyStudioScreen()));
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('لم يتم إنشاء صفحة فيسبوك'), findsOneWidget);
@@ -44,7 +44,7 @@ void main() {
     expect(prefs.getString('nova.comedy_studio.queue.v1'), isNull);
   });
   testWidgets('selects and persists the chosen brand ID', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: NovaComedyStudioScreen()));
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
 
     await tester.tap(find.textContaining('AI After Dark').first);
@@ -60,7 +60,7 @@ void main() {
     expect(queue.single['brand'], 'ai_after_dark');
   });
   testWidgets('records and persists observed content results', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: NovaComedyStudioScreen()));
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).at(1), 'Original AI tip');
@@ -87,7 +87,7 @@ void main() {
   });
 
   testWidgets('rejects retention percentages outside zero to one hundred', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: NovaComedyStudioScreen()));
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).at(1), 'Draft');
     await tester.tap(find.text('حفظ المسودة محلياً'));
@@ -103,7 +103,7 @@ void main() {
 
 
   testWidgets('filters the queue to the selected brand without losing other drafts', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: NovaComedyStudioScreen()));
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).at(1), 'LOL only phrase');
