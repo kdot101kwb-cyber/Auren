@@ -350,7 +350,7 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           isExpanded: true,
-          value: _brandId,
+          initialValue: _brandId,
           decoration: const InputDecoration(labelText: 'علامة المحتوى', border: OutlineInputBorder()),
           items: _brands.entries.map((entry) =>
             DropdownMenuItem(value: entry.key, child: Text(entry.value, overflow: TextOverflow.ellipsis))).toList(),
@@ -363,7 +363,7 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           isExpanded: true,
-          value: _format,
+          initialValue: _format,
           decoration: const InputDecoration(labelText: 'نوع المحتوى', border: OutlineInputBorder()),
           items: _formats.entries.map((entry) =>
             DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
@@ -372,7 +372,7 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           isExpanded: true,
-          value: _language,
+          initialValue: _language,
           decoration: const InputDecoration(labelText: 'اللغة', border: OutlineInputBorder()),
           items: const [
             DropdownMenuItem(value: 'both', child: Text('عربي + English')),
@@ -409,7 +409,7 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           isExpanded: true,
-          value: _filterBrandId,
+          initialValue: _filterBrandId,
           decoration: const InputDecoration(labelText: 'تصفية حسب العلامة', border: OutlineInputBorder()),
           items: [
             const DropdownMenuItem(value: 'all', child: Text('كل العلامات')),
@@ -445,7 +445,7 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   isExpanded: true,
-                  value: _statuses.containsKey(status) ? status : 'draft',
+                  initialValue: _statuses.containsKey(status) ? status : 'draft',
                   decoration: const InputDecoration(labelText: 'حالة المحتوى', isDense: true),
                   items: _statuses.entries.map((entry) =>
                     DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
