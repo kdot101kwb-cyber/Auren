@@ -95,7 +95,7 @@ test('client cannot change createdAt or write approval fields', async () => {
   await assertFails(ref.update({
     createdAt: new Date(Date.now() - 1000), draftVersion: 1, updatedAt: Timestamp.now(),
   }));
-  await assertFails(updateDoc(ref, {
+  await assertFails(ref.update({
     approvedBy: 'rules-user-5', approvedPayloadHash: 'forged-hash',
     approvalExpiresAt: Timestamp.now(), idempotencyKey: 'forged-key',
     draftVersion: 1, updatedAt: Timestamp.now(),
