@@ -218,16 +218,16 @@ class _NovaHomeState extends State<NovaHome> {
   ]);
 
   Widget agents() => ListView(padding: const EdgeInsets.all(16), children: [
-    Text('فريق NOVA', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
-    SizedBox(height: 6),
-    Text('وكلاء متخصصون تحت إشراف المدير الرئيسي. هذه قائمة الأدوار المخططة؛ لم يتم تفعيل التنفيذ الآلي بعد.'),
-    SizedBox(height: 12),
-    _Agent(icon: Icons.account_tree, name: 'NOVA Manager', role: 'توزيع المهام ومتابعة النتائج'),
-    _Agent(icon: Icons.code, name: 'وكيل التطوير', role: 'فحص الكود وتنفيذ الإصلاحات'),
-    _Agent(icon: Icons.fact_check, name: 'وكيل الجودة', role: 'اختبارات Flutter وAndroid وCI'),
-    _Agent(icon: Icons.security, name: 'وكيل الأمان', role: 'مراجعة Firebase والصلاحيات'),
-    _Agent(icon: Icons.campaign, name: 'وكيل التسويق', role: 'المحتوى والنشر وتحليل الجمهور'),
-    _Agent(icon: Icons.mail, name: 'وكيل البريد', role: 'فرز الرسائل وصياغة الردود'),
+    const Text('فريق NOVA', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
+    const SizedBox(height: 6),
+    const Text('وكلاء متخصصون تحت إشراف المدير الرئيسي. هذه قائمة الأدوار المخططة؛ لم يتم تفعيل التنفيذ الآلي بعد.'),
+    const SizedBox(height: 12),
+    const _Agent(icon: Icons.account_tree, name: 'NOVA Manager', role: 'توزيع المهام ومتابعة النتائج'),
+    const _Agent(icon: Icons.code, name: 'وكيل التطوير', role: 'فحص الكود وتنفيذ الإصلاحات'),
+    const _Agent(icon: Icons.fact_check, name: 'وكيل الجودة', role: 'اختبارات Flutter وAndroid وCI'),
+    const _Agent(icon: Icons.security, name: 'وكيل الأمان', role: 'مراجعة Firebase والصلاحيات'),
+    const _Agent(icon: Icons.campaign, name: 'وكيل التسويق', role: 'المحتوى والنشر وتحليل الجمهور'),
+    const _Agent(icon: Icons.mail, name: 'وكيل البريد', role: 'فرز الرسائل وصياغة الردود'),
     OutlinedButton.icon(
       onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const NovaDebateScreen())),
       icon: const Icon(Icons.balance),
