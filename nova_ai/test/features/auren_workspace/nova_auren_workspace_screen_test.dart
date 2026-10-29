@@ -26,9 +26,11 @@ void main() {
     await tester.tap(find.text('حفظ في مساحة AUREN'));
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(find.text('إضافة مزامنة منخفضة البيانات'), 300);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -1400));
+    await tester.pumpAndSettle();
     expect(find.text('إضافة مزامنة منخفضة البيانات'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('دراسة خيارات التخزين والعمل دون اتصال.'), 300);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -600));
+    await tester.pumpAndSettle();
     expect(find.text('دراسة خيارات التخزين والعمل دون اتصال.'), findsOneWidget);
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('nova.auren.workspace.items.v1'), contains('إضافة مزامنة منخفضة البيانات'));
