@@ -193,7 +193,7 @@ class OpportunityWorkPack {
     '',
     'قبل التقديم:',
     ...checksBeforeApplying.map((item) => '- $item'),
-  ].join('\\n');
+  ].join('\n');
 }
 
 OpportunityWorkPack prepareOpportunityWorkPack(GlobalOpportunityLead lead) {
@@ -247,7 +247,7 @@ OpportunityWorkPack prepareOpportunityWorkPack(GlobalOpportunityLead lead) {
   final fit = lead.salary.trim().isEmpty
       ? 'مبدئي فقط: الأجر غير ظاهر في بيانات الرادار، والأهلية من السودان وطريقة الدفع غير مؤكدتين.'
       : 'مبدئي فقط: الأجر مذكور في الإعلان، لكن الأهلية من السودان وطريقة الدفع وشروط المهمة تحتاج تحققاً من المصدر.';
-  final proposal = 'Hello $company,\\n\\nI am interested in your ${lead.title} opportunity. I can start by preparing a small sample focused on $proposalFocus, then align the work with your instructions and quality requirements.\\n\\nBefore starting, I would like to confirm the scope, deadline, acceptance criteria, permitted use of AI tools, and payment method. I will not claim experience or completed work that I cannot substantiate.\\n\\nThank you for considering my proposal.';
+  final proposal = 'Hello $company,\n\nI am interested in your ${lead.title} opportunity. I can start by preparing a small sample focused on $proposalFocus, then align the work with your instructions and quality requirements.\n\nBefore starting, I would like to confirm the scope, deadline, acceptance criteria, permitted use of AI tools, and payment method. I will not claim experience or completed work that I cannot substantiate.\n\nThank you for considering my proposal.';
   final checks = <String>[
     'هل يسمح الإعلان بالتقديم من السودان؟ كلمة Remote أو Worldwide وحدها لا تكفي.',
     'هل الأجر وطريقة الدفع والسحب متاحة فعلاً للمستخدم في السودان؟',
@@ -258,7 +258,7 @@ OpportunityWorkPack prepareOpportunityWorkPack(GlobalOpportunityLead lead) {
   return OpportunityWorkPack(
     summary: '${lead.title} — $company — ${lead.source}',
     fitAssessment: fit,
-    preparationPlan: tasks.map((item) => '- $item').join('\\n'),
+    preparationPlan: tasks.map((item) => '- $item').join('\n'),
     proposalDraft: proposal,
     sampleTask: sample,
     checksBeforeApplying: List.unmodifiable(checks),
