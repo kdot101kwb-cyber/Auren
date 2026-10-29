@@ -81,7 +81,7 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
         .where((s) => s.trim().isNotEmpty).take(4).toList();
     try {
       final requests = <Future<void>>[];
-      for (final q in queries.take(3)) { requests.add(_fetchRemotive(q, all)); }
+      if (queries.isNotEmpty) requests.add(_fetchRemotive(queries.first, all));
       requests.add(_fetchArbeitnow(all));
       await Future.wait(requests);
       final ranked = rankGlobalLeads(all, query: rawQuery, country: _country, region: _region);
@@ -92,8 +92,8 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
           ? 'لم نجد نتائج مطابقة في المصادر العامة التي استجابت. جرّب حذف بعض الكلمات أو اختيار كل الدول.'
           : 'تم فحص ' + all.length.toString() + ' سجل عام، وعرض ' + ranked.length.toString() + ' نتيجة بعد إزالة التكرار والفلاتر. افحص الأهلية والدفع من المصدر قبل التقديم.';
       });
-    } catch (error) {
-      if (mounted) setState(() => _status = 'تعذر إكمال البحث: ' + error.toString());
+    } catch (_) {
+      if (mounted) setState(() => _status = 'تعذر إكمال البحث بسبب مشكلة في أحد المصادر. حاول لاحقاً.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -104,6 +104,7 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
       final uri = Uri.https('remotive.com', '/api/remote-jobs', {'search': query, 'limit': '40'});
       final response = await http.get(uri).timeout(const Duration(seconds: 12));
       if (response.statusCode != 200) { _sourceWarnings.add('Remotive: HTTP ' + response.statusCode.toString()); return; }
+      if (utf8.encode(response.body).length > 2 * 1024 * 1024) { _sourceWarnings.add('Remotive: تم تجاهل استجابة أكبر من الحد الآمن'); return; }
       final payload = jsonDecode(response.body);
       final jobs = payload is Map && payload['jobs'] is List ? payload['jobs'] as List : const [];
       into.addAll(jobs.whereType<Map>().map((item) => parseRemotiveLead(Map<String, dynamic>.from(item))).whereType<GlobalOpportunityLead>());
@@ -114,6 +115,7 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
     try {
       final response = await http.get(Uri.https('www.arbeitnow.com', '/api/job-board-api')).timeout(const Duration(seconds: 12));
       if (response.statusCode != 200) { _sourceWarnings.add('Arbeitnow: HTTP ' + response.statusCode.toString()); return; }
+      if (utf8.encode(response.body).length > 2 * 1024 * 1024) { _sourceWarnings.add('Arbeitnow: تم تجاهل استجابة أكبر من الحد الآمن'); return; }
       final payload = jsonDecode(response.body);
       final jobs = payload is Map && payload['data'] is List ? payload['data'] as List : const [];
       into.addAll(jobs.whereType<Map>().map((item) => parseArbeitnowLead(Map<String, dynamic>.from(item))).whereType<GlobalOpportunityLead>());
