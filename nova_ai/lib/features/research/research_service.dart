@@ -1,3 +1,6 @@
+import 'package:http/http.dart' as http;
+
+import 'public_opportunity_research_connector.dart';
 import 'research_connector.dart';
 
 /// Outcome of a bounded multi-source search.
@@ -24,13 +27,21 @@ class ResearchSearchReport {
 
 /// Coordinates provider-neutral research connectors.
 ///
-/// Connectors are called sequentially to keep load predictable and to make
-/// source failures independent. Provider credentials and HTTP details belong
-/// in trusted backend implementations, never in this Flutter package.
+/// Use [ResearchService.publicOpportunitySources] for read-only public job
+/// search. Authenticated or paid providers must remain behind a trusted backend;
+/// never place their credentials in this Flutter package.
 class ResearchService {
   ResearchService({
     required List<ResearchConnector> connectors,
   }) : _connectors = List.unmodifiable(connectors);
+
+  /// Ready-to-use research service backed by two public job-listing APIs.
+  ///
+  /// [client] is injectable for deterministic tests. No API keys are required.
+  ResearchService.publicOpportunitySources({http.Client? client})
+      : _connectors = List.unmodifiable([
+          PublicOpportunityResearchConnector(client: client),
+        ]);
 
   final List<ResearchConnector> _connectors;
 
