@@ -167,6 +167,7 @@ class _NovaDebateScreenState extends State<NovaDebateScreen> {
               maxLines: 6,
               maxLength: 5000,
               textDirection: TextDirection.rtl,
+              onChanged: (_) => setState(() {}),
               decoration: _inputDecoration(
                 label: 'الخطة أو القرار',
                 hint: 'مثلاً: قيّم أفضل طريقة لبناء مصدر دخل دون رأس مال...',
