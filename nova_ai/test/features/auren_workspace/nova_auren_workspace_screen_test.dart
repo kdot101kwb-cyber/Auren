@@ -10,7 +10,7 @@ void main() {
 
   testWidgets('workspace records and displays a private AUREN idea', (tester) async {
     await tester.pumpWidget(MaterialApp(
-      home: NovaAurenWorkspaceScreen(onOpenBuilder: () {}),
+      home: Scaffold(body: NovaAurenWorkspaceScreen(onOpenBuilder: () {})),
     ));
     await tester.pumpAndSettle();
 
@@ -23,11 +23,28 @@ void main() {
       find.byType(TextField).last,
       'دراسة خيارات التخزين والعمل دون اتصال.',
     );
-    await tester.tap(find.text('حفظ في مساحة AUREN'));
+    final saveButton = find.text('حفظ في مساحة AUREN');
+    await tester.ensureVisible(saveButton);
+    await tester.pumpAndSettle();
+    await tester.tap(saveButton);
     await tester.pumpAndSettle();
 
-    expect(find.text('إضافة مزامنة منخفضة البيانات'), findsOneWidget);
-    expect(find.text('دراسة خيارات التخزين والعمل دون اتصال.'), findsOneWidget);
+    final savedTitle = find.text('إضافة مزامنة منخفضة البيانات');
+    await tester.scrollUntilVisible(
+      savedTitle,
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(savedTitle, findsOneWidget);
+    final savedDetails = find.text('دراسة خيارات التخزين والعمل دون اتصال.');
+    await tester.scrollUntilVisible(
+      savedDetails,
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(savedDetails, findsOneWidget);
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('nova.auren.workspace.items.v1'), contains('إضافة مزامنة منخفضة البيانات'));
   });
@@ -35,11 +52,14 @@ void main() {
   testWidgets('workspace builder shortcut invokes callback', (tester) async {
     var opened = false;
     await tester.pumpWidget(MaterialApp(
-      home: NovaAurenWorkspaceScreen(onOpenBuilder: () => opened = true),
+      home: Scaffold(body: NovaAurenWorkspaceScreen(onOpenBuilder: () => opened = true)),
     ));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('فتح مهندس بناء التطبيقات'));
+    final builderShortcut = find.text('فتح مهندس بناء التطبيقات');
+    await tester.ensureVisible(builderShortcut);
+    await tester.pumpAndSettle();
+    await tester.tap(builderShortcut);
     expect(opened, isTrue);
   });
 }
