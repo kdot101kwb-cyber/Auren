@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nova_ai/features/opportunities/opportunity_engine.dart';
+import 'package:nova_ai/features/opportunities/global_opportunity_radar_engine.dart';
 
 void main() {
   group('OpportunityCandidate', () {
