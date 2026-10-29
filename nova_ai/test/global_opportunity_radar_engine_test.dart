@@ -56,6 +56,23 @@ void main() {
       expect(result.map((e) => e.id), ['a']);
     });
 
+    test('deduplicates the same listing returned by multiple searches', () {
+      GlobalOpportunityLead lead(String id, String url) => GlobalOpportunityLead(
+        id: id, title: 'Arabic Translator', description: 'Arabic translation',
+        company: 'Example', country: 'Worldwide', category: 'Translation',
+        source: 'Remotive', url: url, language: 'Arabic', salary: '',
+        remote: true, publishedAt: DateTime.utc(2026, 10, 28),
+      );
+
+      final results = rankGlobalLeads([
+        lead('first', 'https://remotive.com/remote-jobs/example-role#details'),
+        lead('duplicate', 'https://remotive.com/remote-jobs/example-role/'),
+      ], query: 'translation');
+
+      expect(results, hasLength(1));
+      expect(results.single.id, 'first');
+    });
+
     test('round trips saved opportunities', () {
       final lead = GlobalOpportunityLead(
         id: 'saved-1', title: 'Arabic QA', description: 'Check transcripts',
