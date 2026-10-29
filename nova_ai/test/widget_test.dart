@@ -22,6 +22,8 @@ void main() {
     await tester.pumpAndSettle();
 
     final task = find.text('فحص حالة مستودع AUREN');
+    await tester.ensureVisible(task);
+    await tester.pumpAndSettle();
     final checkbox = find.ancestor(of: task, matching: find.byType(CheckboxListTile));
     expect(checkbox, findsOneWidget);
     await tester.tap(checkbox);
