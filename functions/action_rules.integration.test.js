@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, runTransaction, Timestamp } = require('firebase/firestore');
+const { doc, getDoc, setDoc, updateDoc, deleteDoc, runTransaction, Timestamp } = require('firebase/firestore');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'auren-emulator';
@@ -26,8 +26,9 @@ test.after(async () => {
 });
 
 function dbFor(context) {
-  // Use the modular Firestore API with the app created by rules-unit-testing.
-  return getFirestore(context.getApp());
+  // RulesTestContext.firestore() returns the emulator-configured Firestore instance.
+  // It can be used directly with the modular Firestore helpers imported above.
+  return context.firestore();
 }
 
 function actionRef(context, userId, actionId) {
