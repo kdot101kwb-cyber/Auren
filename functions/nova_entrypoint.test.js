@@ -9,4 +9,6 @@ test('Firebase deployment entrypoint exports NOVA revenue callables and daily sc
   assert.equal(typeof deployedFunctions.getNovaRevenueDashboard, 'function');
   assert.equal(typeof deployedFunctions.runNovaRevenueEngineDaily, 'function');
   assert.equal(typeof deployedFunctions.getNovaSignalOpportunities, 'function');
+  assert.equal(typeof deployedFunctions.getNovaMarketWatch, 'function');
+  assert.equal(typeof deployedFunctions.runNovaMarketWatchDaily, 'function');
 });

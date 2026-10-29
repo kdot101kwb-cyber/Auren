@@ -61,7 +61,7 @@ jobs:
           name: Analyze
           command: |
             set +e
-            flutter analyze --no-fatal-warnings --no-fatal-infos > flutter_analyze.log 2>&1
+            flutter analyze lib test --no-fatal-warnings --no-fatal-infos > flutter_analyze.log 2>&1
             status=$?
             echo "flutter_analyze_exit_code=$status" >> flutter_analyze.log
             echo "$status" > /tmp/flutter_analyze_status
@@ -77,6 +77,14 @@ jobs:
             echo "$status" > /tmp/flutter_test_status
             cat flutter_test.log
             exit 0
+      - run:
+          name: Validate NOVA Flutter package
+          command: |
+            set -e
+            cd nova_ai
+            flutter pub get
+            flutter analyze lib test --no-fatal-warnings --no-fatal-infos
+            flutter test
       - run:
           name: Android build
           command: |
@@ -144,17 +152,17 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - functions-node-v3-
-            - functions-node-v3
+            - functions-node-v4-
+            - functions-node-v4
       - run:
           name: Install Functions dependencies
           command: |
             cd functions
-            npm install --no-audit --no-fund
+            npm install --include=dev --no-audit --no-fund
             echo "========== RESOLVED FIREBASE TEST SDK VERSIONS =========="
             npm ls firebase @firebase/rules-unit-testing
       - save_cache:
-          key: functions-node-v3-{{ .Branch }}
+          key: functions-node-v4-{{ .Branch }}
           paths:
             - functions/node_modules
       - run:
