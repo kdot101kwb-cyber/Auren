@@ -156,6 +156,115 @@ List<GlobalOpportunityLead> rankGlobalLeads(
   return List.unmodifiable(filtered);
 }
 
+/// A locally prepared starter pack for reviewing an opportunity.
+/// This does not submit an application or claim that the sample is client-ready.
+class OpportunityWorkPack {
+  final String summary;
+  final String fitAssessment;
+  final String preparationPlan;
+  final String proposalDraft;
+  final String sampleTask;
+  final List<String> checksBeforeApplying;
+
+  const OpportunityWorkPack({
+    required this.summary,
+    required this.fitAssessment,
+    required this.preparationPlan,
+    required this.proposalDraft,
+    required this.sampleTask,
+    required this.checksBeforeApplying,
+  });
+
+  String toPlainText() => [
+    'NOVA — ملف تحضير فرصة',
+    '',
+    'الفرصة: $summary',
+    '',
+    'تقييم مبدئي: $fitAssessment',
+    '',
+    'خطة التحضير:',
+    preparationPlan,
+    '',
+    'مسودة عرض قابلة للتعديل:',
+    proposalDraft,
+    '',
+    'عينة عمل مقترحة (تحتاج مراجعة):',
+    sampleTask,
+    '',
+    'قبل التقديم:',
+    ...checksBeforeApplying.map((item) => '- $item'),
+  ].join('\\n');
+}
+
+OpportunityWorkPack prepareOpportunityWorkPack(GlobalOpportunityLead lead) {
+  final text = normalizeRadarText('${lead.title} ${lead.description} ${lead.category}');
+  final tasks = <String>[];
+  String sample;
+  String proposalFocus;
+  if (RegExp(r'translat|locali[sz]|transcri|subtitl|caption|language|ترجم|تفريغ').hasMatch(text)) {
+    tasks.addAll([
+      'استخراج المطلوب واللغة واللهجة والتنسيق من وصف العميل.',
+      'تجهيز عينة قصيرة للمراجعة مع الحفاظ على المعنى وعدم اختلاق محتوى.',
+      'مراجعة المصطلحات والأسماء ثم مقارنة الناتج بالنص الأصلي.',
+    ]);
+    sample = 'عينة مقترحة: اختَر فقرة قصيرة مسموح استخدامها من وصف المهمة، جهّز ترجمة/تفريغاً أولياً، ثم أرفق النص الأصلي والناتج وملاحظات المصطلحات. لا تستخدم مواد محمية أو خاصة دون إذن.';
+    proposalFocus = 'translation, transcription, or localization support';
+  } else if (RegExp(r'content|copywrit|blog|article|social media|script|writing|كتابة|محتوى').hasMatch(text)) {
+    tasks.addAll([
+      'تحديد الجمهور والهدف والنبرة المطلوبة من وصف المهمة.',
+      'كتابة مسودة واحدة قصيرة ونموذج بديل للعنوان أو الافتتاحية.',
+      'مراجعة الحقائق واللغة وحقوق الصور/الموسيقى قبل التسليم.',
+    ]);
+    sample = 'عينة مقترحة: أنشئ منشوراً قصيراً للجمهور المحدد، مع عنوان ونداء إجراء ونسخة بديلة. وضّح أنها عينة تجريبية، وراجع المعلومات قبل إرسالها.';
+    proposalFocus = 'content writing and short-form script preparation';
+  } else if (RegExp(r'data annot|data label|ai evaluat|rating|categor|spreadsheet|research|وسم بيانات|تقييم').hasMatch(text)) {
+    tasks.addAll([
+      'استخراج قواعد التصنيف ومعايير الجودة من وصف المهمة.',
+      'إنشاء جدول تجريبي صغير ببيانات عامة أو اصطناعية فقط.',
+      'مراجعة العينة يدوياً وقياس الأخطاء قبل توسيع العمل.',
+    ]);
+    sample = 'عينة مقترحة: أنشئ 5 صفوف بيانات اصطناعية وفق معايير المهمة، مع أعمدة واضحة للتصنيف وسبب التصنيف. لا ترفع بيانات شخصية أو سرية إلى أدوات خارجية.';
+    proposalFocus = 'structured data review and AI-assisted evaluation';
+  } else if (RegExp(r'automat|workflow|no code|developer|software|website|app build|program|برمجة|تطبيق').hasMatch(text)) {
+    tasks.addAll([
+      'تحويل المطلوب إلى قائمة متطلبات صغيرة قابلة للاختبار.',
+      'اقتراح أبسط نموذج أولي مجاني يناسب المهمة قبل بناء حل كامل.',
+      'كتابة اختبارات أساسية وتوثيق ما لم يتم اختباره بعد.',
+    ]);
+    sample = 'عينة مقترحة: أعد مخططاً مختصراً للتدفق أو نموذجاً أولياً محدوداً مع حالات اختبار واضحة. لا تعد بتكامل أو نشر قبل تجربته في بيئة فعلية.';
+    proposalFocus = 'a small, testable automation or prototype';
+  } else {
+    tasks.addAll([
+      'تلخيص المطلوب والمخرجات والموعد النهائي من إعلان الفرصة.',
+      'تقسيم المهمة إلى أجزاء يمكن تجهيزها بأدوات مجانية.',
+      'إعداد عينة صغيرة لا تكشف معلومات خاصة قبل الالتزام بالمهمة كاملة.',
+    ]);
+    sample = 'عينة مقترحة: جهّز مثالاً صغيراً مرتبطاً مباشرة بمتطلبات الإعلان بعد قراءته. نوع العينة غير محسوم لأن الوصف لم يحدد مجالاً واضحاً.';
+    proposalFocus = 'a small, clearly scoped first deliverable';
+  }
+
+  final company = lead.company.trim().isEmpty ? 'your team' : lead.company.trim();
+  final fit = lead.salary.trim().isEmpty
+      ? 'مبدئي فقط: الأجر غير ظاهر في بيانات الرادار، والأهلية من السودان وطريقة الدفع غير مؤكدتين.'
+      : 'مبدئي فقط: الأجر مذكور في الإعلان، لكن الأهلية من السودان وطريقة الدفع وشروط المهمة تحتاج تحققاً من المصدر.';
+  final proposal = 'Hello $company,\\n\\nI am interested in your ${lead.title} opportunity. I can start by preparing a small sample focused on $proposalFocus, then align the work with your instructions and quality requirements.\\n\\nBefore starting, I would like to confirm the scope, deadline, acceptance criteria, permitted use of AI tools, and payment method. I will not claim experience or completed work that I cannot substantiate.\\n\\nThank you for considering my proposal.';
+  final checks = <String>[
+    'هل يسمح الإعلان بالتقديم من السودان؟ كلمة Remote أو Worldwide وحدها لا تكفي.',
+    'هل الأجر وطريقة الدفع والسحب متاحة فعلاً للمستخدم في السودان؟',
+    'هل توجد رسوم مقدّمة أو طلب لإيداع مال؟ لا تدفع رسوماً للبدء.',
+    'هل يسمح العميل باستخدام أدوات الذكاء الاصطناعي لهذه المهمة؟',
+    'هل الشركة ورابط التقديم أصليان، وما هي المخرجات والموعد وشروط القبول؟',
+  ];
+  return OpportunityWorkPack(
+    summary: '${lead.title} — $company — ${lead.source}',
+    fitAssessment: fit,
+    preparationPlan: tasks.map((item) => '- $item').join('\\n'),
+    proposalDraft: proposal,
+    sampleTask: sample,
+    checksBeforeApplying: List.unmodifiable(checks),
+  );
+}
+
 /// Explain which parts NOVA may be able to prepare for a lead.
 /// This is a suggested workflow, not a claim that NOVA can autonomously perform
 /// paid work or submit an application.
