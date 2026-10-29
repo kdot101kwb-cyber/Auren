@@ -35,6 +35,37 @@ void main() {
       expect(lead.salary, 'USD 15/hour');
     });
 
+    test('parses Himalayas listings with attribution, restrictions and salary', () {
+      final lead = parseHimalayasLead({
+        'guid': 'job-77',
+        'title': 'Arabic Content Reviewer',
+        'applicationLink': 'https://himalayas.app/jobs/example',
+        'description': '<p>Review Arabic content</p>',
+        'companyName': 'Example Company',
+        'locationRestrictions': <String>[],
+        'categories': <String>['Content', 'AI'],
+        'employmentType': 'Contract',
+        'minSalary': 15,
+        'maxSalary': 20,
+        'currency': 'USD',
+        'salaryPeriod': 'hourly',
+        'pubDate': 1792800000,
+      });
+      expect(lead, isNotNull);
+      expect(lead!.url, 'https://himalayas.app/jobs/example');
+      expect(lead.source, contains('himalayas.app'));
+      expect(lead.country, contains('Worldwide'));
+      expect(lead.salary, contains('USD 15–20 / hourly'));
+      expect(lead.description, contains('Review Arabic content'));
+    });
+
+    test('rejects Himalayas application links that are not HTTPS', () {
+      expect(parseHimalayasLead({
+        'title': 'Unsafe listing',
+        'applicationLink': 'javascript:alert(1)',
+      }), isNull);
+    });
+
     test('rejects unsafe or missing listing URLs', () {
       expect(parseRemotiveLead({'title': 'Bad', 'url': 'javascript:alert(1)'}), isNull);
       expect(parseArbeitnowLead({'title': 'No URL'}), isNull);
