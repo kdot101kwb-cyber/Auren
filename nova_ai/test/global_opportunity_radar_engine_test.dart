@@ -21,7 +21,7 @@ void main() {
       final lead = parseRemotiveLead({
         'id': 22,
         'title': 'Arabic Transcriber',
-        'url': 'https://example.com/job/22',
+        'url': 'https://remotive.com/remote-jobs/example-role',
         'description': '<p>Review &amp; transcribe Arabic audio</p>',
         'company_name': 'Example Co',
         'candidate_required_location': 'Worldwide',
