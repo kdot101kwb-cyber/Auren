@@ -111,6 +111,9 @@ class PublicOpportunityResearchConnector implements ResearchConnector {
       return null;
     } on http.ClientException {
       return null;
+    } catch (_) {
+      // DNS/socket/TLS failures must not prevent the other source from running.
+      return null;
     }
   }
 
