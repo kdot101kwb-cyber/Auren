@@ -101,4 +101,37 @@ void main() {
     expect(find.text('أدخل نسبة بين 0 و100'), findsOneWidget);
   });
 
+
+  testWidgets('filters the queue to the selected brand without losing other drafts', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: NovaComedyStudioScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(1), 'LOL only phrase');
+    await tester.tap(find.text('حفظ المسودة محلياً'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('AI After Dark').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(1), 'AI only phrase');
+    await tester.tap(find.text('حفظ المسودة محلياً'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('LOL only phrase'), findsOneWidget);
+    expect(find.text('AI only phrase'), findsOneWidget);
+
+    await tester.tap(find.text('تصفية حسب العلامة'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('AI After Dark').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('AI only phrase'), findsOneWidget);
+    expect(find.text('LOL only phrase'), findsNothing);
+
+    final prefs = await SharedPreferences.getInstance();
+    final queue = jsonDecode(prefs.getString('nova.comedy_studio.queue.v1')!) as List<dynamic>;
+    expect(queue, hasLength(2));
+  });
+
 }
