@@ -43,6 +43,22 @@ void main() {
     });
   });
 
+  group('Public opportunity listing URL validation', () {
+    test('accepts HTTPS listings from the expected source domains', () {
+      final remotive = parseRemotiveLead({'title': 'Remote role', 'url': 'https://remotive.com/remote-jobs/example'});
+      final arbeitnow = parseArbeitnowLead({'title': 'Remote role', 'url': 'https://www.arbeitnow.com/jobs/example'});
+      expect(remotive, isNotNull);
+      expect(arbeitnow, isNotNull);
+    });
+
+    test('rejects deceptive hosts, HTTP, and URLs containing credentials', () {
+      expect(parseRemotiveLead({'title': 'Fake', 'url': 'https://remotive.com.attacker.test/job'}), isNull);
+      expect(parseRemotiveLead({'title': 'HTTP', 'url': 'http://remotive.com/job'}), isNull);
+      expect(parseArbeitnowLead({'title': 'Fake', 'url': 'https://arbeitnow.com.attacker.test/job'}), isNull);
+      expect(parseArbeitnowLead({'title': 'Credential URL', 'url': 'https://user:pass@arbeitnow.com/job'}), isNull);
+    });
+  });
+
   group('RevenueScenario', () {
     test('calculates gross revenue, profit and margin transparently', () {
       const scenario = RevenueScenario(expectedCustomers: 10, revenuePerCustomer: 25,
