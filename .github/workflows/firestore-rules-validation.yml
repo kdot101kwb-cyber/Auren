@@ -7,6 +7,7 @@ on:
       - "firebase.json"
       - "firestore.indexes.json"
       - "functions/*rules*"
+      - "functions/package.json"
       - ".github/workflows/firestore-rules-validation.yml"
   workflow_dispatch:
 
