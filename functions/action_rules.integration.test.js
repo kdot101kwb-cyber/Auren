@@ -27,7 +27,7 @@ test.after(async () => {
 
 async function seedAction(userId, actionId, overrides = {}) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    const db = getFirestore(context);
+    const db = getFirestore(context.getApp());
     const now = Timestamp.now();
     await setDoc(doc(db, `users/${userId}/actions/${actionId}`), {
       actionType: 'demo.create_note',
@@ -45,7 +45,7 @@ async function seedAction(userId, actionId, overrides = {}) {
 }
 
 function actionRef(userId, actionId) {
-  return doc(getFirestore(testEnv.authenticatedContext(userId)), `users/${userId}/actions/${actionId}`);
+  return doc(getFirestore(testEnv.authenticatedContext(userId).getApp()), `users/${userId}/actions/${actionId}`);
 }
 
 test('owner can read and edit only the pending draft with version +1', async () => {
@@ -142,7 +142,7 @@ test('client cannot delete an action', async () => {
 
 test('another user cannot read or update the action', async () => {
   await seedAction('rules-owner', 'cross-user');
-  const ref = doc(getFirestore(testEnv.authenticatedContext('rules-other')), 'users/rules-owner/actions/cross-user');
+  const ref = doc(getFirestore(testEnv.authenticatedContext('rules-other').getApp()), 'users/rules-owner/actions/cross-user');
   await assertFails(getDoc(ref));
   await assertFails(updateDoc(ref, {
     payload: { text: 'cross-user tamper' },
@@ -153,7 +153,7 @@ test('another user cannot read or update the action', async () => {
 
 test('unauthenticated client cannot read or update the action', async () => {
   await seedAction('rules-user-10', 'unauth');
-  const ref = doc(getFirestore(testEnv.unauthenticatedContext()), 'users/rules-user-10/actions/unauth');
+  const ref = doc(getFirestore(testEnv.unauthenticatedContext().getApp()), 'users/rules-user-10/actions/unauth');
   await assertFails(getDoc(ref));
   await assertFails(updateDoc(ref, {
     payload: { text: 'unauth tamper' },
@@ -163,7 +163,7 @@ test('unauthenticated client cannot read or update the action', async () => {
 });
 
 test('client cannot create action documents directly', async () => {
-  const db = getFirestore(testEnv.authenticatedContext('rules-user-11'));
+  const db = getFirestore(testEnv.authenticatedContext('rules-user-11').getApp());
   await assertFails(setDoc(doc(db, 'users/rules-user-11/actions/client-create'), {
     actionType: 'demo.create_note',
     title: 'Client-created',
@@ -187,7 +187,7 @@ test('concurrent execution claims allow exactly one winner', async () => {
   });
 
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    const db = getFirestore(context);
+    const db = getFirestore(context.getApp());
     const ref = doc(db, 'users/rules-concurrency/actions/execution-claim');
 
     const claim = async () => {
@@ -216,7 +216,7 @@ test('concurrent execution claims allow exactly one winner', async () => {
 
 async function seedSocialRequest(collection, id, data) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    await setDoc(doc(getFirestore(context), `${collection}/${id}`), data);
+    await setDoc(doc(getFirestore(context.getApp()), `${collection}/${id}`), data);
   });
 }
 
@@ -228,9 +228,9 @@ test('random connect requests: only waiting requests or involved users are reada
     uid: 'social-owner', status: 'matched', matchedWith: 'social-peer',
     displayName: 'Matched profile',
   });
-  const stranger = getFirestore(testEnv.authenticatedContext('social-stranger'));
-  const owner = getFirestore(testEnv.authenticatedContext('social-owner'));
-  const peer = getFirestore(testEnv.authenticatedContext('social-peer'));
+  const stranger = getFirestore(testEnv.authenticatedContext('social-stranger').getApp());
+  const owner = getFirestore(testEnv.authenticatedContext('social-owner').getApp());
+  const peer = getFirestore(testEnv.authenticatedContext('social-peer').getApp());
 
   await assertSucceeds(getDoc(doc(stranger, 'random_connect/waiting-public')));
   await assertFails(getDoc(doc(stranger, 'random_connect/matched-private')));
@@ -245,8 +245,8 @@ test('random group requests: only waiting requests or the owner are readable', a
   await seedSocialRequest('random_group_connect', 'grouped-private', {
     uid: 'group-owner', status: 'grouped', groupSize: 4,
   });
-  const stranger = getFirestore(testEnv.authenticatedContext('group-stranger'));
-  const owner = getFirestore(testEnv.authenticatedContext('group-owner'));
+  const stranger = getFirestore(testEnv.authenticatedContext('group-stranger').getApp());
+  const owner = getFirestore(testEnv.authenticatedContext('group-owner').getApp());
 
   await assertSucceeds(getDoc(doc(stranger, 'random_group_connect/group-waiting')));
   await assertFails(getDoc(doc(stranger, 'random_group_connect/grouped-private')));
