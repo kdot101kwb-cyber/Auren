@@ -10,7 +10,7 @@ void main() {
 
   testWidgets('workspace records and displays a private AUREN idea', (tester) async {
     await tester.pumpWidget(MaterialApp(
-      home: NovaAurenWorkspaceScreen(onOpenBuilder: () {}),
+      home: Scaffold(body: NovaAurenWorkspaceScreen(onOpenBuilder: () {})),
     ));
     await tester.pumpAndSettle();
 
@@ -35,11 +35,14 @@ void main() {
   testWidgets('workspace builder shortcut invokes callback', (tester) async {
     var opened = false;
     await tester.pumpWidget(MaterialApp(
-      home: NovaAurenWorkspaceScreen(onOpenBuilder: () => opened = true),
+      home: Scaffold(body: NovaAurenWorkspaceScreen(onOpenBuilder: () => opened = true)),
     ));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('فتح مهندس بناء التطبيقات'));
+    final builderShortcut = find.text('فتح مهندس بناء التطبيقات');
+    await tester.ensureVisible(builderShortcut);
+    await tester.pumpAndSettle();
+    await tester.tap(builderShortcut);
     expect(opened, isTrue);
   });
 }
