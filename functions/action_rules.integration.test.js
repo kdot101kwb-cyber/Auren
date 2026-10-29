@@ -29,7 +29,7 @@ test.after(async () => {
 });
 
 function dbFor(context) {
-  // rules-unit-testing v3 exposes the modular Firestore API, not compat methods.
+  // rules-unit-testing v3 returns the compat Firestore API when compat is registered.
   return context.firestore();
 }
 
@@ -86,13 +86,13 @@ test('client cannot change status or actionType during draft editing', async () 
   await seedAction('rules-user-4', 'status-change');
   const ref = actionRef(testEnv.authenticatedContext('rules-user-4'), 'rules-user-4', 'status-change');
   await assertFails(ref.update({ status: 'approved', draftVersion: 1, updatedAt: Timestamp.now() }));
-  await assertFails(updateDoc(ref, { actionType: 'memory.save', draftVersion: 1, updatedAt: Timestamp.now() }));
+  await assertFails(ref.update({ actionType: 'memory.save', draftVersion: 1, updatedAt: Timestamp.now() }));
 });
 
 test('client cannot change createdAt or write approval fields', async () => {
   await seedAction('rules-user-5', 'protected-fields');
   const ref = actionRef(testEnv.authenticatedContext('rules-user-5'), 'rules-user-5', 'protected-fields');
-  await assertFails(updateDoc(ref, {
+  await assertFails(ref.update({
     createdAt: new Date(Date.now() - 1000), draftVersion: 1, updatedAt: Timestamp.now(),
   }));
   await assertFails(updateDoc(ref, {
@@ -169,7 +169,7 @@ test('random connect requests: waiting requests or involved users are readable',
   await seedRequest('random_connect', 'waiting-public', { uid: 'social-owner', status: 'waiting', displayName: 'Discoverable' });
   await seedRequest('random_connect', 'matched-private', { uid: 'social-owner', status: 'matched', matchedWith: 'social-peer', displayName: 'Matched profile' });
   await assertSucceeds(dbFor(testEnv.authenticatedContext('social-stranger')).doc('random_connect/waiting-public').get());
-  await assertFails(getDoc(dbFor(testEnv.authenticatedContext('social-stranger')).doc('random_connect/matched-private')));
+  await assertFails(dbFor(testEnv.authenticatedContext('social-stranger')).doc('random_connect/matched-private').get());
   await assertSucceeds(dbFor(testEnv.authenticatedContext('social-owner')).doc('random_connect/matched-private').get());
   await assertSucceeds(dbFor(testEnv.authenticatedContext('social-peer')).doc('random_connect/matched-private').get());
 });
