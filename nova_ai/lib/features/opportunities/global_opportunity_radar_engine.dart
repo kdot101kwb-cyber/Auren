@@ -156,6 +156,31 @@ List<GlobalOpportunityLead> rankGlobalLeads(
   return List.unmodifiable(filtered);
 }
 
+/// Explain which parts NOVA may be able to prepare for a lead.
+/// This is a suggested workflow, not a claim that NOVA can autonomously perform
+/// paid work or submit an application.
+List<String> novaExecutionPlanForLead(GlobalOpportunityLead lead) {
+  final text = normalizeRadarText('${lead.title} ${lead.description} ${lead.category}');
+  final steps = <String>[];
+  if (RegExp(r'translat|locali[sz]|transcri|subtitl|caption|language|ترجم|تفريغ').hasMatch(text)) {
+    steps.add('NOVA يمكنه تجهيز مسودة ترجمة أو تفريغ ومراجعتها معك قبل التسليم.');
+  }
+  if (RegExp(r'content|copywrit|blog|article|social media|script|writing|كتابة|محتوى').hasMatch(text)) {
+    steps.add('NOVA يمكنه إعداد مسودة محتوى أو نص منشور ونماذج أولية.');
+  }
+  if (RegExp(r'data annot|data label|ai evaluat|rating|categor|spreadsheet|research|وسم بيانات|تقييم').hasMatch(text)) {
+    steps.add('NOVA يمكنه تنظيم البيانات أو إعداد عينة عمل، إذا كانت المهمة تسمح باستخدام أدوات AI.');
+  }
+  if (RegExp(r'automat|workflow|no code|developer|software|website|app build|program|برمجة|تطبيق').hasMatch(text)) {
+    steps.add('NOVA يمكنه تحليل المطلوب واقتراح أو تجهيز نموذج أولي تقني للاختبار.');
+  }
+  if (steps.isEmpty) {
+    steps.add('NOVA يقدر يحلل الوصف ويجهّز مسودة أو خطة عمل بعد التأكد من متطلبات المهمة.');
+  }
+  steps.add('قبل التنفيذ: تحقق من السماح باستخدام الذكاء الاصطناعي، والمهارات المطلوبة، والأجر، وأهلية السودان. التقديم والتسليم والدفع ليست تلقائية.');
+  return List.unmodifiable(steps);
+}
+
 /// Conservative checks for what the public listing actually tells us.
 /// These checks never infer Sudan eligibility or a payout method from "remote".
 List<String> opportunityVerificationWarnings(GlobalOpportunityLead lead) {
