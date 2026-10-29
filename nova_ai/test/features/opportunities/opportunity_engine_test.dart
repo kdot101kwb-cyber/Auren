@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nova_ai/features/opportunities/opportunity_engine.dart';
+import 'package:nova_ai/features/opportunities/global_opportunity_radar_engine.dart';
 
 void main() {
   group('OpportunityCandidate', () {
@@ -40,6 +41,22 @@ void main() {
       final ranked = rankOpportunities([b, a]);
       expect(ranked.first.name, 'A');
       expect(() => ranked.add(a), throwsUnsupportedError);
+    });
+  });
+
+  group('Public opportunity listing URL validation', () {
+    test('accepts HTTPS listings from the expected source domains', () {
+      final remotive = parseRemotiveLead({'title': 'Remote role', 'url': 'https://remotive.com/remote-jobs/example'});
+      final arbeitnow = parseArbeitnowLead({'title': 'Remote role', 'url': 'https://www.arbeitnow.com/jobs/example'});
+      expect(remotive, isNotNull);
+      expect(arbeitnow, isNotNull);
+    });
+
+    test('rejects deceptive hosts, HTTP, and URLs containing credentials', () {
+      expect(parseRemotiveLead({'title': 'Fake', 'url': 'https://remotive.com.attacker.test/job'}), isNull);
+      expect(parseRemotiveLead({'title': 'HTTP', 'url': 'http://remotive.com/job'}), isNull);
+      expect(parseArbeitnowLead({'title': 'Fake', 'url': 'https://arbeitnow.com.attacker.test/job'}), isNull);
+      expect(parseArbeitnowLead({'title': 'Credential URL', 'url': 'https://user:pass@arbeitnow.com/job'}), isNull);
     });
   });
 
