@@ -153,7 +153,97 @@ List<GlobalOpportunityLead> rankGlobalLeads(
     return (b.publishedAt?.millisecondsSinceEpoch ?? 0)
         .compareTo(a.publishedAt?.millisecondsSinceEpoch ?? 0);
   });
-  return List.unmodifiable(filtered);
+
+  // Multiple keyword searches can return the same source listing. Keep the
+  // highest-ranked occurrence and preserve source URLs for opening the listing.
+  final seenUrls = <String>{};
+  final unique = <GlobalOpportunityLead>[];
+  for (final lead in filtered) {
+    final uri = Uri.tryParse(lead.url);
+    final canonicalUrl = uri == null
+        ? lead.url.trim()
+        : uri.replace(fragment: '').toString().replaceFirst(RegExp(r'/
+}
+
+GlobalOpportunityLead? parseRemotiveLead(Map<String, dynamic> json) {
+  final title = (json['title'] ?? '').toString().trim();
+  final url = _trustedListingUrl(json['url'], const {'remotive.com'});
+  if (title.isEmpty || url == null) return null;
+  return GlobalOpportunityLead(
+    id: 'remotive:${json['id'] ?? url}',
+    title: title,
+    description: _stripHtml((json['description'] ?? '').toString()),
+    company: (json['company_name'] ?? '').toString(),
+    country: (json['candidate_required_location'] ?? 'Worldwide eligibility not stated').toString(),
+    category: (json['category'] ?? '').toString(),
+    source: 'Remotive',
+    url: url,
+    language: (json['job_type'] ?? 'Not stated').toString(),
+    salary: (json['salary'] ?? '').toString(),
+    remote: true,
+    publishedAt: DateTime.tryParse((json['publication_date'] ?? '').toString()),
+  );
+}
+
+GlobalOpportunityLead? parseArbeitnowLead(Map<String, dynamic> json) {
+  final title = (json['title'] ?? '').toString().trim();
+  final url = _trustedListingUrl(json['url'], const {'arbeitnow.com'});
+  if (title.isEmpty || url == null) return null;
+  final tags = (json['tags'] is List ? json['tags'] as List : const [])
+      .map((e) => e.toString()).join(', ');
+  return GlobalOpportunityLead(
+    id: 'arbeitnow:${json['slug'] ?? url}',
+    title: title,
+    description: _stripHtml((json['description'] ?? '').toString()),
+    company: (json['company_name'] ?? '').toString(),
+    country: (json['location'] ?? 'Country not stated').toString(),
+    category: tags,
+    source: 'Arbeitnow',
+    url: url,
+    language: 'Not stated by source',
+    salary: '',
+    remote: json['remote'] == true,
+    publishedAt: DateTime.tryParse((json['created_at'] ?? '').toString()),
+  );
+}
+
+String? _trustedListingUrl(Object? value, Set<String> allowedHosts) {
+  final raw = value?.toString().trim() ?? '';
+  final uri = Uri.tryParse(raw);
+  if (uri == null || uri.scheme.toLowerCase() != 'https' ||
+      uri.host.isEmpty || uri.userInfo.isNotEmpty) return null;
+  final host = uri.host.toLowerCase();
+  final trusted = allowedHosts.any((domain) => host == domain || host.endsWith('.$domain'));
+  return trusted ? uri.toString() : null;
+}
+
+String _stripHtml(String value) => value
+    .replaceAll(RegExp(r'<[^>]*>'), ' ')
+    .replaceAll(RegExp(r'&nbsp;|&#160;'), ' ')
+    .replaceAll(RegExp(r'&amp;'), '&')
+    .replaceAll(RegExp(r'&quot;'), '"')
+    .replaceAll(RegExp(r'&#39;|&apos;'), "'")
+    .replaceAll(RegExp(r'\s+'), ' ')
+    .trim();
+
+List<GlobalOpportunityLead> decodeSavedRadarLeads(String? raw) {
+  if (raw == null || raw.trim().isEmpty) return const [];
+  try {
+    final data = jsonDecode(raw);
+    if (data is! List) return const [];
+    return data.whereType<Map>().map((row) =>
+      GlobalOpportunityLead.fromJson(Map<String, dynamic>.from(row))).toList();
+  } catch (_) {
+    return const [];
+  }
+}
+), '').toLowerCase();
+    final key = canonicalUrl.isEmpty
+        ? '${normalizeRadarText(lead.title)}|${normalizeRadarText(lead.company)}|${lead.source}'
+        : canonicalUrl;
+    if (seenUrls.add(key)) unique.add(lead);
+  }
+  return List.unmodifiable(unique);
 }
 
 GlobalOpportunityLead? parseRemotiveLead(Map<String, dynamic> json) {
