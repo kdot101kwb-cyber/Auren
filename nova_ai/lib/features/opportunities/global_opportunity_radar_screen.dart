@@ -142,7 +142,7 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
   Widget _filter(String label, String value, List<String> options, ValueChanged<String?> onChanged) => Padding(
     padding: const EdgeInsets.only(bottom: 10),
     child: DropdownButtonFormField<String>(
-      value: value, isExpanded: true,
+      initialValue: value, isExpanded: true,
       decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
       items: options.map((option) => DropdownMenuItem<String>(value: option, child: Text(option, overflow: TextOverflow.ellipsis))).toList(),
       onChanged: onChanged,
