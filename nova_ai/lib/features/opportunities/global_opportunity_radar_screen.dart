@@ -71,6 +71,9 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
   }
 
   Future<void> _search() async {
+    // Guard against duplicate invocations even if this method is triggered
+    // outside the disabled search button while a request is still in flight.
+    if (_busy) return;
     FocusScope.of(context).unfocus();
     setState(() { _busy = true; _status = null; _sourceWarnings.clear(); });
     final all = <GlobalOpportunityLead>[];
@@ -80,16 +83,11 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
     final queries = <String>{if (rawQuery.isNotEmpty) rawQuery, if (localized.isNotEmpty) localized, ...expanded}
         .where((s) => s.trim().isNotEmpty).take(4).toList();
     try {
-      // Remotive's daily quota is stored on-device. Run its requests sequentially
-      // so concurrent calls cannot read and increment the same quota value.
+      // Keep one search invocation from launching duplicate Remotive requests.
+      // These sources are independent, so fetch Arbeitnow while Remotive runs.
       final arbeitnowRequest = _fetchArbeitnow(all);
       for (final query in queries.take(3)) {
         await _fetchRemotive(query, all);
-        if (_sourceWarnings.any(
-          (warning) => warning.startsWith('Remotive: وصل التطبيق إلى حد 4 طلبات يومياً'),
-        )) {
-          break;
-        }
       }
       await arbeitnowRequest;
       final ranked = rankGlobalLeads(all, query: rawQuery, country: _country, region: _region);
