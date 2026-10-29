@@ -167,7 +167,7 @@ jobs:
           command: |
             set -e
             cd nova_ai
-            if [ ! -f android/app/build.gradle ] && [ ! -f android/app/build.gradle.kts ]; then
+            if [ ! -x android/gradlew ] || { [ ! -f android/app/build.gradle ] && [ ! -f android/app/build.gradle.kts ]; }; then
               echo "NOVA Android Gradle project is missing; generating the standard Flutter Android platform."
               flutter create --platforms=android --org com.auren --project-name nova_ai .
             fi
