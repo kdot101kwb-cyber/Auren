@@ -10,9 +10,15 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
+  Future<void> revealComposer(WidgetTester tester) async {
+    await tester.drag(find.byType(ListView).first, const Offset(0, -700));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('saves bilingual original content as a local draft', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
+    await revealComposer(tester);
 
     await tester.enterText(find.byType(TextField).at(0), 'لما تقول خمس دقائق وتختفي ساعة');
     await tester.enterText(find.byType(TextField).at(1), 'When you say five minutes and vanish for an hour');
@@ -34,6 +40,8 @@ void main() {
   testWidgets('does not claim a Facebook page is connected or publish automatically', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, -1800));
+    await tester.pumpAndSettle();
 
     expect(find.textContaining('لم يتم إنشاء صفحة فيسبوك'), findsOneWidget);
     await tester.tap(find.text('طلب النشر التلقائي'));
@@ -51,6 +59,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.textContaining('AI After Dark').last);
     await tester.pumpAndSettle();
+    await revealComposer(tester);
     await tester.enterText(find.byType(TextField).at(1), 'A real AI tip');
     await tester.tap(find.text('حفظ المسودة محلياً'));
     await tester.pumpAndSettle();
@@ -62,6 +71,7 @@ void main() {
   testWidgets('records and persists observed content results', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
+    await revealComposer(tester);
 
     await tester.enterText(find.byType(TextField).at(1), 'Original AI tip');
     await tester.tap(find.text('حفظ المسودة محلياً'));
@@ -89,6 +99,7 @@ void main() {
   testWidgets('rejects retention percentages outside zero to one hundred', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
+    await revealComposer(tester);
     await tester.enterText(find.byType(TextField).at(1), 'Draft');
     await tester.tap(find.text('حفظ المسودة محلياً'));
     await tester.pumpAndSettle();
@@ -105,6 +116,7 @@ void main() {
   testWidgets('filters the queue to the selected brand without losing other drafts', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
+    await revealComposer(tester);
 
     await tester.enterText(find.byType(TextField).at(1), 'LOL only phrase');
     await tester.tap(find.text('حفظ المسودة محلياً'));
