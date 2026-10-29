@@ -52,3 +52,22 @@ test('missing source data is labelled incomplete rather than invented', () => {
   assert.equal(pack.evidenceConfidence, 'incomplete');
   assert.ok(pack.evidenceSummary.some((x) => x.includes('unavailable')));
 });
+
+test('timing policy asks for more evidence when either source is unavailable', () => {
+  const {evaluateNovaOpportunityTimingForTest} = require('./nova_market_watch_agent');
+  const hnMissing = evaluateNovaOpportunityTimingForTest({
+    recentMentions: null,
+    previousMentions: null,
+    githubNewRepositories: 14,
+  });
+  assert.equal(hnMissing.decision, 'collect_more_evidence');
+  assert.equal(hnMissing.buildGate, 'human_approval_and_problem_validation_required');
+
+  const githubMissing = evaluateNovaOpportunityTimingForTest({
+    recentMentions: 20,
+    previousMentions: 8,
+    githubNewRepositories: null,
+  });
+  assert.equal(githubMissing.decision, 'collect_more_evidence');
+  assert.match(githubMissing.caution, /not proof/);
+});
