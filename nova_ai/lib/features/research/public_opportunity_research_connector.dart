@@ -51,7 +51,9 @@ class PublicOpportunityResearchConnector implements ResearchConnector {
           results.add(ResearchResult(
             title: title,
             url: url,
-            snippet: description.substring(0, description.length.clamp(0, 500)),
+            snippet: description.substring(
+              0, description.length.clamp(0, 500).toInt(),
+            ),
             sourceId: 'remotive',
             publishedAt: DateTime.tryParse(_text(item['publication_date'])),
             retrievedAt: DateTime.now().toUtc(),
@@ -76,7 +78,9 @@ class PublicOpportunityResearchConnector implements ResearchConnector {
           results.add(ResearchResult(
             title: title,
             url: url,
-            snippet: description.substring(0, description.length.clamp(0, 500)),
+            snippet: description.substring(
+              0, description.length.clamp(0, 500).toInt(),
+            ),
             sourceId: 'arbeitnow',
             publishedAt: DateTime.tryParse(_text(item['created_at'])),
             retrievedAt: DateTime.now().toUtc(),
