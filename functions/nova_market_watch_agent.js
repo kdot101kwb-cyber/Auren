@@ -3,6 +3,7 @@
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const {onSchedule} = require('firebase-functions/scheduler');
 const {getFirestore, FieldValue} = require('firebase-admin/firestore');
+const {evaluateOpportunityTiming} = require('./nova_opportunity_timing');
 
 const db = getFirestore();
 const REGION = 'us-central1';
@@ -222,6 +223,7 @@ async function scanMarket(now = new Date()) {
       id: theme.id,
       label: theme.label,
       score,
+      timing: evaluateOpportunityTiming(signals),
       signals,
       buildPack: buildPack(theme, signals, checkedAt),
       sourceLinks: [
@@ -280,3 +282,5 @@ exports.scanNovaMarketForTest = scanMarket;
 exports.scoreNovaMarketGrowthForTest = growthScore;
 exports.buildNovaMarketPackForTest = buildPack;
 exports.novaMarketWatchThemesForTest = WATCH_THEMES;
+
+exports.evaluateNovaOpportunityTimingForTest = evaluateOpportunityTiming;
