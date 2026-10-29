@@ -7,6 +7,9 @@ import 'global_opportunity_radar_engine.dart';
 
 const _radarAccent = Color(0xFF7DE2D1);
 const _savedKey = 'nova.global_opportunity_radar.saved.v1';
+const _remotiveDailyCountKey = 'nova.global_opportunity_radar.remotive.daily_count.v1';
+const _remotiveDailyDateKey = 'nova.global_opportunity_radar.remotive.daily_date.v1';
+const _remotiveDailyRequestLimit = 8;
 
 class NovaGlobalOpportunityRadarScreen extends StatefulWidget {
   const NovaGlobalOpportunityRadarScreen({super.key});
@@ -105,7 +108,29 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
     }
   }
 
+  Future<bool> _reserveRemotiveRequest() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final today = DateTime.now().toUtc().toIso8601String().split('T').first;
+      final savedDate = prefs.getString(_remotiveDailyDateKey);
+      var count = savedDate == today ? (prefs.getInt(_remotiveDailyCountKey) ?? 0) : 0;
+      if (count >= _remotiveDailyRequestLimit) {
+        _sourceWarnings.add('وصل الرادار إلى حدّه المحلي اليومي لمصدر Remotive؛ جرّب غداً أو راجع النتائج المحفوظة.');
+        return false;
+      }
+      count += 1;
+      await prefs.setString(_remotiveDailyDateKey, today);
+      await prefs.setInt(_remotiveDailyCountKey, count);
+      return true;
+    } catch (_) {
+      // Fail closed if local quota state cannot be read or persisted.
+      _sourceWarnings.add('تعذر التحقق من حد الاستخدام المحلي لـ Remotive؛ تم إيقاف طلب المصدر لحماية الاستخدام.');
+      return false;
+    }
+  }
+
   Future<void> _fetchRemotive(String query, List<GlobalOpportunityLead> into) async {
+    if (!await _reserveRemotiveRequest()) return;
     try {
       final uri = Uri.https('remotive.com', '/api/remote-jobs', {'search': query, 'limit': '40'});
       final response = await http.get(uri).timeout(const Duration(seconds: 12));
