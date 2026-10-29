@@ -172,9 +172,25 @@ jobs:
               flutter create --platforms=android --org com.auren --project-name nova .
             fi
             # Pin versions compatible with the Flutter Gradle plugin; flutter create may refresh these templates.
-            sed -i 's/version "9.1.0"/version "8.11.1"/' android/settings.gradle.kts
-            sed -i 's/version "2.4.0"/version "2.1.0"/' android/settings.gradle.kts
+            # Pin the plugin versions required by this Flutter SDK, regardless of template defaults.
+            sed -i -E '/id\("com.android.application"\) version /s/version "[^"]+"/version "8.11.1"/' android/settings.gradle.kts
+            sed -i -E '/id\("org.jetbrains.kotlin.android"\) version /s/version "[^"]+"/version "2.1.0"/' android/settings.gradle.kts
             sed -i 's#gradle-[0-9.]*-all.zip#gradle-8.14.3-all.zip#' android/gradle/wrapper/gradle-wrapper.properties
+            # Flutter's current template may enable AGP 9-only DSL/Kotlin switches even after AGP is pinned back.
+            touch android/gradle.properties
+            if grep -q '^android.newDsl=' android/gradle.properties; then
+              sed -i 's/^android.newDsl=.*/android.newDsl=false/' android/gradle.properties
+            else
+              echo 'android.newDsl=false' >> android/gradle.properties
+            fi
+            if grep -q '^android.builtInKotlin=' android/gradle.properties; then
+              sed -i 's/^android.builtInKotlin=.*/android.builtInKotlin=false/' android/gradle.properties
+            else
+              echo 'android.builtInKotlin=false' >> android/gradle.properties
+            fi
+            echo "NOVA Android build versions:"
+            grep -E 'com.android.application|org.jetbrains.kotlin.android' android/settings.gradle.kts
+            grep -E '^distributionUrl=|^android.newDsl=|^android.builtInKotlin=' android/gradle/wrapper/gradle-wrapper.properties android/gradle.properties
             test -f android/gradlew
             test -f android/app/build.gradle -o -f android/app/build.gradle.kts
       - run:
