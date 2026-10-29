@@ -32,6 +32,8 @@ void main() {
     await tester.pumpWidget(const NovaApp());
     await tester.pumpAndSettle();
 
+    await tester.drag(find.byType(ListView).first, const Offset(0, -500));
+    await tester.pumpAndSettle();
     final restartedCheckbox = find.ancestor(of: task, matching: find.byType(CheckboxListTile));
     final tile = tester.widget<CheckboxListTile>(restartedCheckbox);
     expect(tile.value, isTrue);
