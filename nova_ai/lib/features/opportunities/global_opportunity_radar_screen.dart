@@ -80,10 +80,18 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
     final queries = <String>{if (rawQuery.isNotEmpty) rawQuery, if (localized.isNotEmpty) localized, ...expanded}
         .where((s) => s.trim().isNotEmpty).take(4).toList();
     try {
-      final requests = <Future<void>>[];
-      for (final q in queries.take(3)) { requests.add(_fetchRemotive(q, all)); }
-      requests.add(_fetchArbeitnow(all));
-      await Future.wait(requests);
+      // Remotive's daily quota is stored on-device. Run its requests sequentially
+      // so concurrent calls cannot read and increment the same quota value.
+      final arbeitnowRequest = _fetchArbeitnow(all);
+      for (final query in queries.take(3)) {
+        await _fetchRemotive(query, all);
+        if (_sourceWarnings.any(
+          (warning) => warning.startsWith('Remotive: وصل التطبيق إلى حد 4 طلبات يومياً'),
+        )) {
+          break;
+        }
+      }
+      await arbeitnowRequest;
       final ranked = rankGlobalLeads(all, query: rawQuery, country: _country, region: _region);
       if (!mounted) return;
       setState(() {
