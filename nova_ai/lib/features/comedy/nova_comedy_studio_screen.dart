@@ -18,6 +18,7 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
   final _en = TextEditingController();
   final _notes = TextEditingController();
   String _format = 'meme';
+  String _brandId = 'lol_planet';
   String _language = 'both';
   bool _loading = true;
   bool _autopublishRequested = false;
@@ -29,6 +30,50 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
     'short_video': 'فيديو قصير',
     'carousel': 'منشور متعدد الصور',
   };
+  static const _brands = <String, String>{
+    'lol_planet': 'LOL Planet — كوميديا',
+    'midnight_files': 'Midnight Files — قصص غامضة',
+    'ai_after_dark': 'AI After Dark — ذكاء اصطناعي',
+    'sports_vibes': 'Sports Vibes — رياضة',
+    'pet_comedy_club': 'Pet Comedy Club — حيوانات مضحكة',
+    'beyond_mystery': 'Beyond Mystery — ألغاز',
+    'future_unlocked': 'Future Unlocked — تقنية',
+    'daily_chaos': 'Daily Chaos — الحياة اليومية',
+    'challenge_arena': 'Challenge Arena — تحديات',
+    'wild_and_funny': 'Wild & Funny — طبيعة',
+    'science_uncovered': 'Science Uncovered — علوم',
+    'bite_and_smile': 'Bite & Smile — طعام',
+    'level_up_life': 'Level Up Life — تطوير الذات',
+    'world_is_weird': 'World Is Weird — غرائب',
+    'dream_machines': 'Dream Machines — اختراعات',
+    'brain_trap': 'Brain Trap — ألغاز ذهنية',
+    'hidden_earth': 'Hidden Earth — أماكن',
+    'money_unfiltered': 'Money Unfiltered — مال',
+    'office_circus': 'Office Circus — كوميديا العمل',
+    'what_if_universe': 'What If Universe — افتراضات',
+    'fit_and_strong': 'Fit & Strong — لياقة',
+    'gameverse': 'GameVerse — ألعاب',
+    'screen_secrets': 'Screen Secrets — سينما',
+    'toon_town': 'Toon Town — رسوم',
+    'style_radar': 'Style Radar — أسلوب',
+    'space_makeover': 'Space Makeover — فضاء',
+    'make_it_magic': 'Make It Magic — إبداع',
+    'sound_lab': 'Sound Lab — موسيقى',
+    'language_hackers': 'Language Hackers — لغات',
+    'nature_pulse': 'Nature Pulse — بيئة',
+    'startup_zero': 'Startup Zero — مشاريع',
+    'focus_mode': 'Focus Mode — تركيز',
+    'cosmic_window': 'Cosmic Window — كون',
+    'reality_glitch': 'Reality Glitch — خيال',
+    'street_food_quest': 'Street Food Quest — أكل الشوارع',
+    'pet_school': 'Pet School — تعليم الحيوانات',
+    'build_tomorrow': 'Build Tomorrow — ابتكار',
+    'book_bites': 'Book Bites — كتب',
+    'culture_connect': 'Culture Connect — ثقافات',
+    'creative_sparks': 'Creative Sparks — أفكار',
+    'sports_skills': 'Sports Vibes: Skills & Tactics — مهارات رياضية',
+  };
+
   static const _statuses = <String, String>{
     'draft': 'مسودة',
     'review': 'تحتاج مراجعة',
@@ -88,7 +133,7 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
     final now = DateTime.now().toUtc().toIso8601String();
     final item = <String, dynamic>{
       'id': now,
-      'brand': 'independent_nova_network_brand',
+      'brand': _brandId,
       'format': _format,
       'language': _language,
       'arabicText': arabic,
@@ -181,6 +226,17 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
             value: _items.where((item) => item['status'] == 'ready').length.toString(),
           )),
         ]),
+        const SizedBox(height: 16),
+        const Text('اختيار العلامة', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+          textDirection: TextDirection.rtl),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: _brandId,
+          decoration: const InputDecoration(labelText: 'علامة المحتوى', border: OutlineInputBorder()),
+          items: _brands.entries.map((entry) =>
+            DropdownMenuItem(value: entry.key, child: Text(entry.value, overflow: TextOverflow.ellipsis))).toList(),
+          onChanged: (value) { if (value != null) setState(() => _brandId = value); },
+        ),
         const SizedBox(height: 16),
         const Text('إنشاء محتوى أصلي',
           style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
