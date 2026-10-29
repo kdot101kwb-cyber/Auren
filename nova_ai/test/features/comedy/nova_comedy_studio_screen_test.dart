@@ -10,33 +10,36 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  Future<void> revealTextField(WidgetTester tester, int index) async {
-    final target = find.byType(TextField).at(index);
-    await tester.dragUntilVisible(
-      target,
-      find.byType(ListView).first,
-      const Offset(0, -240),
-    );
+  Finder contentField(String label) => find.byWidgetPredicate(
+        (widget) => widget is TextField && widget.decoration?.labelText == label,
+      );
+
+  Future<void> revealTarget(WidgetTester tester, Finder target) async {
+    final list = find.byType(ListView).first;
+    for (var attempt = 0; attempt < 16 && target.evaluate().isEmpty; attempt++) {
+      await tester.drag(list, const Offset(0, -300));
+      await tester.pumpAndSettle();
+    }
+    expect(target, findsOneWidget);
+    await tester.ensureVisible(target);
     await tester.pumpAndSettle();
   }
 
+  Future<void> revealTextField(WidgetTester tester, String label) async {
+    await revealTarget(tester, contentField(label));
+  }
+
   Future<void> revealSaveButton(WidgetTester tester) async {
-    final target = find.text('حفظ المسودة محلياً');
-    await tester.dragUntilVisible(
-      target,
-      find.byType(ListView).first,
-      const Offset(0, -240),
-    );
-    await tester.pumpAndSettle();
+    await revealTarget(tester, find.text('حفظ المسودة محلياً'));
   }
 
   testWidgets('saves bilingual original content as a local draft', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
-    await revealTextField(tester, 0);
-    await tester.enterText(find.byType(TextField).at(0), 'لما تقول خمس دقائق وتختفي ساعة');
-    await revealTextField(tester, 1);
-    await tester.enterText(find.byType(TextField).at(1), 'When you say five minutes and vanish for an hour');
+    await revealTextField(tester, 'النص العربي');
+    await tester.enterText(contentField('النص العربي'), 'لما تقول خمس دقائق وتختفي ساعة');
+    await revealTextField(tester, 'English caption');
+    await tester.enterText(contentField('English caption'), 'When you say five minutes and vanish for an hour');
     await revealSaveButton(tester);
     await tester.tap(find.text('حفظ المسودة محلياً'));
     await tester.pumpAndSettle();
@@ -77,7 +80,7 @@ void main() {
     await tester.tap(find.textContaining('AI After Dark').last);
     await tester.pumpAndSettle();
     await revealTextField(tester, 1);
-    await tester.enterText(find.byType(TextField).at(1), 'A real AI tip');
+    await tester.enterText(contentField('English caption'), 'A real AI tip');
     await revealSaveButton(tester);
     await tester.tap(find.text('حفظ المسودة محلياً'));
     await tester.pumpAndSettle();
@@ -90,7 +93,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
     await revealTextField(tester, 1);
-    await tester.enterText(find.byType(TextField).at(1), 'Original AI tip');
+    await tester.enterText(contentField('English caption'), 'Original AI tip');
     await revealSaveButton(tester);
     await tester.tap(find.text('حفظ المسودة محلياً'));
     await tester.pumpAndSettle();
@@ -118,7 +121,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
     await revealTextField(tester, 1);
-    await tester.enterText(find.byType(TextField).at(1), 'Draft');
+    await tester.enterText(contentField('English caption'), 'Draft');
     await revealSaveButton(tester);
     await tester.tap(find.text('حفظ المسودة محلياً'));
     await tester.pumpAndSettle();
@@ -136,7 +139,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
     await revealTextField(tester, 1);
-    await tester.enterText(find.byType(TextField).at(1), 'LOL only phrase');
+    await tester.enterText(contentField('English caption'), 'LOL only phrase');
     await revealSaveButton(tester);
     await tester.tap(find.text('حفظ المسودة محلياً'));
     await tester.pumpAndSettle();
@@ -145,7 +148,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.textContaining('AI After Dark').last);
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).at(1), 'AI only phrase');
+    await tester.enterText(contentField('English caption'), 'AI only phrase');
     await tester.tap(find.text('حفظ المسودة محلياً'));
     await tester.pumpAndSettle();
 
