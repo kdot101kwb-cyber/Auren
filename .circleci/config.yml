@@ -168,9 +168,14 @@ jobs:
             set -e
             cd nova_ai
             if [ ! -x android/gradlew ] || { [ ! -f android/app/build.gradle ] && [ ! -f android/app/build.gradle.kts ]; }; then
-              echo "NOVA Android Gradle project is missing; generating the standard Flutter Android platform."
-              flutter create --platforms=android --org com.auren --project-name nova_ai .
+              echo "Generating NOVA Android wrapper and host files."
+              flutter create --platforms=android --org com.auren --project-name nova .
             fi
+            # Pin versions compatible with the Flutter Gradle plugin; flutter create may refresh these templates.
+            sed -i 's/version "9.1.0"/version "8.9.1"/' android/settings.gradle.kts
+            sed -i 's/version "2.4.0"/version "2.1.0"/' android/settings.gradle.kts
+            sed -i 's#gradle-[0-9.]*-all.zip#gradle-8.14.3-all.zip#' android/gradle/wrapper/gradle-wrapper.properties
+            test -f android/gradlew
             test -f android/app/build.gradle -o -f android/app/build.gradle.kts
       - run:
           name: Build NOVA Android debug APK
