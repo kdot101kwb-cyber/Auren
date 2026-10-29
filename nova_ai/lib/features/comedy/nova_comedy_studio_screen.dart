@@ -19,6 +19,7 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
   final _notes = TextEditingController();
   String _format = 'meme';
   String _brandId = 'lol_planet';
+  String _filterBrandId = 'all';
   String _language = 'both';
   bool _loading = true;
   bool _autopublishRequested = false;
@@ -296,6 +297,7 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final visibleItems = _filterBrandId == 'all' ? _items : _items.where((item) => item['brand'] == _filterBrandId).toList();
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -401,14 +403,26 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
         const Text('قائمة المحتوى',
           style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
           textDirection: TextDirection.rtl),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: _filterBrandId,
+          decoration: const InputDecoration(labelText: 'تصفية حسب العلامة', border: OutlineInputBorder()),
+          items: [
+            const DropdownMenuItem(value: 'all', child: Text('كل العلامات')),
+            ..._brands.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value, overflow: TextOverflow.ellipsis))),
+          ],
+          onChanged: (value) { if (value != null) setState(() => _filterBrandId = value); },
+        ),
+        const SizedBox(height: 8),
         if (_loading)
           const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
-        else if (_items.isEmpty)
+        else if (visibleItems.isEmpty)
           const Padding(padding: EdgeInsets.symmetric(vertical: 18),
             child: Text('لا توجد مسودات بعد. ابدأ بفكرة أصلية أعلاه.', textDirection: TextDirection.rtl))
         else
-          ...List.generate(_items.length, (index) {
-            final item = _items[index];
+          ...List.generate(visibleItems.length, (index) {
+            final item = visibleItems[index];
+            final itemIndex = _items.indexOf(item);
             final format = _formats[item['format']] ?? 'محتوى';
             final status = item['status'] as String? ?? 'draft';
             final ar = item['arabicText'] as String? ?? '';
@@ -430,7 +444,7 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
                   decoration: const InputDecoration(labelText: 'حالة المحتوى', isDense: true),
                   items: _statuses.entries.map((entry) =>
                     DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
-                  onChanged: (value) { if (value != null) _setStatus(index, value); },
+                  onChanged: (value) { if (value != null) _setStatus(itemIndex, value); },
                 ),
                 const SizedBox(height: 8),
                 Text('المنصة: ${(item['platform'] as String? ?? '').isEmpty ? 'غير محددة' : item['platform']}',
@@ -440,12 +454,12 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
                 Text('متوسط المشاهدة: ${item['retentionPercent'] == null ? '—' : '${item['retentionPercent']}%'}  •  الدخل المسجل: ${((item['revenueUsd'] as num?) ?? 0).toStringAsFixed(2)}',
                   textDirection: TextDirection.rtl),
                 OutlinedButton.icon(
-                  onPressed: () => _recordResults(index),
+                  onPressed: () => _recordResults(itemIndex),
                   icon: const Icon(Icons.analytics_outlined),
                   label: const Text('تسجيل النتائج الفعلية'),
                 ),
                 Align(alignment: Alignment.centerLeft, child: IconButton(
-                  tooltip: 'حذف المسودة', onPressed: () => _delete(index),
+                  tooltip: 'حذف المسودة', onPressed: () => _delete(itemIndex),
                   icon: const Icon(Icons.delete_outline))),
               ]),
             ));
