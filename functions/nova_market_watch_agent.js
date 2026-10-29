@@ -264,8 +264,19 @@ exports.getNovaMarketWatch = onCall(
       await ref.set({...result, updatedAt: FieldValue.serverTimestamp()});
       return {...result, cached: false};
     } catch (error) {
-      console.error('NOVA Market Watch scan failed', String(error?.message || error).slice(0, 300));
-      throw new HttpsError('unavailable', 'Market scan is temporarily unavailable. Existing cached reports remain available.');
+      const message = String(error?.message || error).slice(0, 300);
+      console.error('NOVA Market Watch scan failed', message);
+      // A failed refresh should not hide the last successful report from the user.
+      // Mark it stale explicitly so the UI cannot mistake old evidence for a fresh scan.
+      if (cached?.generatedAt) {
+        return {
+          ...cached,
+          cached: true,
+          stale: true,
+          refreshError: 'The latest refresh failed; showing the last successful report.',
+        };
+      }
+      throw new HttpsError('unavailable', 'Market scan is temporarily unavailable and no cached report exists.');
     }
   },
 );
