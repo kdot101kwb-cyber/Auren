@@ -137,6 +137,46 @@ jobs:
               exit 1
             fi
 
+  nova_flutter_ci:
+    docker:
+      - image: ghcr.io/gmeligio/flutter-android:3.47.2
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - nova-flutter-deps-v1-{{ .Branch }}
+            - nova-flutter-deps-v1
+      - run:
+          name: NOVA Flutter version
+          command: cd nova_ai && flutter --version && dart --version
+      - run:
+          name: Install NOVA dependencies
+          command: cd nova_ai && flutter pub get
+      - save_cache:
+          key: nova-flutter-deps-v1-{{ .Branch }}
+          paths:
+            - ~/.pub-cache
+      - run:
+          name: Analyze NOVA package
+          command: cd nova_ai && flutter analyze
+      - run:
+          name: Test NOVA package
+          command: cd nova_ai && flutter test
+      - run:
+          name: Build NOVA Android debug APK
+          command: |
+            set -e
+            cd nova_ai
+            SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+            SDKMANAGER="${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+            NDK_VERSION="28.2.13676358"
+            NDK_DIR="${SDK_ROOT}/ndk/${NDK_VERSION}"
+            if [ ! -d "${NDK_DIR}" ]; then
+              yes | "${SDKMANAGER}" --licenses >/dev/null 2>&1 || true
+              "${SDKMANAGER}" --install "ndk;${NDK_VERSION}"
+            fi
+            flutter build apk --debug
+
   functions_tests:
     docker:
       - image: cimg/node:22.15
@@ -272,6 +312,7 @@ workflows:
   auren_ci:
     jobs:
       - flutter_ci
+      - nova_flutter_ci
       - functions_tests
       - action_executor_tests
       - plugin_worker_tests
