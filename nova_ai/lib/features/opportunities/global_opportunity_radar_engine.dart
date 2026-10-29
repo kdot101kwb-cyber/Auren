@@ -156,6 +156,25 @@ List<GlobalOpportunityLead> rankGlobalLeads(
   return List.unmodifiable(filtered);
 }
 
+/// Conservative checks for what the public listing actually tells us.
+/// These checks never infer Sudan eligibility or a payout method from "remote".
+List<String> opportunityVerificationWarnings(GlobalOpportunityLead lead) {
+  final warnings = <String>[];
+  final place = normalizeRadarText(lead.country);
+  final statesSudan = place.contains('sudan');
+  final statesWorldwide = RegExp(r'worldwide|anywhere|global|all countries').hasMatch(place);
+  if (!statesSudan && !statesWorldwide) {
+    warnings.add('قبول المتقدمين من السودان غير مؤكد؛ راجع شروط البلد في المصدر.');
+  } else if (statesWorldwide) {
+    warnings.add('وصف Worldwide لا يضمن قبول السودان؛ تحقق من شروط التقديم.');
+  }
+  if (lead.salary.trim().isEmpty) {
+    warnings.add('الأجر غير مذكور في بيانات الرادار؛ تحقق منه قبل التقديم.');
+  }
+  warnings.add('وسيلة الدفع غير موثقة هنا؛ تأكد من PayPal أو USDT أو البديل المتاح قبل بدء العمل.');
+  return List.unmodifiable(warnings);
+}
+
 GlobalOpportunityLead? parseRemotiveLead(Map<String, dynamic> json) {
   final title = (json['title'] ?? '').toString().trim();
   final url = (json['url'] ?? '').toString().trim();
