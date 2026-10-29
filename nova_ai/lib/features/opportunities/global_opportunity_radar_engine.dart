@@ -177,6 +177,38 @@ List<String> opportunityVerificationWarnings(GlobalOpportunityLead lead) {
 
 /// Parses the public Himalayas Jobs API response while retaining its
 /// required attribution and application-link semantics.
+/// Parses Jobicy's public API listing while keeping the canonical listing URL.
+GlobalOpportunityLead? parseJobicyLead(Map<String, dynamic> json) {
+  final title = (json['jobTitle'] ?? '').toString().trim();
+  final url = (json['url'] ?? '').toString().trim();
+  final uri = Uri.tryParse(url);
+  if (title.isEmpty || uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+    return null;
+  }
+  final minSalary = json['salaryMin'];
+  final maxSalary = json['salaryMax'];
+  final currency = (json['salaryCurrency'] ?? '').toString().trim();
+  final period = (json['salaryPeriod'] ?? '').toString().trim();
+  final salary = minSalary != null && maxSalary != null
+      ? '${currency.isEmpty ? '' : '$currency '}$minSalary–$maxSalary${period.isEmpty ? '' : ' / $period'}'
+      : '';
+  final pubDate = DateTime.tryParse((json['pubDate'] ?? '').toString());
+  return GlobalOpportunityLead(
+    id: 'jobicy:${json['id'] ?? url}',
+    title: title,
+    description: _stripHtml((json['jobDescription'] ?? json['jobExcerpt'] ?? '').toString()),
+    company: (json['companyName'] ?? '').toString(),
+    country: (json['jobGeo'] ?? 'Location eligibility not stated').toString(),
+    category: (json['jobIndustry'] ?? json['jobType'] ?? '').toString(),
+    source: 'Jobicy',
+    url: url,
+    language: (json['jobType'] ?? 'Not stated').toString(),
+    salary: salary,
+    remote: true,
+    publishedAt: pubDate,
+  );
+}
+
 GlobalOpportunityLead? parseHimalayasLead(Map<String, dynamic> json) {
   final title = (json['title'] ?? '').toString().trim();
   final url = (json['applicationLink'] ?? '').toString().trim();
