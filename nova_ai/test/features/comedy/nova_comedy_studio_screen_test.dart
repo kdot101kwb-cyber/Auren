@@ -79,7 +79,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.textContaining('AI After Dark').last);
     await tester.pumpAndSettle();
-    await revealTextField(tester, 1);
+    await revealTextField(tester, 'English caption');
     await tester.enterText(contentField('English caption'), 'A real AI tip');
     await revealSaveButton(tester);
     await tester.tap(find.text('حفظ المسودة محلياً'));
@@ -92,7 +92,7 @@ void main() {
   testWidgets('records and persists observed content results', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
-    await revealTextField(tester, 1);
+    await revealTextField(tester, 'English caption');
     await tester.enterText(contentField('English caption'), 'Original AI tip');
     await revealSaveButton(tester);
     await tester.tap(find.text('حفظ المسودة محلياً'));
@@ -120,7 +120,7 @@ void main() {
   testWidgets('rejects retention percentages outside zero to one hundred', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
-    await revealTextField(tester, 1);
+    await revealTextField(tester, 'English caption');
     await tester.enterText(contentField('English caption'), 'Draft');
     await revealSaveButton(tester);
     await tester.tap(find.text('حفظ المسودة محلياً'));
@@ -138,7 +138,7 @@ void main() {
   testWidgets('filters the queue to the selected brand without losing other drafts', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaComedyStudioScreen())));
     await tester.pumpAndSettle();
-    await revealTextField(tester, 1);
+    await revealTextField(tester, 'English caption');
     await tester.enterText(contentField('English caption'), 'LOL only phrase');
     await revealSaveButton(tester);
     await tester.tap(find.text('حفظ المسودة محلياً'));
