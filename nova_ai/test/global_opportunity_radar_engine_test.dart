@@ -56,6 +56,19 @@ void main() {
       expect(result.map((e) => e.id), ['a']);
     });
 
+    test('flags unknown Sudan eligibility, missing pay, and payout method', () {
+      final lead = GlobalOpportunityLead(
+        id: 'check-1', title: 'Remote assistant', description: '',
+        company: 'Example', country: 'Worldwide', category: 'Work',
+        source: 'Test', url: 'https://example.com/job', language: '',
+        salary: '', remote: true,
+      );
+      final warnings = opportunityVerificationWarnings(lead);
+      expect(warnings.any((warning) => warning.contains('السودان')), isTrue);
+      expect(warnings.any((warning) => warning.contains('الأجر')), isTrue);
+      expect(warnings.any((warning) => warning.contains('وسيلة الدفع')), isTrue);
+    });
+
     test('round trips saved opportunities', () {
       final lead = GlobalOpportunityLead(
         id: 'saved-1', title: 'Arabic QA', description: 'Check transcripts',
