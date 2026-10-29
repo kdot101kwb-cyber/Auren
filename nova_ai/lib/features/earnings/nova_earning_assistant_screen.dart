@@ -3,8 +3,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'earning_platforms.dart';
+import 'sudan_priority_platforms.dart';
 
 const _earningChecksKey = 'nova.earning_assistant.checked.v1';
+const _priorityChecksKey = 'nova.earning_assistant.sudan_priority.checked.v1';
 
 class NovaEarningAssistantScreen extends StatefulWidget {
   const NovaEarningAssistantScreen({super.key});
@@ -16,6 +18,7 @@ class NovaEarningAssistantScreen extends StatefulWidget {
 class _NovaEarningAssistantScreenState extends State<NovaEarningAssistantScreen> {
   final _query = TextEditingController();
   final Set<String> _checked = <String>{};
+  final Set<String> _priorityChecked = <String>{};
   bool _cryptoOnly = false;
   bool _loading = true;
 
@@ -35,11 +38,15 @@ class _NovaEarningAssistantScreenState extends State<NovaEarningAssistantScreen>
     try {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getStringList(_earningChecksKey) ?? const <String>[];
+      final savedPriority = prefs.getStringList(_priorityChecksKey) ?? const <String>[];
       if (!mounted) return;
       setState(() {
         _checked
           ..clear()
           ..addAll(saved);
+        _priorityChecked
+          ..clear()
+          ..addAll(savedPriority);
         _loading = false;
       });
     } catch (_) {
@@ -62,6 +69,35 @@ class _NovaEarningAssistantScreenState extends State<NovaEarningAssistantScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تعذر حفظ حالة الفحص على الهاتف.')),
+      );
+    }
+  }
+
+  Future<void> _setPriorityChecked(SudanPriorityPlatform platform, bool value) async {
+    setState(() {
+      if (value) {
+        _priorityChecked.add(platform.id);
+      } else {
+        _priorityChecked.remove(platform.id);
+      }
+    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_priorityChecksKey, _priorityChecked.toList()..sort());
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر حفظ حالة متابعة المنصة على الهاتف.')),
+      );
+    }
+  }
+
+  Future<void> _openPriority(SudanPriorityPlatform platform) async {
+    final uri = Uri.tryParse(platform.officialUrl);
+    if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر فتح الموقع الرسمي.')),
       );
     }
   }
@@ -102,11 +138,65 @@ class _NovaEarningAssistantScreenState extends State<NovaEarningAssistantScreen>
                 SizedBox(height: 8),
                 Text('NOVA — مساعد فرص الدخل', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
                 SizedBox(height: 8),
-                Text('يرتب 10 منصات، يفتح المصادر الرسمية، ويسجل فحص التسجيل والسحب حتى لا تضيع وقتك. هذه النسخة لا تسجل حسابات ولا تنفذ المهام نيابة عنك بعد.'),
+                Text('يركّز أولاً على Pixels وGrass وHoneygain وPublish0x وHive، ثم يعرض بقية المنصات. يسجل خطواتك ويفتح المصادر الرسمية؛ لا ينفذ مهام الحساب أو يحرك العملات تلقائياً بعد.'),
               ],
             ),
           ),
           const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('خطة NOVA ذات الأولوية للسودان', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  Text('متابعة: ${_priorityChecked.length} من ${sudanPriorityPlatforms.length}'),
+                  const SizedBox(height: 4),
+                  const Text('هذه القائمة مبنية على أولوياتك وليست إثباتاً بأن السحب مضمون في عطبرة أو أن الدخل الشهري ثابت.'),
+                ],
+              ),
+            ),
+          ),
+          ...sudanPriorityPlatforms.map((platform) => Card(
+            margin: const EdgeInsets.only(bottom: 10),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.flag_outlined, color: Color(0xFF9B87FF)),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(platform.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold))),
+                      IconButton(
+                        tooltip: 'فتح الموقع الرسمي',
+                        onPressed: () => _openPriority(platform),
+                        icon: const Icon(Icons.open_in_new),
+                      ),
+                    ],
+                  ),
+                  Text('مسار الأصل المتوقع: ${platform.expectedAssetPath}'),
+                  const SizedBox(height: 6),
+                  Text('روتين المتابعة: ${platform.suggestedRoutine}'),
+                  const SizedBox(height: 6),
+                  Text('تحقق قبل العمل: ${platform.verificationWarning}', style: const TextStyle(color: Colors.amberAccent)),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _priorityChecked.contains(platform.id),
+                    onChanged: (value) => _setPriorityChecked(platform, value ?? false),
+                    title: const Text('راجعت البلد وطريقة السحب الحالية'),
+                    subtitle: const Text('علّم بعد التحقق من حسابك، لا بمجرد فتح الموقع.'),
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
+                ],
+              ),
+            ),
+          )),
+          const SizedBox(height: 8),
+          const Text('بقية المنصات المرشحة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
           TextField(
             controller: _query,
             onChanged: (_) => setState(() {}),
@@ -134,7 +224,7 @@ class _NovaEarningAssistantScreenState extends State<NovaEarningAssistantScreen>
           ),
           Row(
             children: [
-              Expanded(child: Text('فحصك: ${_checked.length} من ${earningPlatforms.length}')),
+              Expanded(child: Text('فحص بقية القائمة: ${_checked.length} من ${earningPlatforms.length}')),
               if (_loading) const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
             ],
           ),
