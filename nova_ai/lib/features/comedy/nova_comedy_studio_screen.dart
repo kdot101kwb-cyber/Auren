@@ -140,6 +140,11 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
       'englishText': english,
       'notes': _notes.text.trim(),
       'status': 'draft',
+      'platform': '',
+      'views': null,
+      'engagements': null,
+      'retentionPercent': null,
+      'revenueUsd': 0,
       'publishingState': 'not_connected',
       'createdAt': now,
       'updatedAt': now,
@@ -184,6 +189,104 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
     }
   }
 
+  Future<void> _recordResults(int index) async {
+    final item = _items[index];
+    final platformController = TextEditingController(text: item['platform'] as String? ?? '');
+    final viewsController = TextEditingController(text: item['views']?.toString() ?? '');
+    final engagementController = TextEditingController(text: item['engagements']?.toString() ?? '');
+    final retentionController = TextEditingController(text: item['retentionPercent']?.toString() ?? '');
+    final revenueController = TextEditingController(text: item['revenueUsd']?.toString() ?? '');
+    final formKey = GlobalKey<FormState>();
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تسجيل النتائج الفعلية', textDirection: TextDirection.rtl),
+        content: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              TextFormField(controller: platformController,
+                decoration: const InputDecoration(labelText: 'المنصة (مثلاً YouTube Shorts)'),
+                textDirection: TextDirection.ltr),
+              TextFormField(controller: viewsController, keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'المشاهدات'),
+                validator: (value) => _validNonNegativeNumber(value, 'المشاهدات')),
+              TextFormField(controller: engagementController, keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'التفاعلات'),
+                validator: (value) => _validNonNegativeNumber(value, 'التفاعلات')),
+              TextFormField(controller: retentionController, keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'متوسط المشاهدة % (اختياري)'),
+                validator: (value) => _validPercent(value)),
+              TextFormField(controller: revenueController, keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'الدخل المستلم بالدولار'),
+                validator: (value) => _validNonNegativeNumber(value, 'الدخل')),
+              const SizedBox(height: 8),
+              const Text('سجّل الأرقام التي تظهر فعلياً في التحليلات أو التي استلمتها؛ لا تُقدّر الدخل كأنه مستلم.',
+                textDirection: TextDirection.rtl),
+            ]),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء')),
+          FilledButton(onPressed: () {
+            if (!formKey.currentState!.validate()) return;
+            Navigator.pop(dialogContext, {
+              'platform': platformController.text.trim(),
+              'views': _parseOptionalNumber(viewsController.text),
+              'engagements': _parseOptionalNumber(engagementController.text),
+              'retentionPercent': _parseOptionalNumber(retentionController.text),
+              'revenueUsd': _parseOptionalNumber(revenueController.text) ?? 0,
+            });
+          }, child: const Text('حفظ النتائج')),
+        ],
+      ),
+    );
+    platformController.dispose();
+    viewsController.dispose();
+    engagementController.dispose();
+    retentionController.dispose();
+    revenueController.dispose();
+    if (result == null || !mounted) return;
+
+    final previous = Map<String, dynamic>.from(_items[index]);
+    setState(() {
+      _items[index] = {..._items[index], ...result,
+        'resultsUpdatedAt': DateTime.now().toUtc().toIso8601String()};
+    });
+    try {
+      await _persist();
+      _message('تم حفظ النتائج المدخلة محلياً. تحقق من صحتها في مصدرها الأصلي.');
+    } catch (_) {
+      setState(() => _items[index] = previous);
+      _message('تعذر حفظ النتائج؛ تم التراجع عن التغيير.');
+    }
+  }
+
+  String? _validNonNegativeNumber(String? value, String label) {
+    if ((value ?? '').trim().isEmpty) return null;
+    final parsed = double.tryParse(value!.trim());
+    if (parsed == null || !parsed.isFinite || parsed < 0) {
+      return 'أدخل رقماً صحيحاً غير سالب لـ$label';
+    }
+    return null;
+  }
+
+  String? _validPercent(String? value) {
+    if ((value ?? '').trim().isEmpty) return null;
+    final parsed = double.tryParse(value!.trim());
+    if (parsed == null || !parsed.isFinite || parsed < 0 || parsed > 100) {
+      return 'أدخل نسبة بين 0 و100';
+    }
+    return null;
+  }
+
+  num? _parseOptionalNumber(String value) {
+    if (value.trim().isEmpty) return null;
+    return num.tryParse(value.trim());
+  }
+
   void _toggleAutopublish(bool value) {
     setState(() => _autopublishRequested = value);
     if (value) {
@@ -226,6 +329,19 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
             value: _items.where((item) => item['status'] == 'ready').length.toString(),
           )),
         ]),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(child: _Metric(label: 'المشاهدات المسجلة',
+            value: _items.fold<num>(0, (sum, item) => sum + ((item['views'] as num?) ?? 0)).toString())),
+          const SizedBox(width: 8),
+          Expanded(child: _Metric(label: 'الدخل المسجل بالدولار',
+            value: _items.fold<num>(0, (sum, item) => sum + ((item['revenueUsd'] as num?) ?? 0)).toStringAsFixed(2))),
+        ]),
+        const Padding(
+          padding: EdgeInsets.only(top: 6),
+          child: Text('الأرقام هنا مدخلة يدوياً وليست بيانات متصلة تلقائياً بالمنصات.',
+            textDirection: TextDirection.rtl, style: TextStyle(fontSize: 12)),
+        ),
         const SizedBox(height: 16),
         const Text('اختيار العلامة', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
           textDirection: TextDirection.rtl),
@@ -300,7 +416,10 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
             return Card(child: Padding(
               padding: const EdgeInsets.all(12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Text(format, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(_brands[item['brand']] ?? 'علامة غير معروفة',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(format, style: Theme.of(context).textTheme.bodySmall),
                 if (ar.isNotEmpty) ...[const SizedBox(height: 8), Text(ar, textDirection: TextDirection.rtl)],
                 if (en.isNotEmpty) ...[const SizedBox(height: 8), Text(en)],
                 if ((item['notes'] as String? ?? '').isNotEmpty)
@@ -312,6 +431,18 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
                   items: _statuses.entries.map((entry) =>
                     DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
                   onChanged: (value) { if (value != null) _setStatus(index, value); },
+                ),
+                const SizedBox(height: 8),
+                Text('المنصة: ${(item['platform'] as String? ?? '').isEmpty ? 'غير محددة' : item['platform']}',
+                  textDirection: TextDirection.rtl),
+                Text('المشاهدات: ${item['views'] ?? '—'}  •  التفاعلات: ${item['engagements'] ?? '—'}',
+                  textDirection: TextDirection.rtl),
+                Text('متوسط المشاهدة: ${item['retentionPercent'] == null ? '—' : '${item['retentionPercent']}%'}  •  الدخل المسجل: ${((item['revenueUsd'] as num?) ?? 0).toStringAsFixed(2)}',
+                  textDirection: TextDirection.rtl),
+                OutlinedButton.icon(
+                  onPressed: () => _recordResults(index),
+                  icon: const Icon(Icons.analytics_outlined),
+                  label: const Text('تسجيل النتائج الفعلية'),
                 ),
                 Align(alignment: Alignment.centerLeft, child: IconButton(
                   tooltip: 'حذف المسودة', onPressed: () => _delete(index),
