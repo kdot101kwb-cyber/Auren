@@ -41,3 +41,13 @@ Each candidate receives a `research_pack_ready` record with:
 ## Scoring limits
 
 The initial ranking is a simple, deterministic average of HN trend score and GitHub new-repository activity proxy. It is intentionally not described as an AI prediction. The ranking must not be used to promise revenue, invest money, or automatically purchase a domain. Future iterations should add alternative/competitor saturation, user pain evidence, payout eligibility, and small human-verified experiments before improving the score.
+## Timing decision (new)
+
+Every ranked candidate also carries a `timing` decision:
+
+- `validate_now`: recent Hacker News discussion increased and GitHub has related new repositories; start a zero-cost buyer/problem validation, not automatic app generation.
+- `monitor_and_validate`: signals exist but the timing advantage is modest; run a small validation test and watch the next scan.
+- `wait_and_recheck`: current public signals are weak or declining; keep the candidate in the queue and recheck in seven days.
+- `collect_more_evidence`: one or more sources failed; do not make a confident timing call.
+
+The recommendation includes source coverage, a short reason, a suggested recheck interval, and an explicit build gate requiring human approval and problem validation. These are conservative triage heuristics, not predictive AI and not proof of demand. A future iteration should incorporate customer pain evidence, competitor saturation, country-specific distribution and payout eligibility, and measured validation results.
