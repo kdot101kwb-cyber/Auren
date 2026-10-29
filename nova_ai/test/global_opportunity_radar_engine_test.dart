@@ -66,6 +66,37 @@ void main() {
       }), isNull);
     });
 
+    test('parses Jobicy public listings and keeps the canonical source URL', () {
+      final lead = parseJobicyLead({
+        'id': 501,
+        'jobTitle': 'Remote Arabic Content Reviewer',
+        'url': 'https://jobicy.com/jobs/example-role',
+        'jobDescription': '<p>Review Arabic content</p>',
+        'companyName': 'Example Studio',
+        'jobGeo': 'Anywhere',
+        'jobIndustry': 'Content',
+        'jobType': 'Contract',
+        'salaryMin': 20,
+        'salaryMax': 30,
+        'salaryCurrency': 'USD',
+        'salaryPeriod': 'hourly',
+        'pubDate': '2026-10-25T10:00:00Z',
+      });
+      expect(lead, isNotNull);
+      expect(lead!.source, 'Jobicy');
+      expect(lead.url, 'https://jobicy.com/jobs/example-role');
+      expect(lead.country, 'Anywhere');
+      expect(lead.salary, 'USD 20–30 / hourly');
+      expect(lead.description, contains('Review Arabic content'));
+    });
+
+    test('rejects unsafe Jobicy listing URLs', () {
+      expect(parseJobicyLead({
+        'jobTitle': 'Unsafe role',
+        'url': 'javascript:alert(1)',
+      }), isNull);
+    });
+
     test('rejects unsafe or missing listing URLs', () {
       expect(parseRemotiveLead({'title': 'Bad', 'url': 'javascript:alert(1)'}), isNull);
       expect(parseArbeitnowLead({'title': 'No URL'}), isNull);
