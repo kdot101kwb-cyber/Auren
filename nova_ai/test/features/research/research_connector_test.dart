@@ -18,29 +18,39 @@ void main() {
     test('rejects empty and excessively long queries', () {
       expect(() => const ResearchQuery(text: '  ').normalized(), throwsArgumentError);
       expect(
-        () => ResearchQuery(text: 'x' * 501).normalized(),
+        () => ResearchQuery(text: List.filled(501, 'x').join()).normalized(),
         throwsArgumentError,
       );
     });
 
     test('bounds requested result count', () {
-      expect(() => const ResearchQuery(text: 'jobs', maxResults: 0).normalized(),
-          throwsArgumentError);
-      expect(() => const ResearchQuery(text: 'jobs', maxResults: 26).normalized(),
-          throwsArgumentError);
+      expect(
+        () => const ResearchQuery(text: 'jobs', maxResults: 0).normalized(),
+        throwsArgumentError,
+      );
+      expect(
+        () => const ResearchQuery(text: 'jobs', maxResults: 26).normalized(),
+        throwsArgumentError,
+      );
     });
   });
 
   group('ResearchResult safety', () {
     test('accepts HTTPS and rejects insecure or credential-bearing URLs', () {
       expect(
-        const ResearchResult(title: 'Source', url: 'https://example.com/a', sourceId: 'web')
-            .isUsable,
+        const ResearchResult(
+          title: 'Source',
+          url: 'https://example.com/a',
+          sourceId: 'web',
+        ).isUsable,
         isTrue,
       );
       expect(
-        const ResearchResult(title: 'Source', url: 'http://example.com', sourceId: 'web')
-            .isUsable,
+        const ResearchResult(
+          title: 'Source',
+          url: 'http://example.com',
+          sourceId: 'web',
+        ).isUsable,
         isFalse,
       );
       expect(
@@ -57,23 +67,56 @@ void main() {
   group('normalizeResearchResults', () {
     test('drops unsafe results, deduplicates URLs and caps output', () {
       final results = normalizeResearchResults([
-        const ResearchResult(title: 'First', url: 'https://example.com/a?x=1', sourceId: 'reader'),
-        const ResearchResult(title: 'Duplicate', url: 'https://example.com/a?x=2', sourceId: 'reader'),
-        const ResearchResult(title: 'Insecure', url: 'http://example.org', sourceId: 'reader'),
-        const ResearchResult(title: 'Second', url: 'https://example.org', sourceId: 'search'),
-        const ResearchResult(title: 'Third', url: 'https://example.net', sourceId: 'search'),
+        const ResearchResult(
+          title: 'First',
+          url: 'https://example.com/a?x=1',
+          sourceId: 'reader',
+        ),
+        const ResearchResult(
+          title: 'Duplicate',
+          url: 'https://example.com/a?x=2',
+          sourceId: 'reader',
+        ),
+        const ResearchResult(
+          title: 'Insecure',
+          url: 'http://example.org',
+          sourceId: 'reader',
+        ),
+        const ResearchResult(
+          title: 'Second',
+          url: 'https://example.org',
+          sourceId: 'search',
+        ),
+        const ResearchResult(
+          title: 'Third',
+          url: 'https://example.net',
+          sourceId: 'search',
+        ),
       ], maxResults: 2);
 
       expect(results.map((item) => item.title), ['First', 'Second']);
-      expect(() => results.add(
-        const ResearchResult(title: 'No', url: 'https://no.example', sourceId: 'test'),
-      ), throwsUnsupportedError);
+      expect(
+        () => results.add(const ResearchResult(
+          title: 'No',
+          url: 'https://no.example',
+          sourceId: 'test',
+        )),
+        throwsUnsupportedError,
+      );
     });
 
     test('drops blank titles and blank source identifiers', () {
       final results = normalizeResearchResults([
-        const ResearchResult(title: ' ', url: 'https://example.com', sourceId: 'reader'),
-        const ResearchResult(title: 'No source', url: 'https://example.org', sourceId: ' '),
+        const ResearchResult(
+          title: ' ',
+          url: 'https://example.com',
+          sourceId: 'reader',
+        ),
+        const ResearchResult(
+          title: 'No source',
+          url: 'https://example.org',
+          sourceId: ' ',
+        ),
       ]);
       expect(results, isEmpty);
     });
