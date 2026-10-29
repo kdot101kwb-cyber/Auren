@@ -40,7 +40,7 @@ async function seedAction(userId, actionId, overrides = {}) {
       createdAt: now,
       updatedAt: now,
       ...overrides,
-    }));
+    });
   });
 }
 
