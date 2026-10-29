@@ -35,7 +35,7 @@ test.before(async () => {
       lessonCount: 3,
       status: 'published',
       createdAt: Timestamp.now(),
-    }));
+    });
   });
 });
 
