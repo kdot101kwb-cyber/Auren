@@ -86,7 +86,7 @@ class _NovaAppBuilderScreenState extends State<NovaAppBuilderScreen> {
       const Text('اكتب فكرتك أو اطلب إصلاح مشروع موجود. التصميم والكود والاختبارات تُسجل كمتطلبات واضحة، ولا نعلن النجاح قبل ظهور نتائج فحص فعلية.'),
       const SizedBox(height:14),
       DropdownButtonFormField<String>(
-        value:_type,
+        initialValue:_type,
         decoration:const InputDecoration(labelText:'المهمة', border:OutlineInputBorder()),
         items:const [
           DropdownMenuItem(value:'flutter_app', child:Text('تصميم وبناء تطبيق Flutter')),
@@ -99,7 +99,7 @@ class _NovaAppBuilderScreenState extends State<NovaAppBuilderScreen> {
       ),
       const SizedBox(height:10),
       DropdownButtonFormField<String>(
-        value:_stack,
+        initialValue:_stack,
         decoration:const InputDecoration(labelText:'التقنية', border:OutlineInputBorder()),
         items:const [
           DropdownMenuItem(value:'auto', child:Text('اختيار التقنية تلقائياً')),
