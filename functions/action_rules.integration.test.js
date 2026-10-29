@@ -83,16 +83,16 @@ test('client cannot change status or actionType during draft editing', async () 
   await seedAction('rules-user-4', 'status-change');
   const ref = actionRef(testEnv.authenticatedContext('rules-user-4'), 'rules-user-4', 'status-change');
   await assertFails(updateDoc(ref, { status: 'approved', draftVersion: 1, updatedAt: Timestamp.now() }));
-  await assertFails(ref.update({ actionType: 'memory.save', draftVersion: 1, updatedAt: Timestamp.now() }));
+  await assertFails(updateDoc(ref, { actionType: 'memory.save', draftVersion: 1, updatedAt: Timestamp.now() }));
 });
 
 test('client cannot change createdAt or write approval fields', async () => {
   await seedAction('rules-user-5', 'protected-fields');
   const ref = actionRef(testEnv.authenticatedContext('rules-user-5'), 'rules-user-5', 'protected-fields');
-  await assertFails(ref.update({
+  await assertFails(updateDoc(ref, {
     createdAt: new Date(Date.now() - 1000), draftVersion: 1, updatedAt: Timestamp.now(),
   }));
-  await assertFails(ref.update({
+  await assertFails(updateDoc(ref, {
     approvedBy: 'rules-user-5', approvedPayloadHash: 'forged-hash',
     approvalExpiresAt: Timestamp.now(), idempotencyKey: 'forged-key',
     draftVersion: 1, updatedAt: Timestamp.now(),
@@ -105,7 +105,7 @@ test('client cannot update an action after it leaves pending or delete an action
     approvedPayloadHash: 'server-hash', approvalExpiresAt: Timestamp.now(), idempotencyKey: 'server-key',
   });
   const ref = actionRef(testEnv.authenticatedContext('rules-user-6'), 'rules-user-6', 'approved-action');
-  await assertFails(ref.update({ payload: { text: 'tampered' }, draftVersion: 1, updatedAt: Timestamp.now() }));
+  await assertFails(updateDoc(ref, { payload: { text: 'tampered' }, draftVersion: 1, updatedAt: Timestamp.now() }));
   await assertFails(deleteDoc(ref));
 });
 
