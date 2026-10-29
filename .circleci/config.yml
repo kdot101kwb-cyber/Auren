@@ -163,6 +163,16 @@ jobs:
           name: Test NOVA package
           command: cd nova_ai && flutter test
       - run:
+          name: Generate missing NOVA Android platform files
+          command: |
+            set -e
+            cd nova_ai
+            if [ ! -f android/app/build.gradle ] && [ ! -f android/app/build.gradle.kts ]; then
+              echo "NOVA Android Gradle project is missing; generating the standard Flutter Android platform."
+              flutter create --platforms=android --org com.auren --project-name nova_ai .
+            fi
+            test -f android/app/build.gradle -o -f android/app/build.gradle.kts
+      - run:
           name: Build NOVA Android debug APK
           command: |
             set -e
