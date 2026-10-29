@@ -10,6 +10,7 @@ import 'features/debate/nova_debate_screen.dart';
 import 'features/revenue/nova_revenue_engine_screen.dart';
 import 'features/opportunities/global_opportunity_radar_screen.dart';
 import 'features/auren_workspace/nova_auren_workspace_screen.dart';
+import 'features/earnings/nova_earning_assistant_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -132,6 +133,7 @@ class _NovaHomeState extends State<NovaHome> {
       const NovaRevenueEngineScreen(),
       const GlobalOpportunityRadarScreen(),
       NovaAurenWorkspaceScreen(onOpenBuilder: () => setState(() => tab = 9)),
+      const NovaEarningAssistantScreen(),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -149,6 +151,7 @@ class _NovaHomeState extends State<NovaHome> {
               PopupMenuItem(value: 9, child: Text('بناء التطبيقات')),
               PopupMenuItem(value: 11, child: Text('الرادار العالمي للفرص')),
               PopupMenuItem(value: 12, child: Text('مساحة NOVA الخاصة بـ AUREN')),
+              PopupMenuItem(value: 13, child: Text('بوت مساعد الدخل')), 
             ],
           ),
           IconButton(onPressed: () => showAboutDialog(context: context, applicationName: 'NOVA AI', applicationVersion: '0.2.0', children: const [Text('نسخة أولية قيد التحقق. بعض الأدوات تحتاج ربط خدمات وخادم آمن.')]), icon: const Icon(Icons.info_outline)),
@@ -196,6 +199,8 @@ class _NovaHomeState extends State<NovaHome> {
     FilledButton.icon(onPressed: () => setState(() => tab = 2), icon: const Icon(Icons.auto_awesome), label: const Text('فتح استوديو الصور والفيديو والألعاب')),
     const SizedBox(height: 8),
     FilledButton.icon(onPressed: () => setState(() => tab = 10), icon: const Icon(Icons.attach_money), label: const Text('فتح محرك فرص الدخل اليومي')),
+    const SizedBox(height: 8),
+    FilledButton.icon(onPressed: () => setState(() => tab = 13), icon: const Icon(Icons.account_balance_wallet_outlined), label: const Text('فتح بوت مساعد الدخل')), 
     const SizedBox(height: 8),
     FilledButton.icon(onPressed: () => setState(() => tab = 11), icon: const Icon(Icons.public), label: const Text('فتح الرادار العالمي متعدد اللغات')),
     const SizedBox(height: 8),
