@@ -89,10 +89,12 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
       // Keep one search invocation from launching duplicate Remotive requests.
       // These sources are independent, so fetch Arbeitnow while Remotive runs.
       final arbeitnowRequest = _fetchArbeitnow(all);
+      final himalayasQuery = rawQuery.isNotEmpty ? rawQuery : (localized.isNotEmpty ? localized : 'remote work');
+      final himalayasRequest = _fetchHimalayas(himalayasQuery, all);
       for (final query in queries.take(3)) {
         await _fetchRemotive(query, all);
       }
-      await arbeitnowRequest;
+      await Future.wait([arbeitnowRequest, himalayasRequest]);
       final ranked = rankGlobalLeads(all, query: rawQuery, country: _country, region: _region);
       if (!mounted) return;
       setState(() {
@@ -139,6 +141,26 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
       final jobs = payload is Map && payload['jobs'] is List ? payload['jobs'] as List : const [];
       into.addAll(jobs.whereType<Map>().map((item) => parseRemotiveLead(Map<String, dynamic>.from(item))).whereType<GlobalOpportunityLead>());
     } catch (_) { _sourceWarnings.add('Remotive غير متاح حالياً'); }
+  }
+
+  Future<void> _fetchHimalayas(String query, List<GlobalOpportunityLead> into) async {
+    try {
+      final uri = Uri.https('himalayas.app', '/jobs/api/search', {'q': query, 'page': '1'});
+      final response = await http.get(uri).timeout(const Duration(seconds: 15));
+      if (response.statusCode != 200) {
+        _sourceWarnings.add('Himalayas: HTTP ' + response.statusCode.toString());
+        return;
+      }
+      final payload = jsonDecode(response.body);
+      final jobs = payload is Map && payload['jobs'] is List ? payload['jobs'] as List : const [];
+      into.addAll(
+        jobs.whereType<Map>()
+          .map((item) => parseHimalayasLead(Map<String, dynamic>.from(item)))
+          .whereType<GlobalOpportunityLead>(),
+      );
+    } catch (_) {
+      _sourceWarnings.add('Himalayas غير متاح حالياً');
+    }
   }
 
   Future<void> _fetchArbeitnow(List<GlobalOpportunityLead> into) async {
@@ -216,12 +238,12 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
         OutlinedButton.icon(onPressed: () => setState(() => _showSaved = !_showSaved), icon: const Icon(Icons.bookmark_outline), label: Text(_showSaved ? 'نتائج البحث' : 'المحفوظة (' + _saved.length.toString() + ')')),
       ]),
       if (_status != null) ...[const SizedBox(height: 10), Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(_status!, textDirection: TextDirection.rtl)))],
-      if (_sourceWarnings.isNotEmpty) ...[const SizedBox(height: 6), Text('مصادر لم تستجب: ' + _sourceWarnings.toSet().join('، '), style: const TextStyle(color: Colors.orangeAccent))],
+      if (_sourceWarnings.isNotEmpty) ...[const SizedBox(height: 6), Text('مصادر لم تستجب أو لم تُرجع بيانات: ' + _sourceWarnings.toSet().join('، '), style: const TextStyle(color: Colors.orangeAccent))],
       const SizedBox(height: 12),
       if (shown.isEmpty && !_busy) const Padding(padding: EdgeInsets.symmetric(vertical: 26), child: Center(child: Text('لا توجد نتائج معروضة. اضغط «ابحث عالمياً» أو افتح المحفوظة.'))),
       ...shown.map(_leadCard),
       const SizedBox(height: 12),
-      const Text('المصادر الحالية: Remotive وArbeitnow. البحث يستخدم كلمات مفتاحية متعددة اللغات، لكنه ليس ترجمة آلية شاملة لكل لغة ولا قاعدة وظائف تغطي كل دول العالم. لا يتم إرسال طلبات توظيف أو إنشاء حسابات أو دفع أي رسوم تلقائياً.', style: TextStyle(color: Colors.white70)),
+      const Text('المصادر الحالية: Remotive وArbeitnow وHimalayas. بيانات Himalayas تخضع لشروط المصدر، ويُعرض رابط التقديم كما ورد من واجهته مع إظهار إسناد المصدر. البحث يستخدم كلمات مفتاحية متعددة اللغات، لكنه ليس ترجمة آلية شاملة لكل لغة ولا قاعدة وظائف تغطي كل دول العالم. لا يتم إرسال طلبات توظيف أو إنشاء حسابات أو دفع أي رسوم تلقائياً.', style: TextStyle(color: Colors.white70)),
     ]);
   }
 
@@ -236,6 +258,18 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
           IconButton(tooltip: saved ? 'إزالة من المحفوظة' : 'حفظ الفرصة', onPressed: () => _toggleSaved(lead), icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border, color: _radarAccent)),
         ]),
         if (lead.company.isNotEmpty) Text(lead.company, style: const TextStyle(fontWeight: FontWeight.w600)),
+        if (lead.source.startsWith('Himalayas')) ...[
+          TextButton.icon(
+            onPressed: () async {
+              final uri = Uri.https('himalayas.app', '/');
+              if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر فتح موقع Himalayas')));
+              }
+            },
+            icon: const Icon(Icons.open_in_new, size: 16),
+            label: const Text('مصدر البيانات: himalayas.app'),
+          ),
+        ],
         const SizedBox(height: 5),
         Wrap(spacing: 6, runSpacing: 6, children: [
           Chip(label: Text(lead.source)),
