@@ -141,7 +141,7 @@ class _NovaRevenueEngineScreenState extends State<NovaRevenueEngineScreen> {
         _signals = rows;
         _signalMessage = rows.isEmpty
             ? 'لم تصل بيانات كافية؛ أعد المحاولة لاحقاً.'
-            : 'تم تحديث ' + rows.length.toString() + ' إشارات من مصادر عامة مجانية. لا توجد عملية شراء دومينات.';
+            : 'تم تحديث ${rows.length} إشارات من مصادر عامة مجانية. لا توجد عملية شراء دومينات.';
       });
     } catch (error) {
       if (mounted) setState(() => _signalMessage = 'تعذر رصد الاتجاهات: $error');
