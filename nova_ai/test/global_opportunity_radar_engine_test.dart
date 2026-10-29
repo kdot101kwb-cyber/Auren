@@ -128,7 +128,8 @@ void main() {
       );
       final pack = prepareOpportunityWorkPack(lead);
       expect(pack.proposalDraft, contains('Example Studio'));
-      expect(pack.sampleTask, contains('عينة'));
+      expect(pack.sampleTask, contains('الموضوع'));
+      expect(pack.sampleTask, contains('موجز العميل'));
       expect(pack.preparationPlan, contains('مسودة'));
       expect(pack.checksBeforeApplying.any((item) => item.contains('السودان')), isTrue);
       expect(pack.checksBeforeApplying.any((item) => item.contains('رسوماً')), isTrue);
