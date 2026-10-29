@@ -349,6 +349,7 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
           textDirection: TextDirection.rtl),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
+          isExpanded: true,
           value: _brandId,
           decoration: const InputDecoration(labelText: 'علامة المحتوى', border: OutlineInputBorder()),
           items: _brands.entries.map((entry) =>
@@ -361,6 +362,7 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
           textDirection: TextDirection.rtl),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
+          isExpanded: true,
           value: _format,
           decoration: const InputDecoration(labelText: 'نوع المحتوى', border: OutlineInputBorder()),
           items: _formats.entries.map((entry) =>
@@ -369,6 +371,7 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
+          isExpanded: true,
           value: _language,
           decoration: const InputDecoration(labelText: 'اللغة', border: OutlineInputBorder()),
           items: const [
@@ -405,6 +408,7 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
           textDirection: TextDirection.rtl),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
+          isExpanded: true,
           value: _filterBrandId,
           decoration: const InputDecoration(labelText: 'تصفية حسب العلامة', border: OutlineInputBorder()),
           items: [
@@ -440,6 +444,7 @@ class _NovaComedyStudioScreenState extends State<NovaComedyStudioScreen> {
                   Text(item['notes'] as String, textDirection: TextDirection.rtl),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   value: _statuses.containsKey(status) ? status : 'draft',
                   decoration: const InputDecoration(labelText: 'حالة المحتوى', isDense: true),
                   items: _statuses.entries.map((entry) =>
