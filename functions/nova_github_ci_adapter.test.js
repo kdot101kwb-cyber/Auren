@@ -54,6 +54,20 @@ test('checks every page before reporting success', async () => {
   assert.equal(result.verifiedSuccess, true);
 });
 
+test('accepts conditionally skipped jobs when the run and all executed jobs succeed', async () => {
+  const result = await checkGithubActionsRun(
+    'https://github.com/kdot101kwb-cyber/Auren/actions/runs/12345',
+    {fetchImpl: makeFetch([
+      run(),
+      {total_count: 2, jobs: [
+        {name: 'build', status: 'completed', conclusion: 'success', steps: []},
+        {name: 'optional', status: 'completed', conclusion: 'skipped', steps: []},
+      ]},
+    ])},
+  );
+  assert.equal(result.verifiedSuccess, true);
+});
+
 test('does not report green when a later job page is missing', async () => {
   const first = Array.from({length: 100}, (_, i) => ({
     name: 'job-' + i, status: 'completed', conclusion: 'success', steps: [],
