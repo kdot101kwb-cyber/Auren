@@ -17,6 +17,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
   bool _busy = false;
   String? _message;
   List<Map<String, dynamic>> _tasks = const [];
+  List<Map<String, dynamic>> _repairProposals = const [];
 
   @override
   void dispose() {
@@ -49,6 +50,130 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
       });
     } catch (error) {
       setState(() => _message = 'تعذر تحميل المهام: $error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+
+  Future<void> _loadRepairProposals() async {
+    if (!NovaFirebaseRuntime.initialized || !NovaFirebaseRuntime.appCheckActivated) return;
+    try {
+      await _ensureSignedIn();
+      final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('listNovaRepairProposals').call();
+      final data = Map<String, dynamic>.from(response.data as Map);
+      final raw = data['proposals'] as List? ?? const [];
+      if (mounted) setState(() {
+        _repairProposals = raw.map((item) => Map<String, dynamic>.from(item as Map)).toList();
+      });
+    } catch (_) {
+      // The repair functions may not be deployed until the reviewed release step.
+    }
+  }
+
+  Future<void> _generateRepairProposal(Map<String, dynamic> task) async {
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('إنشاء اقتراح إصلاح'),
+        content: const Text(
+          'سيُرسل دليل الفشل المختصر والملفات المصدرية المحددة إلى نموذج OpenRouter المجاني لتحليلها واقتراح تعديل. لن يُكتب أي شيء في GitHub الآن. هل توافق على التحليل؟',
+          textDirection: TextDirection.rtl,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('موافق، حلّل')),
+        ],
+      ),
+    );
+    if (accepted != true) return;
+    setState(() { _busy = true; _message = null; });
+    try {
+      await _ensureSignedIn();
+      final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('generateNovaRepairProposal').call(<String, dynamic>{
+        'taskId': '${task['taskId']}',
+      });
+      final data = Map<String, dynamic>.from(response.data as Map);
+      setState(() => _message =
+          'أنشأت NOVA اقتراحاً للمراجعة: ${data['proposalId']}. لم يُطبّق أي تعديل بعد.');
+      await _loadRepairProposals();
+    } catch (error) {
+      if (mounted) setState(() => _message = 'تعذر إنشاء اقتراح الإصلاح: $error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _approveRepairProposal(Map<String, dynamic> proposal) async {
+    final files = proposal['files'] as List? ?? const [];
+    final preview = StringBuffer()
+      ..writeln('${proposal['summary'] ?? ''}')
+      ..writeln('\nSource: ${proposal['sourceCommitSha'] ?? ''}');
+    for (final raw in files) {
+      if (raw is! Map) continue;
+      preview
+        ..writeln('\nFILE: ${raw['path']}')
+        ..writeln('REASON: ${raw['reason']}')
+        ..writeln('--- COMPLETE REPLACEMENT ---')
+        ..writeln('${raw['content'] ?? ''}');
+    }
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('مراجعة واعتماد الإصلاح'),
+        content: SizedBox(
+          width: 560,
+          child: SingleChildScrollView(
+            child: SelectableText(
+              '${preview.toString()}\n\nبالموافقة ستنشئ NOVA commit واحداً في فرع nova/repairs/ منفصل. لن تفتح PR ولن تدمج أو تنشر.',
+              textDirection: TextDirection.ltr,
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('رفض / إغلاق')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('أوافق على كتابة فرع الإصلاح')),
+        ],
+      ),
+    );
+    if (accepted != true) return;
+    setState(() { _busy = true; _message = null; });
+    try {
+      await _ensureSignedIn();
+      final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('approveAndApplyNovaRepair').call(<String, dynamic>{
+        'proposalId': '${proposal['proposalId']}',
+      });
+      final data = Map<String, dynamic>.from(response.data as Map);
+      setState(() => _message =
+          'تم إنشاء فرع الإصلاح ${data['branch']} والالتزام ${data['commitSha']}. ننتظر فحوصات CI؛ لم يُفتح PR.');
+      await _loadRepairProposals();
+    } catch (error) {
+      if (mounted) setState(() => _message = 'لم يُطبق الإصلاح: $error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _checkRepairProposal(Map<String, dynamic> proposal) async {
+    setState(() { _busy = true; _message = null; });
+    try {
+      await _ensureSignedIn();
+      final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('checkNovaRepairValidation').call(<String, dynamic>{
+        'proposalId': '${proposal['proposalId']}',
+      });
+      final data = Map<String, dynamic>.from(response.data as Map);
+      setState(() => _message = switch (data['state']) {
+        'verified' => 'نجح الإصلاح في جميع فحوصات CI المطلوبة على نفس commit.',
+        'failed' => 'فشل واحد أو أكثر من فحوصات الإصلاح. لن يُعتبر الإصلاح ناجحاً.',
+        _ => 'فحوصات الإصلاح لم تكتمل بعد؛ الحالة ما زالت قيد الانتظار.',
+      });
+      await _loadRepairProposals();
+    } catch (error) {
+      if (mounted) setState(() => _message = 'تعذر التحقق من الإصلاح: $error');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -194,6 +319,55 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
         padding: EdgeInsets.symmetric(vertical: 14),
         child: Text('لا توجد مهام محمّلة بعد. اضغط تحديث القائمة بعد إعداد الاتصال.'),
       ),
+
+      const SizedBox(height: 18),
+      const Text('اقتراحات الإصلاح الذاتي', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      const Text('كل اقتراح يُعرض كاملاً للمراجعة. التطبيق يتطلب موافقتك، ثم ينشئ فرعاً منفصلاً فقط.'),
+      OutlinedButton.icon(
+        onPressed: _busy ? null : _loadRepairProposals,
+        icon: const Icon(Icons.refresh),
+        label: const Text('تحديث اقتراحات الإصلاح'),
+      ),
+      for (final proposal in _repairProposals)
+        Card(child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('اقتراح ${proposal['proposalId']} — ${proposal['state']}',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Text('${proposal['summary'] ?? ''}', textDirection: TextDirection.rtl),
+            if (proposal['sourceCommitSha'] is String)
+              SelectableText('Source commit: ${proposal['sourceCommitSha']}', textDirection: TextDirection.ltr),
+            for (final raw in (proposal['files'] as List? ?? const []))
+              if (raw is Map) ...[
+                const Divider(),
+                Text('FILE: ${raw['path']}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text('السبب: ${raw['reason'] ?? ''}', textDirection: TextDirection.rtl),
+                SelectableText('${raw['content'] ?? ''}', textDirection: TextDirection.ltr),
+              ],
+            if (proposal['repairBranch'] is String)
+              SelectableText('Repair branch: ${proposal['repairBranch']}', textDirection: TextDirection.ltr),
+            if (proposal['repairCommitSha'] is String)
+              SelectableText('Repair commit: ${proposal['repairCommitSha']}', textDirection: TextDirection.ltr),
+            if (proposal['validation'] is Map)
+              Text('CI validation: ${(proposal['validation'] as Map)['status'] ?? proposal['state']}'),
+            if (proposal['error'] is String)
+              Text('الخطأ: ${proposal['error']}', style: const TextStyle(color: Colors.orangeAccent)),
+            Wrap(spacing: 8, children: [
+              if (proposal['state'] == 'awaiting_approval')
+                FilledButton.tonal(
+                  onPressed: _busy ? null : () => _approveRepairProposal(proposal),
+                  child: const Text('مراجعة وموافقة على الإصلاح'),
+                ),
+              if (proposal['state'] == 'validation_pending')
+                OutlinedButton(
+                  onPressed: _busy ? null : () => _checkRepairProposal(proposal),
+                  child: const Text('افحص نتيجة CI'),
+                ),
+            ]),
+          ]),
+        )),
+
       for (final task in _tasks)
         Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -255,6 +429,17 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
             ],
             const SizedBox(height: 6),
             Text('المعرف: ${task['taskId'] ?? ''}', style: const TextStyle(fontSize: 11)),
+
+            if (task['status'] == 'failed' &&
+                task['result'] is Map &&
+                (task['result'] as Map)['diagnostics'] is Map &&
+                ((task['result'] as Map)['diagnostics'] as Map)['status'] == 'available')
+              TextButton.icon(
+                onPressed: _busy ? null : () => _generateRepairProposal(task),
+                icon: const Icon(Icons.auto_fix_high),
+                label: const Text('اقترح إصلاحاً بالذكاء الاصطناعي'),
+              ),
+
             Wrap(spacing: 8, children: [
               if (task['status'] == 'awaiting_approval')
                 TextButton(onPressed: _busy ? null : () => _taskAction('approveNovaTask', '${task['taskId']}'),
