@@ -7,18 +7,18 @@ const MAX_LINE_LENGTH = 420;
 
 function redactSensitiveText(value) {
   return String(value || '')
-    .replace(/(authorization\\s*[:=]\\s*bearer\\s+)[^\\s,;]+/ig, '$1[REDACTED]')
+    .replace(/(authorization\s*[:=]\s*bearer\s+)[^\s,;]+/ig, '$1[REDACTED]')
     .replace(/(gh[pousr]_[A-Za-z0-9_]{20,})/g, '[REDACTED_GITHUB_TOKEN]')
     .replace(/(github_pat_[A-Za-z0-9_]{20,})/g, '[REDACTED_GITHUB_TOKEN]')
-    .replace(/((?:api[_-]?key|access[_-]?token|secret|password)\\s*[:=]\\s*)[^\\s,;]+/ig, '$1[REDACTED]')
+    .replace(/((?:api[_-]?key|access[_-]?token|secret|password)\s*[:=]\s*)[^\s,;]+/ig, '$1[REDACTED]')
     .slice(0, MAX_LINE_LENGTH);
 }
 
 function extractFailureEvidence(logText) {
-  const lines = String(logText || '').slice(0, MAX_LOG_BYTES).split(/\\r?\\n/);
+  const lines = String(logText || '').slice(0, MAX_LOG_BYTES).split(/\r?\n/);
   const matches = [];
   const seen = new Set();
-  const pattern = /\\b(error|fatal|exception|failed|failure|denied|timed out|timeout|cannot find|not found|exit code [1-9])\\b|^\\s*✗/i;
+  const pattern = /\b(error|fatal|exception|failed|failure|denied|timed out|timeout|cannot find|not found|exit code [1-9])\b|^\s*✗/i;
   for (let index = 0; index < lines.length && matches.length < MAX_EVIDENCE_LINES; index += 1) {
     if (!pattern.test(lines[index])) continue;
     const text = redactSensitiveText(lines[index].trim());
@@ -30,7 +30,7 @@ function extractFailureEvidence(logText) {
 }
 
 async function fetchGithubActionsJobDiagnostics({runId, jobId, token, fetchImpl = fetch, timeoutMs = 20000}) {
-  if (!/^\\d+$/.test(String(runId || '')) || !/^\\d+$/.test(String(jobId || ''))) {
+  if (!/^\d+$/.test(String(runId || '')) || !/^\d+$/.test(String(jobId || ''))) {
     throw new Error('A valid GitHub Actions run ID and job ID are required.');
   }
   if (!token || !String(token).trim()) {
