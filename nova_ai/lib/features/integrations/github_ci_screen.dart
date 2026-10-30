@@ -219,12 +219,6 @@ class _GitHubCiScreenState extends State<GitHubCiScreen> {
     );
   }
 
-  static NovaCiRunStatus _runStatus(_WorkflowRun run) =>
-      NovaCiRunStatus.fromGitHub(
-        status: run.status,
-        conclusion: run.conclusion,
-      );
-
   static IconData _iconFor(String status, String conclusion) {
     final state = NovaCiRunStatus.fromGitHub(
       status: status,
