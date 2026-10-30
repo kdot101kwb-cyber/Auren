@@ -1,0 +1,86 @@
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const {
+  extractVerifiedEvidence,
+  validateFailedTask,
+  buildValidationResult,
+  createIsolatedRepairCommit,
+} = require('./nova_self_repair_service');
+
+const sha = 'a'.repeat(40);
+const fileSha = 'b'.repeat(40);
+
+test('accepts only owned failed CI tasks with available redacted evidence and a full commit SHA', () => {
+  const task = {
+    ownerUid:'owner-1',
+    status:'failed',
+    result:{
+      provider:'github_actions',
+      commit:sha,
+      diagnostics:{status:'available', failedJobs:[{jobName:'flutter_ci', evidence:[{line:8,text:'Error: missing package'}]}]},
+    },
+  };
+  assert.equal(validateFailedTask(task, 'owner-1').commitSha, sha);
+  assert.equal(extractVerifiedEvidence(task.result).length, 1);
+  assert.throws(() => validateFailedTask(task, 'owner-2'), /owned/);
+  assert.throws(() => validateFailedTask({...task, status:'succeeded'}, 'owner-1'), /failed CI/);
+  assert.throws(() => validateFailedTask({...task, result:{...task.result, diagnostics:{status:'unavailable'}}}, 'owner-1'), /evidence is unavailable/);
+  assert.throws(() => validateFailedTask({...task, result:{...task.result, commit:'abc'}}, 'owner-1'), /commit SHA/);
+});
+
+test('repair validation requires every CircleCI gate on the exact pushed commit', () => {
+  const proposal = {state:'validation_pending', repairCommitSha:sha};
+  const required = [
+    'ci/circleci: flutter_ci',
+    'ci/circleci: functions_tests',
+    'ci/circleci: plugin_worker_tests',
+    'ci/circleci: action_executor_tests',
+    'ci/circleci: plugin_worker_image',
+  ];
+  const passed = buildValidationResult(proposal, required.map(context => ({context, state:'success'})));
+  assert.equal(passed.state, 'verified');
+  const missing = buildValidationResult(proposal, required.slice(0,4).map(context => ({context, state:'success'})));
+  assert.equal(missing.state, 'failed');
+  const pending = buildValidationResult(proposal, required.map((context, index) => ({context, state:index ? 'success' : 'pending'})));
+  assert.equal(pending.state, 'failed');
+});
+
+test('creates a single isolated Git commit only after checking every expected source blob', async () => {
+  const calls = [];
+  const sourceTree = 'c'.repeat(40);
+  const repairTree = 'd'.repeat(40);
+  const repairCommit = 'e'.repeat(40);
+  const fetchImpl = async (url, options = {}) => {
+    calls.push({url, options});
+    let payload;
+    if (url.endsWith('/git/commits/' + sha)) payload = {sha, tree:{sha:sourceTree}};
+    else if (url.includes('/contents/functions/nova_example.js?ref=')) payload = {sha:fileSha};
+    else if (url.endsWith('/git/blobs')) payload = {sha:'f'.repeat(40)};
+    else if (url.endsWith('/git/trees')) payload = {sha:repairTree};
+    else if (url.endsWith('/git/commits')) payload = {sha:repairCommit};
+    else if (url.endsWith('/git/refs')) payload = {ref:'refs/heads/nova/repairs/repairid123456789'};
+    else throw new Error('Unexpected GitHub request: ' + url);
+    return new Response(JSON.stringify(payload), {status:201});
+  };
+  const result = await createIsolatedRepairCommit({
+    sourceCommitSha:sha,
+    files:[{path:'functions/nova_example.js', content:'module.exports = true;', expectedSha:fileSha}],
+  }, 'test-token', 'repairid123456789', fetchImpl);
+  assert.equal(result.commitSha, repairCommit);
+  assert.equal(result.branch, 'nova/repairs/repairid123456789');
+  assert.equal(calls.length, 6);
+  assert.equal(calls.at(-1).options.method, 'POST');
+  assert.match(calls.at(-1).options.body, /refs\/heads\/nova\/repairs/);
+});
+
+test('refuses to write when a source blob changed after proposal creation', async () => {
+  const fetchImpl = async (url) => new Response(JSON.stringify(
+    url.endsWith('/git/commits/' + sha) ? {sha, tree:{sha:'c'.repeat(40)}} : {sha:'0'.repeat(40)},
+  ), {status:200});
+  await assert.rejects(() => createIsolatedRepairCommit({
+    sourceCommitSha:sha,
+    files:[{path:'functions/nova_example.js', content:'x', expectedSha:fileSha}],
+  }, 'test-token', 'repairid123456789', fetchImpl), /Source file changed/);
+});
