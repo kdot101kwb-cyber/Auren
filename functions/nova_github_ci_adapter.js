@@ -18,7 +18,8 @@ async function checkGithubActionsRun(value, options = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    const headers = {accept:'application/vnd.github+json', 'x-github-api-version':'2022-11-28'};
+    if (!options.token) throw new Error('NOVA_GITHUB_TOKEN is not configured in Firebase Secret Manager.');
+    const headers = {accept:'application/vnd.github+json', 'x-github-api-version':'2022-11-28', authorization:'Bearer ' + options.token};
     const base = 'https://api.github.com/repos/' + REPOSITORY + '/actions/runs/' + runId;
     const runResponse = await fetchImpl(base, {headers, signal:controller.signal});
     if (!runResponse.ok) throw new Error('GitHub run lookup failed with HTTP ' + runResponse.status + '.');
