@@ -8,9 +8,13 @@ const db = getFirestore();
 const OPENROUTER_API_KEY = defineSecret('OPENROUTER_API_KEY');
 const HIGGSFIELD_API_KEY_ID = defineSecret('HIGGSFIELD_API_KEY_ID');
 const HIGGSFIELD_API_KEY_SECRET = defineSecret('HIGGSFIELD_API_KEY_SECRET');
+const NOVA_GITHUB_TOKEN = defineSecret('NOVA_GITHUB_TOKEN');
+const CIRCLECI_TOKEN = defineSecret('CIRCLECI_TOKEN');
 const {submitVideoGeneration, getVideoGenerationStatus} = require('./nova_higgsfield_adapter');
 const {isTaskExecutable} = require('./nova_task_worker_policy');
 const {checkGithubActionsRun} = require('./nova_github_ci_adapter');
+const {diagnoseGithubActionsRun} = require('./nova_github_ci_diagnostics');
+const {checkCircleCiJob} = require('./nova_circleci_adapter');
 const REGION = 'us-central1';
 
 async function runTextTask(prompt, type, apiKey) {
@@ -47,7 +51,7 @@ async function runTextTask(prompt, type, apiKey) {
 }
 
 exports.processNovaTaskQueue = onSchedule(
-  {schedule:'every 1 minutes', region:REGION, timeoutSeconds:300, memory:'512MiB', maxInstances:1, secrets:[OPENROUTER_API_KEY, HIGGSFIELD_API_KEY_ID, HIGGSFIELD_API_KEY_SECRET ]},
+  {schedule:'every 1 minutes', region:REGION, timeoutSeconds:300, memory:'512MiB', maxInstances:1, secrets:[OPENROUTER_API_KEY, HIGGSFIELD_API_KEY_ID, HIGGSFIELD_API_KEY_SECRET, NOVA_GITHUB_TOKEN, CIRCLECI_TOKEN]},
   async () => {
     const queue = await db.collection('nova_task_queue')
       .where('status', '==', 'queued')
@@ -90,8 +94,53 @@ exports.processNovaTaskQueue = onSchedule(
       if (!claimed) continue;
 
       try {
-        if (task.type === 'github_ci_check') {
-          const result = await checkGithubActionsRun(String(task.prompt || ''));
+        if (task.type === 'circleci_check') {
+          const result = await checkCircleCiJob(String(task.prompt || ''), {token:CIRCLECI_TOKEN.value().trim()});
+          const finalStatus = result.state === 'succeeded' ? 'succeeded' :
+            result.state === 'failed' ? 'failed' :
+            result.state === 'unknown' ? 'verification_incomplete' : 'provider_processing';
+          await db.runTransaction(async (tx) => {
+            const qs = await tx.get(queueRef);
+            const ts = await tx.get(taskRef);
+            if (!qs.exists || !ts.exists || qs.data()?.status !== 'running' || ts.data()?.status !== 'running') return;
+            tx.update(taskRef, {
+              status:finalStatus,
+              result:{
+                text:result.text,
+                provider:'circleci',
+                evidenceUrl:result.jobUrl,
+                jobNumber:result.jobNumber,
+                runStatus:result.status,
+                branch:result.branch,
+                commit:result.commit,
+                diagnostics:result.diagnostics,
+              },
+              error:finalStatus === 'failed' ? 'CircleCI job completed with a failure status.' :
+                finalStatus === 'verification_incomplete' ? 'CircleCI job status could not be verified.' : null,
+              completedAt:finalStatus === 'provider_processing' ? null : FieldValue.serverTimestamp(),
+              updatedAt:FieldValue.serverTimestamp(),
+            });
+            tx.update(queueRef, {
+              status:finalStatus,
+              provider:finalStatus === 'provider_processing' ? 'circleci' : FieldValue.delete(),
+              runUrl:result.jobUrl,
+              jobNumber:result.jobNumber,
+              completedAt:finalStatus === 'provider_processing' ? null : FieldValue.serverTimestamp(),
+              updatedAt:FieldValue.serverTimestamp(),
+            });
+            tx.create(db.collection('users').doc(uid).collection('nova_audit').doc(), {
+              action:result.state === 'failed' ? 'nova.circleci.failed_diagnosed' : 'nova.circleci.checked',
+              actorUid:'nova_worker', taskId, taskType:task.type,
+              jobNumber:result.jobNumber, status:result.status, evidenceUrl:result.jobUrl,
+              diagnosticsStatus:result.diagnostics?.status || 'unknown',
+              createdAt:FieldValue.serverTimestamp(),
+            });
+          });
+        } else if (task.type === 'github_ci_check') {
+          const result = await checkGithubActionsRun(String(task.prompt || ''), {token:NOVA_GITHUB_TOKEN.value().trim()});
+          const diagnostics = result.state === 'failed'
+            ? await diagnoseGithubActionsRun(result, NOVA_GITHUB_TOKEN.value().trim())
+            : {status:'not_needed', failedJobs:[]};
           const finalStatus = result.state === 'succeeded' ? 'succeeded' :
             result.state === 'failed' ? 'failed' :
             result.state === 'unknown' ? 'verification_incomplete' : 'provider_processing';
@@ -115,6 +164,7 @@ exports.processNovaTaskQueue = onSchedule(
                 paginationComplete:result.paginationComplete,
                 verificationError:result.verificationError,
                 jobs:result.jobs,
+                diagnostics,
               },
               error:finalStatus === 'failed' ? 'GitHub Actions run completed with a failure conclusion.' :
                 finalStatus === 'verification_incomplete' ? (result.verificationError || 'GitHub job results could not be fully verified.') : null,
@@ -275,8 +325,88 @@ exports.pollHiggsfieldVideoTasks = onSchedule(
 
 // GitHub Actions runs may still be active on first inspection. Poll those
 // tasks separately so provider_processing is a live state, not a dead end.
+exports.pollCircleCiTasks = onSchedule(
+  {schedule:'every 1 minutes', region:REGION, timeoutSeconds:180, memory:'512MiB', maxInstances:1, secrets:[CIRCLECI_TOKEN]},
+  async () => {
+    const queue = await db.collection('nova_task_queue')
+      .where('provider', '==', 'circleci')
+      .limit(20)
+      .get();
+    for (const queueDoc of queue.docs) {
+      const row = queueDoc.data() || {};
+      const uid = String(row.ownerUid || '');
+      const taskId = String(row.taskId || '');
+      const jobUrl = String(row.runUrl || '');
+      if (!uid || !taskId || !jobUrl) continue;
+      const queueRef = queueDoc.ref;
+      const taskRef = db.collection('users').doc(uid).collection('nova_tasks').doc(taskId);
+      let claimed = false;
+      await db.runTransaction(async (tx) => {
+        const qs = await tx.get(queueRef);
+        const ts = await tx.get(taskRef);
+        if (!qs.exists || !ts.exists ||
+            qs.data()?.status !== 'provider_processing' ||
+            ts.data()?.status !== 'provider_processing') return;
+        const leaseUntil = qs.data()?.pollLeaseUntil?.toMillis?.() || 0;
+        if (leaseUntil > Date.now()) return;
+        tx.update(queueRef, {pollLeaseUntil:new Date(Date.now() + 120000), updatedAt:FieldValue.serverTimestamp()});
+        claimed = true;
+      });
+      if (!claimed) continue;
+      try {
+        const result = await checkCircleCiJob(jobUrl, {token:CIRCLECI_TOKEN.value().trim()});
+        const finalStatus = result.state === 'succeeded' ? 'succeeded' :
+          result.state === 'failed' ? 'failed' :
+          result.state === 'unknown' ? 'verification_incomplete' : 'provider_processing';
+        await db.runTransaction(async (tx) => {
+          const qs = await tx.get(queueRef);
+          const ts = await tx.get(taskRef);
+          if (!qs.exists || !ts.exists || qs.data()?.status !== 'provider_processing' ||
+              qs.data()?.provider !== 'circleci' || ts.data()?.status !== 'provider_processing') return;
+          tx.update(taskRef, {
+            status:finalStatus,
+            result:{
+              text:result.text, provider:'circleci', evidenceUrl:result.jobUrl,
+              jobNumber:result.jobNumber, runStatus:result.status, branch:result.branch,
+              commit:result.commit, diagnostics:result.diagnostics,
+            },
+            error:finalStatus === 'failed' ? 'CircleCI job completed with a failure status.' :
+              finalStatus === 'verification_incomplete' ? 'CircleCI job status could not be verified.' : null,
+            completedAt:finalStatus === 'provider_processing' ? null : FieldValue.serverTimestamp(),
+            updatedAt:FieldValue.serverTimestamp(),
+          });
+          tx.update(queueRef, {
+            status:finalStatus, provider:finalStatus === 'provider_processing' ? 'circleci' : FieldValue.delete(),
+            pollLeaseUntil:FieldValue.delete(), completedAt:finalStatus === 'provider_processing' ? null : FieldValue.serverTimestamp(),
+            updatedAt:FieldValue.serverTimestamp(),
+          });
+          tx.create(db.collection('users').doc(uid).collection('nova_audit').doc(), {
+            action:result.state === 'failed' ? 'nova.circleci.failed_diagnosed' : 'nova.circleci.polled',
+            actorUid:'nova_worker', taskId, taskType:'circleci_check', jobNumber:result.jobNumber,
+            status:result.status, evidenceUrl:result.jobUrl, diagnosticsStatus:result.diagnostics?.status || 'unknown',
+            createdAt:FieldValue.serverTimestamp(),
+          });
+        });
+      } catch (error) {
+        const message = String(error?.message || error).slice(0,500);
+        await db.runTransaction(async (tx) => {
+          const qs = await tx.get(queueRef);
+          const ts = await tx.get(taskRef);
+          if (!qs.exists || !ts.exists || qs.data()?.status !== 'provider_processing' ||
+              ts.data()?.status !== 'provider_processing') return;
+          tx.update(queueRef, {pollLeaseUntil:FieldValue.delete(), lastPollError:message, updatedAt:FieldValue.serverTimestamp()});
+          tx.create(db.collection('users').doc(uid).collection('nova_audit').doc(), {
+            action:'nova.circleci.poll_error', actorUid:'nova_worker', taskId, taskType:'circleci_check',
+            error:message, evidenceUrl:jobUrl, createdAt:FieldValue.serverTimestamp(),
+          });
+        });
+      }
+    }
+  }
+);
+
 exports.pollGithubActionsTasks = onSchedule(
-  {schedule:'every 1 minutes', region:REGION, timeoutSeconds:180, memory:'512MiB', maxInstances:1},
+  {schedule:'every 1 minutes', region:REGION, timeoutSeconds:180, memory:'512MiB', maxInstances:1, secrets:[NOVA_GITHUB_TOKEN]},
   async () => {
     const queue = await db.collection('nova_task_queue')
       .where('provider', '==', 'github_actions')
@@ -308,7 +438,10 @@ exports.pollGithubActionsTasks = onSchedule(
       });
       if (!claimed) continue;
       try {
-        const result = await checkGithubActionsRun(runUrl);
+        const result = await checkGithubActionsRun(runUrl, {token:NOVA_GITHUB_TOKEN.value().trim()});
+        const diagnostics = result.state === 'failed'
+          ? await diagnoseGithubActionsRun(result, NOVA_GITHUB_TOKEN.value().trim())
+          : {status:'not_needed', failedJobs:[]};
         const finalStatus = result.state === 'succeeded' ? 'succeeded' :
           result.state === 'failed' ? 'failed' :
           result.state === 'unknown' ? 'verification_incomplete' : 'provider_processing';
@@ -335,6 +468,7 @@ exports.pollGithubActionsTasks = onSchedule(
               paginationComplete:result.paginationComplete,
               verificationError:result.verificationError,
               jobs:result.jobs,
+              diagnostics,
             },
             error:finalStatus === 'failed' ? 'GitHub Actions run completed with a failure conclusion.' :
               finalStatus === 'verification_incomplete' ? (result.verificationError || 'GitHub job results could not be fully verified.') : null,

@@ -97,6 +97,7 @@ async function checkGithubActionsRun(value, options = {}) {
       run.status !== 'completed' ? 'running' : 'unknown';
 
     const jobLines = jobs.map(job => ({
+      jobId: Number(job.id || 0),
       name: String(job.name || 'job'),
       status: String(job.status || 'unknown'),
       conclusion: String(job.conclusion || ''),

@@ -160,6 +160,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
           DropdownMenuItem(value: 'opportunity_scan', child: Text('بحث عن فرص دخل')),
           DropdownMenuItem(value: 'content_draft', child: Text('مسودة محتوى')),
           DropdownMenuItem(value: 'github_ci_check', child: Text('فحص GitHub Actions — قراءة فقط')),
+          DropdownMenuItem(value: 'circleci_check', child: Text('فحص CircleCI وسجلات الأخطاء — قراءة فقط')),
           DropdownMenuItem(value: 'video_generation', child: Text('توليد فيديو عبر Higgsfield — مدفوع ويتطلب موافقة')),
           DropdownMenuItem(value: 'social_publish', child: Text('نشر اجتماعي — يتطلب موافقة')),
         ],
@@ -170,7 +171,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
         controller: _prompt,
         minLines: 3,
         maxLines: 6,
-        decoration: InputDecoration(labelText: _type == 'github_ci_check' ? 'رابط تشغيل GitHub Actions' : 'شنو داير NOVA تنفّذ؟', hintText: _type == 'github_ci_check' ? 'https://github.com/kdot101kwb-cyber/Auren/actions/runs/41069266046' : 'اكتب هدف المهمة بالتفصيل', border: const OutlineInputBorder()),
+        decoration: InputDecoration(labelText: _type == 'github_ci_check' ? 'رابط تشغيل GitHub Actions' : _type == 'circleci_check' ? 'رابط وظيفة CircleCI' : 'شنو داير NOVA تنفّذ؟', hintText: _type == 'github_ci_check' ? 'https://github.com/kdot101kwb-cyber/Auren/actions/runs/41069266046' : _type == 'circleci_check' ? 'https://circleci.com/gh/kdot101kwb-cyber/Auren/28039' : 'اكتب هدف المهمة بالتفصيل', border: const OutlineInputBorder()),
       ),
       const SizedBox(height: 10),
       FilledButton.icon(
@@ -207,8 +208,42 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
             ],
             if (task['result'] is Map && (task['result'] as Map)['evidenceUrl'] is String) ...[
               const SizedBox(height: 8),
-              SelectableText('دليل GitHub: ${(task['result'] as Map)['evidenceUrl']}', textDirection: TextDirection.ltr),
-              Text('الفرع: ${(task['result'] as Map)['branch'] ?? 'غير معروف'} — النجاح المثبت: ${(task['result'] as Map)['verifiedSuccess'] == true ? 'نعم' : 'لا'}'),
+              SelectableText('دليل CI: ${(task['result'] as Map)['evidenceUrl']}', textDirection: TextDirection.ltr),
+              Text('الفرع: ${(task['result'] as Map)['branch'] ?? 'غير معروف'} — النجاح المثبت: ${(task['result'] as Map)['verifiedSuccess'] == true || (task['result'] as Map)['runStatus'] == 'success' ? 'نعم' : 'لا'}'),
+            ],
+            if (task['result'] is Map && (task['result'] as Map)['diagnostics'] is Map) ...[
+              const SizedBox(height: 8),
+              Text(
+                'تشخيص CI: ${((task['result'] as Map)['diagnostics'] as Map)['status'] ?? 'غير متاح'}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              if (((task['result'] as Map)['diagnostics'] as Map)['message'] is String)
+                Text('${((task['result'] as Map)['diagnostics'] as Map)['message']}',
+                    textDirection: TextDirection.rtl),
+              for (final diagnostic in (((task['result'] as Map)['diagnostics'] as Map)['failedJobs'] as List? ?? const []))
+                if (diagnostic is Map) ...[
+                  Text('الوظيفة: ${diagnostic['jobName'] ?? diagnostic['jobId'] ?? 'غير معروفة'}',
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  if (diagnostic['message'] is String)
+                    Text('${diagnostic['message']}', textDirection: TextDirection.rtl),
+                  for (final evidence in (diagnostic['evidence'] as List? ?? const []))
+                    if (evidence is Map)
+                      SelectableText(
+                        'L${evidence['line']}: ${evidence['text']}',
+                        textDirection: TextDirection.ltr,
+                      ),
+                ],
+              for (final step in (((task['result'] as Map)['diagnostics'] as Map)['failedSteps'] as List? ?? const []))
+                if (step is Map) ...[
+                  Text('الخطوة الفاشلة: ${step['name'] ?? 'غير معروفة'}',
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  for (final evidence in (step['evidence'] as List? ?? const []))
+                    if (evidence is Map)
+                      SelectableText(
+                        'L${evidence['line']}: ${evidence['text']}',
+                        textDirection: TextDirection.ltr,
+                      ),
+                ],
             ],
             if (task['result'] is Map && (task['result'] as Map)['videoUrl'] is String) ...[
               const SizedBox(height: 8),
