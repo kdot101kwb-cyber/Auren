@@ -88,6 +88,32 @@ jobs:
             cat flutter_test.log
             exit 0
       - run:
+          name: Prepare Android SDK Platform
+          command: |
+            set -e
+            SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+            SDKMANAGER="${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+            SDK_PLATFORM="platforms;android-35"
+            PLATFORM_DIR="${SDK_ROOT}/platforms/android-35"
+            if [ ! -d "${PLATFORM_DIR}" ]; then
+              for attempt in 1 2 3; do
+                echo "Installing ${SDK_PLATFORM} (attempt ${attempt}/3)"
+                yes | "${SDKMANAGER}" --licenses >/dev/null 2>&1 || true
+                if "${SDKMANAGER}" --install "${SDK_PLATFORM}"; then
+                  break
+                fi
+                rm -rf "${PLATFORM_DIR}"
+                rm -rf "${SDK_ROOT}/.temp"/* || true
+                if [ "${attempt}" -eq 3 ]; then
+                  echo "ERROR: Failed to install ${SDK_PLATFORM} after 3 attempts."
+                  exit 1
+                fi
+                sleep 5
+              done
+            fi
+            test -d "${PLATFORM_DIR}"
+            echo "Android SDK Platform 35 ready: ${PLATFORM_DIR}"
+      - run:
           name: Android build
           command: |
             set +e
