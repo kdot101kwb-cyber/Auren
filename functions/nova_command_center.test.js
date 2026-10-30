@@ -10,6 +10,13 @@ test('accepts a bounded task with stable idempotency key', () => {
   assert.equal(task.metadata.locale,'ar');
 });
 
+test('accepts read-only CI diagnostic task types without approval', () => {
+  for (const type of ['github_ci_check', 'circleci_check']) {
+    const task = normalizeNovaTaskInput({type, prompt:'https://circleci.com/gh/kdot101kwb-cyber/Auren/28039', idempotencyKey:'nova_task_123456'});
+    assert.equal(task.requiresApproval, false);
+  }
+});
+
 test('rejects unknown task types and missing prompt', () => {
   assert.throws(() => normalizeNovaTaskInput({type:'root_access',prompt:'x',idempotencyKey:'nova_task_123456'}), /Unsupported NOVA task type/);
   assert.throws(() => normalizeNovaTaskInput({type:'chat',prompt:' ',idempotencyKey:'nova_task_123456'}), /Prompt/);
