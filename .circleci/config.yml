@@ -132,21 +132,14 @@ jobs:
       - image: cimg/node:22.15
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - functions-node-v4-
-            - functions-node-v4
       - run:
           name: Install Functions dependencies (including test SDKs)
           command: |
             cd functions
+            rm -rf node_modules
             npm install --include=dev --no-audit --no-fund
             echo "========== RESOLVED FIREBASE TEST SDK VERSIONS =========="
             npm ls --include=dev firebase @firebase/rules-unit-testing
-      - save_cache:
-          key: functions-node-v4-{{ .Branch }}
-          paths:
-            - functions/node_modules
       - run:
           name: Run Functions tests
           command: |
