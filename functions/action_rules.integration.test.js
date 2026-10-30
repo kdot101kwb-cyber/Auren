@@ -4,6 +4,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+require('firebase/compat/app');
+require('firebase/compat/firestore');
 const {
   Timestamp, deleteDoc, doc, getDoc, runTransaction, setDoc, updateDoc,
 } = require('firebase/firestore');
