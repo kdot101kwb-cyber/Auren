@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   redactSensitiveText,
+  readTextBounded,
   extractFailureEvidence,
   fetchGithubActionsJobDiagnostics,
   diagnoseGithubActionsRun,
@@ -62,14 +63,10 @@ test('downloads only a failed job log and returns compact evidence', async () =>
   assert.equal(result.truncated, false);
 });
 
-test('bounds GitHub job log reads and reports truncation', async () => {
-  const fetchImpl = async (url) => url.endsWith('/logs')
-    ? new Response('Error: ' + 'x'.repeat(2000), {status:200})
-    : new Response(JSON.stringify({id:456, run_id:123, status:'completed', conclusion:'failure'}), {status:200});
-  const result = await fetchGithubActionsJobDiagnostics({
-    runId:123, jobId:456, token:'test-token', fetchImpl,
-  });
-  assert.equal(result.truncated, false); // The production cap is larger than this fixture.
+test('bounds GitHub log reads to the requested byte limit', async () => {
+  const result = await readTextBounded(new Response('x'.repeat(2000)), 100);
+  assert.equal(new TextEncoder().encode(result.text).byteLength, 100);
+  assert.equal(result.truncated, true);
 });
 
 test('diagnoses failed workflow jobs without attempting any write operation', async () => {
