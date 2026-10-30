@@ -15,6 +15,40 @@ function redactSensitiveText(value) {
     .slice(0, MAX_LINE_LENGTH);
 }
 
+async function readTextBounded(response, maxBytes = MAX_LOG_BYTES) {
+  if (response.body && typeof response.body.getReader === 'function') {
+    const reader = response.body.getReader();
+    const chunks = [];
+    let total = 0;
+    let truncated = false;
+    try {
+      while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+        const remaining = maxBytes - total;
+        if (value.byteLength > remaining) {
+          if (remaining > 0) chunks.push(value.slice(0, remaining));
+          total += Math.max(0, remaining);
+          truncated = true;
+          await reader.cancel();
+          break;
+        }
+        chunks.push(value);
+        total += value.byteLength;
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    const combined = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) { combined.set(chunk, offset); offset += chunk.byteLength; }
+    return {text:new TextDecoder().decode(combined), truncated};
+  }
+  const text = await response.text();
+  const bytes = new TextEncoder().encode(text);
+  return {text:new TextDecoder().decode(bytes.slice(0, maxBytes)), truncated:bytes.byteLength > maxBytes};
+}
+
 function extractFailureEvidence(logText) {
   const lines = String(logText || '').slice(0, MAX_LOG_BYTES).split(/\r?\n/);
   const matches = [];
@@ -62,8 +96,8 @@ async function fetchGithubActionsJobDiagnostics({runId, jobId, token, fetchImpl 
       {headers:{...headers, accept:'application/vnd.github+json'}, signal:controller.signal, redirect:'follow'},
     );
     if (!logResponse.ok) throw new Error('GitHub job log download failed with HTTP ' + logResponse.status + '.');
-    const logText = await logResponse.text();
-    const evidence = extractFailureEvidence(logText);
+    const boundedLog = await readTextBounded(logResponse, MAX_LOG_BYTES);
+    const evidence = extractFailureEvidence(boundedLog.text);
     return {
       status:'available',
       jobId:Number(jobId),
@@ -73,7 +107,7 @@ async function fetchGithubActionsJobDiagnostics({runId, jobId, token, fetchImpl 
         .filter(step => step.conclusion && !['success','skipped'].includes(step.conclusion))
         .map(step => String(step.name || 'step').slice(0,120)).slice(0,10),
       evidence,
-      truncated:logText.length > MAX_LOG_BYTES,
+      truncated:boundedLog.truncated,
       message:evidence.length ? 'تم استخراج مؤشرات الفشل من سجل الوظيفة دون حفظ السجل الكامل.' :
         'تم تنزيل السجل، لكن لم تُعثر على أسطر خطأ واضحة؛ راجع سجل CircleCI أو تفاصيل الوظيفة.',
     };
@@ -110,4 +144,4 @@ async function diagnoseGithubActionsRun(result, token, options = {}) {
   };
 }
 
-module.exports = {redactSensitiveText, extractFailureEvidence, fetchGithubActionsJobDiagnostics, diagnoseGithubActionsRun};
+module.exports = {redactSensitiveText, readTextBounded, extractFailureEvidence, fetchGithubActionsJobDiagnostics, diagnoseGithubActionsRun};
