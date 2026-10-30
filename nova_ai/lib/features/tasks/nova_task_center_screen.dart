@@ -209,7 +209,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
             if (task['result'] is Map && (task['result'] as Map)['evidenceUrl'] is String) ...[
               const SizedBox(height: 8),
               SelectableText('دليل CI: ${(task['result'] as Map)['evidenceUrl']}', textDirection: TextDirection.ltr),
-              Text('الفرع: ${(task['result'] as Map)['branch'] ?? 'غير معروف'} — النجاح المثبت: ${(task['result'] as Map)['verifiedSuccess'] == true ? 'نعم' : 'لا'}'),
+              Text('الفرع: ${(task['result'] as Map)['branch'] ?? 'غير معروف'} — النجاح المثبت: ${(task['result'] as Map)['verifiedSuccess'] == true || (task['result'] as Map)['runStatus'] == 'success' ? 'نعم' : 'لا'}'),
             ],
             if (task['result'] is Map && (task['result'] as Map)['diagnostics'] is Map) ...[
               const SizedBox(height: 8),
