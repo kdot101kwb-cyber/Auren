@@ -112,7 +112,7 @@ exports.processNovaTaskQueue = onSchedule(
                 jobs:result.jobs,
               },
               error:result.state === 'failed' ? 'GitHub Actions run completed with a failure conclusion.' : null,
-              completedAt:FieldValue.serverTimestamp(),
+              completedAt:result.state === 'running' ? null : FieldValue.serverTimestamp(),
               updatedAt:FieldValue.serverTimestamp(),
             });
             tx.update(queueRef, {
