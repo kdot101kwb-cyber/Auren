@@ -63,7 +63,6 @@ jobs:
             set +e
             flutter analyze --no-fatal-warnings --no-fatal-infos > flutter_analyze.log 2>&1
             status=$?
-            echo "flutter_analyze_exit_code=$status" >> flutter_analyze.log
             echo "$status" > /tmp/flutter_analyze_status
             cat flutter_analyze.log
             exit 0
@@ -73,7 +72,6 @@ jobs:
             set +e
             flutter test > flutter_test.log 2>&1
             status=$?
-            echo "flutter_test_exit_code=$status" >> flutter_test.log
             echo "$status" > /tmp/flutter_test_status
             cat flutter_test.log
             exit 0
@@ -83,7 +81,6 @@ jobs:
             set +e
             flutter build apk --debug > flutter_android_build.log 2>&1
             status=$?
-            echo "flutter_android_build_exit_code=$status" >> flutter_android_build.log
             echo "$status" > /tmp/flutter_android_build_status
             cat flutter_android_build.log
             exit 0
@@ -108,31 +105,24 @@ jobs:
             echo "Flutter analyze: ${analyze_status}"
             echo "Flutter test: ${test_status}"
             echo "Android debug build: ${build_status}"
-
             echo
             echo "========== ANALYZE ERRORS =========="
             grep -E "^[[:space:]]*(error|warning)[[:space:]]|^[[:space:]]*error •|^[[:space:]]*warning •" flutter_analyze.log | tail -n 80 || true
-
             echo
             echo "========== TEST FAILURES =========="
             grep -E "FAILED|Error:|Exception:|Test failed|Some tests failed|Expected:|Actual:" flutter_test.log | tail -n 80 || true
-
             echo
             echo "========== BUILD ERRORS =========="
             grep -E "ERROR:|FAILURE:|error:|Exception:|Execution failed|What went wrong|Could not" flutter_android_build.log | tail -n 100 || true
-
             echo
             echo "========== LAST ANALYZE LINES =========="
             tail -n 40 flutter_analyze.log
-
             echo
             echo "========== LAST TEST LINES =========="
             tail -n 40 flutter_test.log
-
             echo
             echo "========== LAST BUILD LINES =========="
             tail -n 60 flutter_android_build.log
-
             if [ "${analyze_status}" -ne 0 ] || [ "${test_status}" -ne 0 ] || [ "${build_status}" -ne 0 ]; then
               exit 1
             fi
@@ -144,17 +134,17 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - functions-node-v3-
-            - functions-node-v3
+            - functions-node-v4-
+            - functions-node-v4
       - run:
-          name: Install Functions dependencies
+          name: Install Functions dependencies (including test SDKs)
           command: |
             cd functions
-            npm install --no-audit --no-fund
+            npm install --include=dev --no-audit --no-fund
             echo "========== RESOLVED FIREBASE TEST SDK VERSIONS =========="
-            npm ls firebase @firebase/rules-unit-testing
+            npm ls --include=dev firebase @firebase/rules-unit-testing
       - save_cache:
-          key: functions-node-v3-{{ .Branch }}
+          key: functions-node-v4-{{ .Branch }}
           paths:
             - functions/node_modules
       - run:
@@ -165,7 +155,7 @@ jobs:
             npm test 2>&1 | tee functions_test.log
             status=${PIPESTATUS[0]}
             echo "npm_test_exit_code=${status}" >> functions_test.log
-            exit $status
+            exit ${status}
       - run:
           name: Firestore Rules source size guard
           command: |
@@ -222,7 +212,7 @@ jobs:
             npm test 2>&1 | tee action_executor_test.log
             status=${PIPESTATUS[0]}
             echo "npm_test_exit_code=${status}" >> action_executor_test.log
-            exit $status
+            exit ${status}
       - store_artifacts:
           path: backend/action-executor/action_executor_test.log
 
@@ -242,7 +232,6 @@ jobs:
           key: plugin-worker-node-v1-{{ .Branch }}
           paths:
             - backend/plugin-worker/node_modules
-
       - run:
           name: Syntax check
           command: cd backend/plugin-worker && node --check src/worker.js
@@ -254,7 +243,7 @@ jobs:
             npm test 2>&1 | tee plugin_worker_test.log
             status=${PIPESTATUS[0]}
             echo "npm_test_exit_code=${status}" >> plugin_worker_test.log
-            exit $status
+            exit ${status}
       - store_artifacts:
           path: backend/plugin-worker/plugin_worker_test.log
 
