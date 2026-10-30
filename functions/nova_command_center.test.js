@@ -17,6 +17,11 @@ test('accepts read-only CI diagnostic task types without approval', () => {
   }
 });
 
+test('accepts self-repair planning as a read-only proposal task', () => {
+  const task = normalizeNovaTaskInput({type:'self_repair_plan',prompt:'{}',idempotencyKey:'nova_task_123456'});
+  assert.equal(task.requiresApproval, false);
+});
+
 test('rejects unknown task types and missing prompt', () => {
   assert.throws(() => normalizeNovaTaskInput({type:'root_access',prompt:'x',idempotencyKey:'nova_task_123456'}), /Unsupported NOVA task type/);
   assert.throws(() => normalizeNovaTaskInput({type:'chat',prompt:' ',idempotencyKey:'nova_task_123456'}), /Prompt/);
