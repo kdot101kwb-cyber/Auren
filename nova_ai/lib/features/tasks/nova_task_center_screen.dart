@@ -141,6 +141,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
           DropdownMenuItem(value: 'research', child: Text('بحث وتحليل')),
           DropdownMenuItem(value: 'opportunity_scan', child: Text('بحث عن فرص دخل')),
           DropdownMenuItem(value: 'content_draft', child: Text('مسودة محتوى')),
+          DropdownMenuItem(value: 'github_ci_check', child: Text('فحص GitHub Actions — قراءة فقط')),
           DropdownMenuItem(value: 'video_generation', child: Text('توليد فيديو عبر Higgsfield — مدفوع ويتطلب موافقة')),
           DropdownMenuItem(value: 'social_publish', child: Text('نشر اجتماعي — يتطلب موافقة')),
         ],
@@ -151,7 +152,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
         controller: _prompt,
         minLines: 3,
         maxLines: 6,
-        decoration: const InputDecoration(labelText: 'شنو داير NOVA تنفّذ؟', hintText: 'اكتب هدف المهمة بالتفصيل', border: OutlineInputBorder()),
+        decoration: InputDecoration(labelText: _type == 'github_ci_check' ? 'رابط تشغيل GitHub Actions' : 'شنو داير NOVA تنفّذ؟', hintText: _type == 'github_ci_check' ? 'https://github.com/kdot101kwb-cyber/Auren/actions/runs/41069266046' : 'اكتب هدف المهمة بالتفصيل', border: const OutlineInputBorder()),
       ),
       const SizedBox(height: 10),
       FilledButton.icon(
@@ -185,6 +186,11 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
             if (task['result'] is Map && (task['result'] as Map)['text'] is String) ...[
               const SizedBox(height: 8),
               Text('النتيجة: ${(task['result'] as Map)['text']}', textDirection: TextDirection.rtl),
+            ],
+            if (task['result'] is Map && (task['result'] as Map)['evidenceUrl'] is String) ...[
+              const SizedBox(height: 8),
+              SelectableText('دليل GitHub: ${(task['result'] as Map)['evidenceUrl']}', textDirection: TextDirection.ltr),
+              Text('الفرع: ${(task['result'] as Map)['branch'] ?? 'غير معروف'} — النجاح المثبت: ${(task['result'] as Map)['verifiedSuccess'] == true ? 'نعم' : 'لا'}'),
             ],
             if (task['result'] is Map && (task['result'] as Map)['videoUrl'] is String) ...[
               const SizedBox(height: 8),
