@@ -5,6 +5,7 @@ try { initializeApp({projectId:'auren-nova-repair-tests'}); } catch (_) {}
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
+  parseModelJson,
   extractVerifiedEvidence,
   validateFailedTask,
   buildValidationResult,
@@ -13,6 +14,11 @@ const {
 
 const sha = 'a'.repeat(40);
 const fileSha = 'b'.repeat(40);
+
+test('parses bounded JSON model output and rejects malformed responses', () => {
+  assert.deepEqual(parseModelJson('```json\\n{"summary":"ok","files":[]}\\n```'), {summary:'ok', files:[]});
+  assert.throws(() => parseModelJson('not json'), /JSON repair proposal/);
+});
 
 test('accepts only owned failed CI tasks with available redacted evidence and a full commit SHA', () => {
   const task = {
