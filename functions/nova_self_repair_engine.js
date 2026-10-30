@@ -31,15 +31,15 @@ function redactRepairEvidence(value) {
     .replace(/(authorization\s*[:=]\s*bearer\s+)[^\s,;]+/ig, '$1[REDACTED]')
     .replace(/(circle-token\s*[:=]\s*)[^\s,;]+/ig, '$1[REDACTED]')
     .replace(/(gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})/g, '[REDACTED_TOKEN]')
-    .replace(/\\bAKIA[0-9A-Z]{16}\\b/g, '[REDACTED_AWS_KEY]')
-    .replace(/\\bAIza[0-9A-Za-z_-]{30,}\\b/g, '[REDACTED_GOOGLE_KEY]')
+    .replace(/\bAKIA[0-9A-Z]{16}\b/g, '[REDACTED_AWS_KEY]')
+    .replace(/\bAIza[0-9A-Za-z_-]{30,}\b/g, '[REDACTED_GOOGLE_KEY]')
     .replace(/((?:api[_-]?key|access[_-]?token|token|secret|password)\s*[:=]\s*)[^\s,;]+/ig, '$1[REDACTED]')
     .replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----/g, '[REDACTED_PRIVATE_KEY]')
     .slice(0, 420);
 }
 
 function containsCredentialMaterial(value) {
-  return /(gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|authorization\s*:\s*bearer\s+\S{20,})/i.test(String(value || ''));
+  return /(gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|authorization\s*:\s*bearer\s+\S{20,}|circle-token\s*[:=]\s*\S{12,}|(?:api[_-]?key|access[_-]?token|secret|password)\s*[:=]\s*['"][^'"]{12,}['"])/i.test(String(value || ''));
 }
 
 function validatePatchSet(files) {
