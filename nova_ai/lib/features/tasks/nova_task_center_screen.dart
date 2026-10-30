@@ -210,6 +210,29 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
               SelectableText('دليل GitHub: ${(task['result'] as Map)['evidenceUrl']}', textDirection: TextDirection.ltr),
               Text('الفرع: ${(task['result'] as Map)['branch'] ?? 'غير معروف'} — النجاح المثبت: ${(task['result'] as Map)['verifiedSuccess'] == true ? 'نعم' : 'لا'}'),
             ],
+            if (task['result'] is Map && (task['result'] as Map)['diagnostics'] is Map) ...[
+              const SizedBox(height: 8),
+              Text(
+                'تشخيص CI: ${((task['result'] as Map)['diagnostics'] as Map)['status'] ?? 'غير متاح'}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              if (((task['result'] as Map)['diagnostics'] as Map)['message'] is String)
+                Text('${((task['result'] as Map)['diagnostics'] as Map)['message']}',
+                    textDirection: TextDirection.rtl),
+              for (final diagnostic in (((task['result'] as Map)['diagnostics'] as Map)['failedJobs'] as List? ?? const []))
+                if (diagnostic is Map) ...[
+                  Text('الوظيفة: ${diagnostic['jobName'] ?? diagnostic['jobId'] ?? 'غير معروفة'}',
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  if (diagnostic['message'] is String)
+                    Text('${diagnostic['message']}', textDirection: TextDirection.rtl),
+                  for (final evidence in (diagnostic['evidence'] as List? ?? const []))
+                    if (evidence is Map)
+                      SelectableText(
+                        'L${evidence['line']}: ${evidence['text']}',
+                        textDirection: TextDirection.ltr,
+                      ),
+                ],
+            ],
             if (task['result'] is Map && (task['result'] as Map)['videoUrl'] is String) ...[
               const SizedBox(height: 8),
               SelectableText('رابط الفيديو: ${(task['result'] as Map)['videoUrl']}', textDirection: TextDirection.ltr),
