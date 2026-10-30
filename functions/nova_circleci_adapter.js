@@ -13,7 +13,7 @@ function parseCircleCiJobUrl(value) {
   if (url.protocol !== 'https:' || url.hostname !== 'circleci.com' ||
       parts.length !== 4 || parts[0] !== 'gh' ||
       parts[1] !== 'kdot101kwb-cyber' || parts[2] !== 'Auren' ||
-      !/^\\d+$/.test(parts[3]) || url.search || url.hash) {
+      !/^\d+$/.test(parts[3]) || url.search || url.hash) {
     throw new Error('يُقبل فقط رابط وظيفة CircleCI في مستودع AUREN المحدد.');
   }
   return {
@@ -37,23 +37,23 @@ function extractCircleCiMessages(payload) {
     if (Array.isArray(parsed)) messages = parsed.map(item => item?.message).filter(value => typeof value === 'string');
     else if (typeof parsed?.message === 'string') messages = [parsed.message];
   } catch (_) {
-    messages = String(payload || '').split(/\\r?\\n/);
+    messages = String(payload || '').split(/\r?\n/);
   }
   return messages;
 }
 
 function redactCircleCiLine(value) {
   return String(value || '')
-    .replace(/(authorization\\s*[:=]\\s*bearer\\s+)[^\\s,;]+/ig, '$1[REDACTED]')
-    .replace(/(circle-token\\s*[:=]\\s*)[^\\s,;]+/ig, '$1[REDACTED]')
+    .replace(/(authorization\s*[:=]\s*bearer\s+)[^\s,;]+/ig, '$1[REDACTED]')
+    .replace(/(circle-token\s*[:=]\s*)[^\s,;]+/ig, '$1[REDACTED]')
     .replace(/(gh[pousr]_[A-Za-z0-9_]{20,})/g, '[REDACTED_GITHUB_TOKEN]')
     .replace(/(github_pat_[A-Za-z0-9_]{20,})/g, '[REDACTED_GITHUB_TOKEN]')
-    .replace(/((?:api[_-]?key|access[_-]?token|secret|password)\\s*[:=]\\s*)[^\\s,;]+/ig, '$1[REDACTED]')
+    .replace(/((?:api[_-]?key|access[_-]?token|secret|password)\s*[:=]\s*)[^\s,;]+/ig, '$1[REDACTED]')
     .slice(0, 420);
 }
 
 function extractCircleCiFailureEvidence(messages, maxLines = 12) {
-  const pattern = /\\b(error|fatal|exception|failed|failure|denied|timed out|timeout|cannot find|not found|exit code [1-9])\\b|^\\s*✗/i;
+  const pattern = /\b(error|fatal|exception|failed|failure|denied|timed out|timeout|cannot find|not found|exit code [1-9])\b|^\s*✗/i;
   const found = [];
   const seen = new Set();
   for (let index = 0; index < messages.length && found.length < maxLines; index += 1) {
@@ -118,7 +118,7 @@ async function checkCircleCiJob(value, options = {}) {
             try {
               const parsed = JSON.parse(payload);
               messages = Array.isArray(parsed) ? parsed.map(row => row?.message).filter(row => typeof row === 'string') : [];
-            } catch (_) { messages = payload.split(/\\r?\\n/); }
+            } catch (_) { messages = payload.split(/\r?\n/); }
             evidence = extractCircleCiFailureEvidence(messages, 12);
           } catch (error) {
             outputStatus = 'unavailable';
