@@ -16,7 +16,7 @@ const sha = 'a'.repeat(40);
 const fileSha = 'b'.repeat(40);
 
 test('parses bounded JSON model output and rejects malformed responses', () => {
-  assert.deepEqual(parseModelJson('```json\\n{"summary":"ok","files":[]}\\n```'), {summary:'ok', files:[]});
+  assert.deepEqual(parseModelJson('```json\n{"summary":"ok","files":[]}\n```'), {summary:'ok', files:[]});
   assert.throws(() => parseModelJson('not json'), /JSON repair proposal/);
 });
 
