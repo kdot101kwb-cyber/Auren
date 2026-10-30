@@ -94,6 +94,9 @@ exports.processNovaTaskQueue = onSchedule(
       try {
         if (task.type === 'github_ci_check') {
           const result = await checkGithubActionsRun(String(task.prompt || ''));
+          const diagnostics = result.state === 'failed'
+            ? await diagnoseGithubActionsRun(result, NOVA_GITHUB_TOKEN.value().trim())
+            : {status:'not_needed', failedJobs:[]};
           const finalStatus = result.state === 'succeeded' ? 'succeeded' :
             result.state === 'failed' ? 'failed' :
             result.state === 'unknown' ? 'verification_incomplete' : 'provider_processing';
@@ -117,6 +120,7 @@ exports.processNovaTaskQueue = onSchedule(
                 paginationComplete:result.paginationComplete,
                 verificationError:result.verificationError,
                 jobs:result.jobs,
+                diagnostics,
               },
               error:finalStatus === 'failed' ? 'GitHub Actions run completed with a failure conclusion.' :
                 finalStatus === 'verification_incomplete' ? (result.verificationError || 'GitHub job results could not be fully verified.') : null,
@@ -278,7 +282,7 @@ exports.pollHiggsfieldVideoTasks = onSchedule(
 // GitHub Actions runs may still be active on first inspection. Poll those
 // tasks separately so provider_processing is a live state, not a dead end.
 exports.pollGithubActionsTasks = onSchedule(
-  {schedule:'every 1 minutes', region:REGION, timeoutSeconds:180, memory:'512MiB', maxInstances:1},
+  {schedule:'every 1 minutes', region:REGION, timeoutSeconds:180, memory:'512MiB', maxInstances:1, secrets:[NOVA_GITHUB_TOKEN]},
   async () => {
     const queue = await db.collection('nova_task_queue')
       .where('provider', '==', 'github_actions')
@@ -311,6 +315,9 @@ exports.pollGithubActionsTasks = onSchedule(
       if (!claimed) continue;
       try {
         const result = await checkGithubActionsRun(runUrl);
+        const diagnostics = result.state === 'failed'
+          ? await diagnoseGithubActionsRun(result, NOVA_GITHUB_TOKEN.value().trim())
+          : {status:'not_needed', failedJobs:[]};
         const finalStatus = result.state === 'succeeded' ? 'succeeded' :
           result.state === 'failed' ? 'failed' :
           result.state === 'unknown' ? 'verification_incomplete' : 'provider_processing';
@@ -337,6 +344,7 @@ exports.pollGithubActionsTasks = onSchedule(
               paginationComplete:result.paginationComplete,
               verificationError:result.verificationError,
               jobs:result.jobs,
+              diagnostics,
             },
             error:finalStatus === 'failed' ? 'GitHub Actions run completed with a failure conclusion.' :
               finalStatus === 'verification_incomplete' ? (result.verificationError || 'GitHub job results could not be fully verified.') : null,
