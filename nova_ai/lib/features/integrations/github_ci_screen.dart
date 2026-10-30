@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
+import 'nova_ci_run_status.dart';
+
 /// Read-only live view of public GitHub Actions runs for the AUREN repository.
 /// No token is embedded in the mobile app; private repositories need a secure backend.
 class GitHubCiScreen extends StatefulWidget {
@@ -218,38 +220,50 @@ class _GitHubCiScreenState extends State<GitHubCiScreen> {
   }
 
   static IconData _iconFor(String status, String conclusion) {
-    if (status != 'completed') return Icons.pending_outlined;
-    if (conclusion == 'success') return Icons.check_circle_outline;
-    if (conclusion == 'failure' || conclusion == 'cancelled' || conclusion == 'timed_out') return Icons.error_outline;
-    return Icons.info_outline;
+    final state = NovaCiRunStatus.fromGitHub(
+      status: status,
+      conclusion: conclusion,
+    ).state;
+    switch (state) {
+      case NovaCiRunState.queued:
+      case NovaCiRunState.running:
+        return Icons.pending_outlined;
+      case NovaCiRunState.succeeded:
+        return Icons.check_circle_outline;
+      case NovaCiRunState.failed:
+      case NovaCiRunState.cancelled:
+        return Icons.error_outline;
+      case NovaCiRunState.skipped:
+      case NovaCiRunState.unknown:
+        return Icons.info_outline;
+    }
   }
 
   static Color _colorFor(BuildContext context, String status, String conclusion) {
-    if (status != 'completed') return Colors.amber;
-    if (conclusion == 'success') return Colors.green;
-    if (conclusion == 'failure' || conclusion == 'cancelled' || conclusion == 'timed_out') {
-      return Theme.of(context).colorScheme.error;
+    final state = NovaCiRunStatus.fromGitHub(
+      status: status,
+      conclusion: conclusion,
+    ).state;
+    switch (state) {
+      case NovaCiRunState.queued:
+      case NovaCiRunState.running:
+        return Colors.amber;
+      case NovaCiRunState.succeeded:
+        return Colors.green;
+      case NovaCiRunState.failed:
+      case NovaCiRunState.cancelled:
+        return Theme.of(context).colorScheme.error;
+      case NovaCiRunState.skipped:
+      case NovaCiRunState.unknown:
+        return Theme.of(context).colorScheme.onSurfaceVariant;
     }
-    return Theme.of(context).colorScheme.onSurfaceVariant;
   }
 
-  static String _statusLabel(String status, String conclusion) {
-    if (status != 'completed') {
-      switch (status) {
-        case 'queued': return 'في الانتظار';
-        case 'in_progress': return 'قيد التنفيذ';
-        default: return 'غير مكتمل: $status';
-      }
-    }
-    switch (conclusion) {
-      case 'success': return 'نجاح';
-      case 'failure': return 'فشل';
-      case 'cancelled': return 'أُلغي';
-      case 'timed_out': return 'انتهت المهلة';
-      case 'skipped': return 'تم التخطي';
-      default: return conclusion.isEmpty ? 'اكتمل دون نتيجة معروفة' : conclusion;
-    }
-  }
+  static String _statusLabel(String status, String conclusion) =>
+      NovaCiRunStatus.fromGitHub(
+        status: status,
+        conclusion: conclusion,
+      ).label;
 }
 
 class _WorkflowRun {
