@@ -43,6 +43,9 @@ test('redacts credential evidence and rejects patches containing known secret fo
   assert.equal(proposal.evidence[0].text.includes('ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'), false);
   assert.match(redactRepairEvidence('Authorization: Bearer verylongsecretvalue'), /REDACTED/);
   assert.throws(() => validatePatchSet([{...validFile, content:'const token = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";'}]), /credential material/);
+  assert.throws(() => validatePatchSet([{...validFile, content:'const api_key = "this-is-a-hardcoded-secret-value";'}]), /credential material/);
+  const awsEvidence = createRepairProposal({...validInput, evidence:[{text:'Error: AKIA1234567890ABCDEF'}]});
+  assert.doesNotMatch(awsEvidence.evidence[0].text, /AKIA1234567890ABCDEF/);
 });
 
 test('validates patch count, content size, expected SHA and duplicate paths', () => {
