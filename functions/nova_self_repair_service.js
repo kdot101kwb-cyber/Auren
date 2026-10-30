@@ -282,7 +282,8 @@ function buildValidationResult(proposal, statuses) {
   const byContext = new Map();
   for (const item of Array.isArray(statuses) ? statuses : []) {
     const context = String(item.context || '');
-    if (REQUIRED_CHECKS.includes(context)) byContext.set(context, item);
+    // GitHub returns status contexts newest-first; retain the latest status per context.
+    if (REQUIRED_CHECKS.includes(context) && !byContext.has(context)) byContext.set(context, item);
   }
   const checks = REQUIRED_CHECKS.filter(name => byContext.has(name)).map(name => ({
     name,
@@ -477,6 +478,9 @@ exports.checkNovaRepairValidation = onCall(
       });
       if (!response.ok) throw new HttpsError('unavailable', 'GitHub CI status lookup failed with HTTP ' + response.status + '.');
       const payload = await response.json();
+      if (String(payload.sha || '').toLowerCase() !== String(proposal.repairCommitSha).toLowerCase()) {
+        throw new HttpsError('failed-precondition', 'GitHub status response did not match the exact repair commit.');
+      }
       const updated = buildValidationResult(proposal, payload.statuses || []);
       await ref.update({
         state:updated.state,
