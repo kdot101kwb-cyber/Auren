@@ -92,12 +92,15 @@ exports.processNovaTaskQueue = onSchedule(
       try {
         if (task.type === 'github_ci_check') {
           const result = await checkGithubActionsRun(String(task.prompt || ''));
+          const finalStatus = result.state === 'succeeded' ? 'succeeded' :
+            result.state === 'failed' ? 'failed' :
+            result.state === 'unknown' ? 'verification_incomplete' : 'provider_processing';
           await db.runTransaction(async (tx) => {
             const qs = await tx.get(queueRef);
             const ts = await tx.get(taskRef);
             if (!qs.exists || !ts.exists || qs.data()?.status !== 'running' || ts.data()?.status !== 'running') return;
             tx.update(taskRef, {
-              status:result.state === 'failed' ? 'failed' : result.state === 'succeeded' ? 'succeeded' : 'provider_processing',
+              status:finalStatus,
               result:{
                 text:result.text,
                 provider:'github_actions',
@@ -108,15 +111,22 @@ exports.processNovaTaskQueue = onSchedule(
                 verifiedSuccess:result.verifiedSuccess,
                 branch:result.branch,
                 commit:result.commit,
+                totalJobs:result.totalJobs,
+                paginationComplete:result.paginationComplete,
+                verificationError:result.verificationError,
                 jobs:result.jobs,
               },
-              error:result.state === 'failed' ? 'GitHub Actions run completed with a failure conclusion.' : null,
-              completedAt:result.state === 'running' ? null : FieldValue.serverTimestamp(),
+              error:finalStatus === 'failed' ? 'GitHub Actions run completed with a failure conclusion.' :
+                finalStatus === 'verification_incomplete' ? (result.verificationError || 'GitHub job results could not be fully verified.') : null,
+              completedAt:finalStatus === 'provider_processing' ? null : FieldValue.serverTimestamp(),
               updatedAt:FieldValue.serverTimestamp(),
             });
             tx.update(queueRef, {
-              status:result.state === 'failed' ? 'failed' : result.state === 'succeeded' ? 'succeeded' : 'provider_processing',
-              updatedAt:FieldValue.serverTimestamp(),
+              status:finalStatus,
+              provider:'github_actions',
+              runId:result.runId,
+              runUrl:result.runUrl,
+              completedAt:finalStatus === 'provider_processing' ? null : FieldValue.serverTimestamp(),
               updatedAt:FieldValue.serverTimestamp(),
             });
             tx.create(db.collection('users').doc(uid).collection('nova_audit').doc(), {
@@ -124,6 +134,7 @@ exports.processNovaTaskQueue = onSchedule(
               actorUid:'nova_worker', taskId, taskType:task.type,
               runId:result.runId, runStatus:result.status, conclusion:result.conclusion,
               verifiedSuccess:result.verifiedSuccess, evidenceUrl:result.runUrl,
+              totalJobs:result.totalJobs, paginationComplete:result.paginationComplete,
               createdAt:FieldValue.serverTimestamp(),
             });
           });
@@ -255,6 +266,114 @@ exports.pollHiggsfieldVideoTasks = onSchedule(
           action:'nova.task.higgsfield_poll_error', actorUid:'nova_worker', taskId,
           taskType:'video_generation', provider:'higgsfield', providerRequestId:requestId,
           error:message, createdAt:FieldValue.serverTimestamp(),
+        });
+      }
+    }
+  }
+);
+
+
+// GitHub Actions runs may still be active on first inspection. Poll those
+// tasks separately so provider_processing is a live state, not a dead end.
+exports.pollGithubActionsTasks = onSchedule(
+  {schedule:'every 1 minutes', region:REGION, timeoutSeconds:180, memory:'512MiB', maxInstances:1},
+  async () => {
+    const queue = await db.collection('nova_task_queue')
+      .where('status', '==', 'provider_processing')
+      .limit(20)
+      .get();
+    for (const queueDoc of queue.docs) {
+      const row = queueDoc.data() || {};
+      if (row.provider !== 'github_actions') continue;
+      const uid = String(row.ownerUid || '');
+      const taskId = String(row.taskId || '');
+      const runUrl = String(row.runUrl || '');
+      if (!uid || !taskId || !runUrl) continue;
+      const queueRef = queueDoc.ref;
+      const taskRef = db.collection('users').doc(uid).collection('nova_tasks').doc(taskId);
+      let claimed = false;
+      await db.runTransaction(async (tx) => {
+        const qs = await tx.get(queueRef);
+        const ts = await tx.get(taskRef);
+        if (!qs.exists || !ts.exists ||
+            qs.data()?.status !== 'provider_processing' ||
+            ts.data()?.status !== 'provider_processing') return;
+        const leaseUntil = qs.data()?.pollLeaseUntil?.toMillis?.() || 0;
+        if (leaseUntil > Date.now()) return;
+        tx.update(queueRef, {
+          pollLeaseUntil: new Date(Date.now() + 120000),
+          updatedAt:FieldValue.serverTimestamp(),
+        });
+        claimed = true;
+      });
+      if (!claimed) continue;
+      try {
+        const result = await checkGithubActionsRun(runUrl);
+        const finalStatus = result.state === 'succeeded' ? 'succeeded' :
+          result.state === 'failed' ? 'failed' :
+          result.state === 'unknown' ? 'verification_incomplete' : 'provider_processing';
+        await db.runTransaction(async (tx) => {
+          const qs = await tx.get(queueRef);
+          const ts = await tx.get(taskRef);
+          if (!qs.exists || !ts.exists ||
+              qs.data()?.status !== 'provider_processing' ||
+              ts.data()?.status !== 'provider_processing') return;
+          tx.update(taskRef, {
+            status:finalStatus,
+            result:{
+              text:result.text,
+              provider:'github_actions',
+              evidenceUrl:result.runUrl,
+              runId:result.runId,
+              runStatus:result.status,
+              conclusion:result.conclusion,
+              verifiedSuccess:result.verifiedSuccess,
+              branch:result.branch,
+              commit:result.commit,
+              totalJobs:result.totalJobs,
+              paginationComplete:result.paginationComplete,
+              verificationError:result.verificationError,
+              jobs:result.jobs,
+            },
+            error:finalStatus === 'failed' ? 'GitHub Actions run completed with a failure conclusion.' :
+              finalStatus === 'verification_incomplete' ? (result.verificationError || 'GitHub job results could not be fully verified.') : null,
+            completedAt:finalStatus === 'provider_processing' ? null : FieldValue.serverTimestamp(),
+            updatedAt:FieldValue.serverTimestamp(),
+          });
+          tx.update(queueRef, {
+            status:finalStatus,
+            pollLeaseUntil:FieldValue.delete(),
+            completedAt:finalStatus === 'provider_processing' ? null : FieldValue.serverTimestamp(),
+            updatedAt:FieldValue.serverTimestamp(),
+          });
+          tx.create(db.collection('users').doc(uid).collection('nova_audit').doc(), {
+            action:result.verifiedSuccess ? 'nova.github_ci.verified_success' :
+              finalStatus === 'verification_incomplete' ? 'nova.github_ci.verification_incomplete' :
+              'nova.github_ci.polled',
+            actorUid:'nova_worker', taskId, taskType:'github_ci_check',
+            runId:result.runId, runStatus:result.status, conclusion:result.conclusion,
+            verifiedSuccess:result.verifiedSuccess, evidenceUrl:result.runUrl,
+            totalJobs:result.totalJobs, paginationComplete:result.paginationComplete,
+            createdAt:FieldValue.serverTimestamp(),
+          });
+        });
+      } catch (error) {
+        const message = String(error?.message || error).slice(0, 500);
+        await db.runTransaction(async (tx) => {
+          const qs = await tx.get(queueRef);
+          const ts = await tx.get(taskRef);
+          if (!qs.exists || !ts.exists || qs.data()?.status !== 'provider_processing' ||
+              ts.data()?.status !== 'provider_processing') return;
+          tx.update(queueRef, {
+            pollLeaseUntil:FieldValue.delete(),
+            lastPollError:message,
+            updatedAt:FieldValue.serverTimestamp(),
+          });
+          tx.create(db.collection('users').doc(uid).collection('nova_audit').doc(), {
+            action:'nova.github_ci.poll_error', actorUid:'nova_worker',
+            taskId, taskType:'github_ci_check', error:message,
+            evidenceUrl:runUrl, createdAt:FieldValue.serverTimestamp(),
+          });
         });
       }
     }
