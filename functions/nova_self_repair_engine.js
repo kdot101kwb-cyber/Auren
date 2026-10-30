@@ -26,6 +26,20 @@ function normalizeRepairPath(value) {
   return path;
 }
 
+function redactRepairEvidence(value) {
+  return String(value || '')
+    .replace(/(authorization\\s*[:=]\\s*bearer\\s+)[^\\s,;]+/ig, '$1[REDACTED]')
+    .replace(/(circle-token\\s*[:=]\\s*)[^\\s,;]+/ig, '$1[REDACTED]')
+    .replace(/(gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})/g, '[REDACTED_TOKEN]')
+    .replace(/((?:api[_-]?key|access[_-]?token|token|secret|password)\\s*[:=]\\s*)[^\\s,;]+/ig, '$1[REDACTED]')
+    .replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----/g, '[REDACTED_PRIVATE_KEY]')
+    .slice(0, 420);
+}
+
+function containsCredentialMaterial(value) {
+  return /(gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|authorization\\s*:\\s*bearer\\s+\\S{20,})/i.test(String(value || ''));
+}
+
 function validatePatchSet(files) {
   if (!Array.isArray(files) || files.length < 1 || files.length > MAX_PATCH_FILES) {
     throw new Error('A repair patch must contain between 1 and ' + MAX_PATCH_FILES + ' files.');
@@ -41,6 +55,9 @@ function validatePatchSet(files) {
     seen.add(path);
     const content = file.content;
     if (typeof content !== 'string') throw new Error('Repair patch content must be UTF-8 text.');
+    if (containsCredentialMaterial(content)) {
+      throw new Error('Repair patch appears to contain credential material.');
+    }
     const bytes = Buffer.byteLength(content, 'utf8');
     totalBytes += bytes;
     if (bytes > MAX_PATCH_BYTES || totalBytes > MAX_PATCH_BYTES) {
