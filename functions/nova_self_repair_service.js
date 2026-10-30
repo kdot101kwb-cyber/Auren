@@ -162,8 +162,21 @@ function buildValidationResult(proposal, statuses) {
   const checks = REQUIRED_CHECKS.filter(name => byContext.has(name)).map(name => ({
     name,
     conclusion:String(byContext.get(name)?.state || 'pending') === 'success' ? 'success' :
-      String(byContext.get(name)?.state || 'pending') === 'failure' ? 'failure' : 'pending',
+      ['failure','error'].includes(String(byContext.get(name)?.state || '').toLowerCase()) ? 'failure' : 'pending',
   }));
+  const failed = checks.some(check => check.conclusion === 'failure');
+  const complete = checks.length === REQUIRED_CHECKS.length && checks.every(check => check.conclusion === 'success');
+  if (!failed && !complete) {
+    return {
+      ...proposal,
+      state:'validation_pending',
+      validation:{
+        status:'pending',
+        checks,
+        missingOrPending:REQUIRED_CHECKS.filter(name => !checks.some(check => check.name === name && check.conclusion === 'success')),
+      },
+    };
+  }
   return evaluateRepairValidation(
     {...proposal, state:'validation_pending'},
     {commitSha:proposal.repairCommitSha, validatedCommitSha:proposal.repairCommitSha, requiredChecks:REQUIRED_CHECKS, checks},
