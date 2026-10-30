@@ -344,7 +344,6 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
                 const Divider(),
                 Text('FILE: ${raw['path']}', style: const TextStyle(fontWeight: FontWeight.w600)),
                 Text('السبب: ${raw['reason'] ?? ''}', textDirection: TextDirection.rtl),
-                SelectableText('${raw['content'] ?? ''}', textDirection: TextDirection.ltr),
               ],
             if (proposal['repairBranch'] is String)
               SelectableText('Repair branch: ${proposal['repairBranch']}', textDirection: TextDirection.ltr),
