@@ -8,7 +8,6 @@ const db = getFirestore();
 const OPENROUTER_API_KEY = defineSecret('OPENROUTER_API_KEY');
 const HIGGSFIELD_API_KEY_ID = defineSecret('HIGGSFIELD_API_KEY_ID');
 const HIGGSFIELD_API_KEY_SECRET = defineSecret('HIGGSFIELD_API_KEY_SECRET');
-const NOVA_GITHUB_TOKEN = defineSecret('NOVA_GITHUB_TOKEN');
 const {submitVideoGeneration, getVideoGenerationStatus} = require('./nova_higgsfield_adapter');
 const {isTaskExecutable} = require('./nova_task_worker_policy');
 const {checkGithubActionsRun} = require('./nova_github_ci_adapter');
@@ -48,7 +47,7 @@ async function runTextTask(prompt, type, apiKey) {
 }
 
 exports.processNovaTaskQueue = onSchedule(
-  {schedule:'every 1 minutes', region:REGION, timeoutSeconds:300, memory:'512MiB', maxInstances:1, secrets:[OPENROUTER_API_KEY, HIGGSFIELD_API_KEY_ID, HIGGSFIELD_API_KEY_SECRET, NOVA_GITHUB_TOKEN]},
+  {schedule:'every 1 minutes', region:REGION, timeoutSeconds:300, memory:'512MiB', maxInstances:1, secrets:[OPENROUTER_API_KEY, HIGGSFIELD_API_KEY_ID, HIGGSFIELD_API_KEY_SECRET ]},
   async () => {
     const queue = await db.collection('nova_task_queue')
       .where('status', '==', 'queued')
@@ -92,7 +91,7 @@ exports.processNovaTaskQueue = onSchedule(
 
       try {
         if (task.type === 'github_ci_check') {
-          const result = await checkGithubActionsRun(String(task.prompt || ''), {token:NOVA_GITHUB_TOKEN.value().trim()});
+          const result = await checkGithubActionsRun(String(task.prompt || ''));
           await db.runTransaction(async (tx) => {
             const qs = await tx.get(queueRef);
             const ts = await tx.get(taskRef);
