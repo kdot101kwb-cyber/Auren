@@ -26,7 +26,7 @@ function safeOutputUrl(value) {
   let url;
   try { url = new URL(String(value || '')); } catch (_) { return null; }
   if (url.protocol !== 'https:' || !ALLOWED_OUTPUT_HOSTS.has(url.hostname) ||
-      url.username || url.password) return null;
+      url.username || url.password || url.port) return null;
   return url.toString();
 }
 
@@ -48,7 +48,7 @@ function redactCircleCiLine(value) {
     .replace(/(circle-token\s*[:=]\s*)[^\s,;]+/ig, '$1[REDACTED]')
     .replace(/(gh[pousr]_[A-Za-z0-9_]{20,})/g, '[REDACTED_GITHUB_TOKEN]')
     .replace(/(github_pat_[A-Za-z0-9_]{20,})/g, '[REDACTED_GITHUB_TOKEN]')
-    .replace(/((?:api[_-]?key|access[_-]?token|secret|password)\s*[:=]\s*)[^\s,;]+/ig, '$1[REDACTED]')
+    .replace(/((?:api[_-]?key|access[_-]?token|token|secret|password)\s*[:=]\s*)[^\s,;]+/ig, '$1[REDACTED]')
     .slice(0, 420);
 }
 
@@ -111,7 +111,7 @@ async function checkCircleCiJob(value, options = {}) {
         let outputStatus = outputUrl ? 'available' : 'no_output';
         if (outputUrl) {
           try {
-            const outputResponse = await fetchImpl(outputUrl, {signal:controller.signal, redirect:'follow'});
+            const outputResponse = await fetchImpl(outputUrl, {signal:controller.signal, redirect:'error'});
             if (!outputResponse.ok) throw new Error('CircleCI step output HTTP ' + outputResponse.status + '.');
             const payload = await outputResponse.text();
             let messages = [];
