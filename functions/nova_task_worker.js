@@ -123,7 +123,7 @@ exports.processNovaTaskQueue = onSchedule(
             });
             tx.update(queueRef, {
               status:finalStatus,
-              provider:'github_actions',
+              provider:finalStatus === 'provider_processing' ? 'github_actions' : FieldValue.delete(),
               runId:result.runId,
               runUrl:result.runUrl,
               completedAt:finalStatus === 'provider_processing' ? null : FieldValue.serverTimestamp(),
@@ -279,7 +279,7 @@ exports.pollGithubActionsTasks = onSchedule(
   {schedule:'every 1 minutes', region:REGION, timeoutSeconds:180, memory:'512MiB', maxInstances:1},
   async () => {
     const queue = await db.collection('nova_task_queue')
-      .where('status', '==', 'provider_processing')
+      .where('provider', '==', 'github_actions')
       .limit(20)
       .get();
     for (const queueDoc of queue.docs) {
@@ -317,6 +317,7 @@ exports.pollGithubActionsTasks = onSchedule(
           const ts = await tx.get(taskRef);
           if (!qs.exists || !ts.exists ||
               qs.data()?.status !== 'provider_processing' ||
+              qs.data()?.provider !== 'github_actions' ||
               ts.data()?.status !== 'provider_processing') return;
           tx.update(taskRef, {
             status:finalStatus,
@@ -342,6 +343,7 @@ exports.pollGithubActionsTasks = onSchedule(
           });
           tx.update(queueRef, {
             status:finalStatus,
+            provider:finalStatus === 'provider_processing' ? 'github_actions' : FieldValue.delete(),
             pollLeaseUntil:FieldValue.delete(),
             completedAt:finalStatus === 'provider_processing' ? null : FieldValue.serverTimestamp(),
             updatedAt:FieldValue.serverTimestamp(),
