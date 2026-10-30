@@ -142,12 +142,14 @@ async function checkCircleCiJob(value, options = {}) {
       for (const item of failedActions.slice(0,8)) {
         const outputUrl = item.action.has_output ? safeOutputUrl(item.action.output_url) : null;
         let evidence = [];
+        let outputTruncated = false;
         let outputStatus = outputUrl ? 'available' : 'no_output';
         if (outputUrl) {
           try {
             const outputResponse = await fetchImpl(outputUrl, {signal:controller.signal, redirect:'error'});
             if (!outputResponse.ok) throw new Error('CircleCI step output HTTP ' + outputResponse.status + '.');
             const boundedOutput = await readTextBounded(outputResponse, 1500000);
+            outputTruncated = boundedOutput.truncated;
             const payload = boundedOutput.text;
             let messages = [];
             try {
@@ -164,7 +166,7 @@ async function checkCircleCiJob(value, options = {}) {
           status:String(item.action.status || 'failed'),
           exitCode:item.action.exit_code ?? null,
           outputStatus,
-          truncated:Boolean(boundedOutput?.truncated),
+          truncated:outputTruncated,
           evidence,
         });
       }
