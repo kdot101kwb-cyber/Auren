@@ -6,6 +6,7 @@ const {
   normalizeRepairPath,
   validatePatchSet,
   createRepairProposal,
+  redactRepairEvidence,
   approveRepairProposal,
   canApplyRepairProposal,
   evaluateRepairValidation,
@@ -33,7 +34,15 @@ test('allows only bounded NOVA source and test paths', () => {
     'functions/package-lock.json',
     'nova_ai/android/app/google-services.json',
     'functions/nova_task_worker.js/../../secrets.js',
-  ]) assert.throws(() => normalizeRepairPath(path), undefined, path);
+  ]) assert.throws(() => normalizeRepairPath(path), /invalid|outside|cannot modify/i, path);
+});
+
+test('redacts credential evidence and rejects patches containing known secret formats', () => {
+  const proposal = createRepairProposal({...validInput, evidence:[{text:'circle-token=ci_secret_value ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'}]});
+  assert.equal(proposal.evidence[0].text.includes('ci_secret_value'), false);
+  assert.equal(proposal.evidence[0].text.includes('ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'), false);
+  assert.match(redactRepairEvidence('Authorization: Bearer verylongsecretvalue'), /REDACTED/);
+  assert.throws(() => validatePatchSet([{...validFile, content:'const token = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";'}]), /credential material/);
 });
 
 test('validates patch count, content size, expected SHA and duplicate paths', () => {
