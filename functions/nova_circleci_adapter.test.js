@@ -34,6 +34,8 @@ test('extracts failure lines and redacts credentials', () => {
   assert.equal(evidence.length, 1);
   assert.match(evidence[0].text, /REDACTED_GITHUB_TOKEN/);
   assert.doesNotMatch(evidence[0].text, /ghp_/);
+  assert.match(extractCircleCiFailureEvidence(['Error: circle-token=ci_secret_value'])[0].text, /REDACTED/);
+  assert.doesNotMatch(extractCircleCiFailureEvidence(['Error: circle-token=ci_secret_value'])[0].text, /ci_secret_value/);
 });
 
 test('requires a CircleCI token and does not call the API without one', async () => {
@@ -69,6 +71,21 @@ test('reads failed CircleCI job step output and returns compact evidence', async
   assert.equal(result.diagnostics.status, 'available');
   assert.match(result.diagnostics.failedSteps[0].evidence[0].text, /expected true/);
   assert.equal(calls.length, 2);
+  assert.equal(result.diagnostics.failedSteps[0].truncated, false);
+});
+
+test('bounds CircleCI step output reads and marks oversized logs', async () => {
+  const fetchImpl = async (url) => url.includes('/api/v1.1/')
+    ? new Response(JSON.stringify({build_num:28039, status:'failed', steps:[{name:'test', actions:[{
+        name:'npm test', status:'failed', has_output:true,
+        output_url:'https://output.circle-artifacts.com/0/raw/step.json',
+      }]}]}), {status:200})
+    : new Response('Error: ' + 'x'.repeat(1501000), {status:200});
+  const result = await checkCircleCiJob(
+    'https://circleci.com/gh/kdot101kwb-cyber/Auren/28039',
+    {token:'test-token', fetchImpl},
+  );
+  assert.equal(result.diagnostics.failedSteps[0].truncated, true);
 });
 
 test('does not follow untrusted step output URLs', async () => {
