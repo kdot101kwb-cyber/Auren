@@ -7,8 +7,18 @@ on:
       - main
       - feat/nova-ai-android-app
       - feat/nova-ci-status-verification
+      - feat/nova-github-ci-task-execution
     paths:
       - 'nova_ai/**'
+      - 'functions/**'
+      - '.github/workflows/nova-android-build.yml'
+  pull_request:
+    branches:
+      - main
+      - feat/nova-github-ci-task-execution
+    paths:
+      - 'nova_ai/**'
+      - 'functions/**'
       - '.github/workflows/nova-android-build.yml'
 
 # Avoid spending CI time building stale commits when several small commits land
@@ -21,6 +31,23 @@ permissions:
   contents: read
 
 jobs:
+  functions-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: functions
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test NOVA GitHub CI adapter and worker policy
+        run: |
+          node --check nova_github_ci_adapter.js
+          node --test nova_github_ci_adapter.test.js nova_task_worker.test.js
+
   build:
     runs-on: ubuntu-latest
     defaults:
