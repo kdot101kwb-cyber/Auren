@@ -110,6 +110,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
     'failed' => 'فشل',
     'running' => 'قيد التنفيذ',
     'queued' || 'awaiting_approval' || 'provider_processing' => 'بانتظار / متابعة',
+    'verification_incomplete' => 'تعذر التحقق بالكامل',
     _ => 'حالة غير معروفة',
   };
 
@@ -118,6 +119,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
     'failed' => Colors.red,
     'running' => Colors.orange,
     'queued' || 'awaiting_approval' || 'provider_processing' => Colors.amber,
+    'verification_incomplete' => Colors.deepOrange,
     _ => Colors.grey,
   };
 
