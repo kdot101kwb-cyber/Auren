@@ -53,6 +53,14 @@ test('repair validation requires every CircleCI gate on the exact pushed commit'
   assert.equal(missing.state, 'validation_pending');
   const pending = buildValidationResult(proposal, required.map((context, index) => ({context, state:index ? 'success' : 'pending'})));
   assert.equal(pending.state, 'validation_pending');
+  const failed = buildValidationResult(proposal, required.map((context, index) => ({context, state:index === 2 ? 'failure' : 'success'})));
+  assert.equal(failed.state, 'failed');
+  const latestFirst = buildValidationResult(proposal, [
+    {context:required[0], state:'pending'},
+    {context:required[0], state:'success'},
+    ...required.slice(1).map(context => ({context, state:'success'})),
+  ]);
+  assert.equal(latestFirst.state, 'validation_pending');
 });
 
 test('creates a single isolated Git commit only after checking every expected source blob', async () => {
