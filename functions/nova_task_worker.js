@@ -15,6 +15,7 @@ const {isTaskExecutable} = require('./nova_task_worker_policy');
 const {checkGithubActionsRun} = require('./nova_github_ci_adapter');
 const {diagnoseGithubActionsRun} = require('./nova_github_ci_diagnostics');
 const {checkCircleCiJob} = require('./nova_circleci_adapter');
+const {buildSelfRepairProposal} = require('./nova_self_repair_engine');
 const REGION = 'us-central1';
 
 async function runTextTask(prompt, type, apiKey) {
@@ -94,7 +95,30 @@ exports.processNovaTaskQueue = onSchedule(
       if (!claimed) continue;
 
       try {
-        if (task.type === 'circleci_check') {
+        if (task.type === 'self_repair_plan') {
+          let repairInput;
+          try { repairInput = JSON.parse(String(task.prompt || '')); }
+          catch { throw new Error('Self-repair input must be valid JSON containing verified CI evidence.'); }
+          const proposal = buildSelfRepairProposal(repairInput);
+          await db.runTransaction(async (tx) => {
+            const qs = await tx.get(queueRef);
+            const ts = await tx.get(taskRef);
+            if (!qs.exists || !ts.exists || qs.data()?.status !== 'running' || ts.data()?.status !== 'running') return;
+            tx.update(taskRef, {
+              status:'succeeded',
+              result:{text:proposal.summary, provider:'nova_self_repair_planner', proposal},
+              error:null,
+              completedAt:FieldValue.serverTimestamp(),
+              updatedAt:FieldValue.serverTimestamp(),
+            });
+            tx.update(queueRef, {status:'succeeded', completedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
+            tx.create(db.collection('users').doc(uid).collection('nova_audit').doc(), {
+              action:'nova.self_repair.proposal_created', actorUid:'nova_worker', taskId,
+              taskType:task.type, provider:proposal.provider, category:proposal.category,
+              filesChanged:0, patchGenerated:false, createdAt:FieldValue.serverTimestamp(),
+            });
+          });
+        } else if (task.type === 'circleci_check') {
           const result = await checkCircleCiJob(String(task.prompt || ''), {token:CIRCLECI_TOKEN.value().trim()});
           const finalStatus = result.state === 'succeeded' ? 'succeeded' :
             result.state === 'failed' ? 'failed' :
