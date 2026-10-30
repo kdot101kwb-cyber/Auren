@@ -87,7 +87,7 @@ async function checkGithubActionsRun(value, options = {}) {
     }
 
     const allJobsSucceeded = paginationComplete && totalCount > 0 &&
-      jobs.every(job => job.status === 'completed' && job.conclusion === 'success');
+      jobs.every(job => job.status === 'completed' && ['success', 'skipped'].includes(job.conclusion));
     const verifiedSuccess = run.status === 'completed' &&
       run.conclusion === 'success' && allJobsSucceeded;
     const failed = run.status === 'completed' && run.conclusion &&
