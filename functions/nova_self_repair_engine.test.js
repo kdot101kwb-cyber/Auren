@@ -70,23 +70,33 @@ test('requires explicit approval from the owning user before a patch can be appl
 });
 
 test('marks a repair verified only when every required check passes on the exact commit', () => {
-  const applied = {...createRepairProposal(validInput), state:'validation_pending'};
+  const applied = {...createRepairProposal(validInput), state:'validation_pending', repairCommitSha:sha};
   const passed = evaluateRepairValidation(applied, {
     commitSha:sha,
     validatedCommitSha:sha,
+    requiredChecks:['functions_tests', 'flutter_ci'],
     checks:[{name:'functions_tests', conclusion:'success'}, {name:'flutter_ci', conclusion:'success'}],
   });
   assert.equal(passed.state, 'verified');
   const failed = evaluateRepairValidation(applied, {
     commitSha:sha,
     validatedCommitSha:'b'.repeat(40),
+    requiredChecks:['functions_tests'],
     checks:[{name:'functions_tests', conclusion:'success'}],
   });
   assert.equal(failed.state, 'failed');
   const red = evaluateRepairValidation(applied, {
     commitSha:sha,
     validatedCommitSha:sha,
-    checks:[{name:'functions_tests', conclusion:'failure'}],
+    requiredChecks:['functions_tests', 'flutter_ci'],
+    checks:[{name:'functions_tests', conclusion:'failure'}, {name:'flutter_ci', conclusion:'success'}],
   });
   assert.equal(red.state, 'failed');
+  const missing = evaluateRepairValidation(applied, {
+    commitSha:sha,
+    validatedCommitSha:sha,
+    requiredChecks:['functions_tests', 'flutter_ci'],
+    checks:[{name:'functions_tests', conclusion:'success'}],
+  });
+  assert.equal(missing.state, 'failed');
 });
