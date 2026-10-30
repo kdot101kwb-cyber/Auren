@@ -337,7 +337,7 @@ exports.listNovaRepairProposals = onCall(
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', 'Sign in to view NOVA repair proposals.');
     const snap = await db.collection('users').doc(uid).collection('nova_repair_proposals')
-      .orderBy('createdAt', 'desc').limit(20).get();
+      .orderBy('createdAt', 'desc').limit(10).get();
     return {proposals:snap.docs.map(doc => {
       const item = doc.data() || {};
       return {
