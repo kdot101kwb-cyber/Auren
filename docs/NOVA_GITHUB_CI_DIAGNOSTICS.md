@@ -24,9 +24,9 @@ Paste the token only into the Firebase CLI secret prompt. Do not place it in sou
 
 CircleCI job output uses its API token and short-lived signed step-output URLs. Configure a CircleCI personal API token in Firebase Secret Manager:
 
-\`\`\`bash
+```bash
 firebase functions:secrets:set CIRCLECI_TOKEN
-\`\`\`
+```
 
 Paste the token only into the Firebase CLI secret prompt. Do not place it in source code, app configuration, Firestore, task prompts, or chat messages.
 
@@ -38,4 +38,4 @@ For GitHub Actions, NOVA stores at most five failed-job summaries, up to ten fai
 
 The feature does not retry jobs, edit files, push commits, open pull requests, or merge code. Diagnosis is read-only; any later repair workflow must be separately reviewed and explicitly approved by the owner.
 
-If the secret is not configured or GitHub denies log access, the task reports diagnostics as unavailable and preserves the original CI result.
+If either secret is not configured or the provider denies log access, the task reports diagnostics as unavailable and preserves the original CI result.
