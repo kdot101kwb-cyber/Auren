@@ -105,6 +105,22 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
     }
   }
 
+  String _statusLabel(dynamic status) => switch (status) {
+    'succeeded' => 'نجاح',
+    'failed' => 'فشل',
+    'running' => 'قيد التنفيذ',
+    'queued' || 'awaiting_approval' || 'provider_processing' => 'بانتظار / متابعة',
+    _ => 'حالة غير معروفة',
+  };
+
+  Color _statusColor(dynamic status) => switch (status) {
+    'succeeded' => Colors.green,
+    'failed' => Colors.red,
+    'running' => Colors.orange,
+    'queued' || 'awaiting_approval' || 'provider_processing' => Colors.amber,
+    _ => Colors.grey,
+  };
+
   @override
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.all(16),
@@ -179,8 +195,8 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
         Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${task['type'] ?? 'task'} — ${task['status'] ?? 'unknown'}',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text('${task['type'] ?? 'task'} — ${_statusLabel(task['status'])}',
+                style: TextStyle(fontWeight: FontWeight.bold, color: _statusColor(task['status']))),
             const SizedBox(height: 5),
             Text('${task['prompt'] ?? task['taskId'] ?? ''}', maxLines: 3, overflow: TextOverflow.ellipsis),
             if (task['result'] is Map && (task['result'] as Map)['text'] is String) ...[
