@@ -15,7 +15,7 @@ function parseGithubRunUrl(value) {
   if (url.protocol !== 'https:' || url.hostname !== 'github.com' ||
       parts.length !== 5 || parts[0] !== 'kdot101kwb-cyber' ||
       parts[1] !== 'Auren' || parts[2] !== 'actions' ||
-      parts[3] !== 'runs' || !/^\\d+$/.test(parts[4]) ||
+      parts[3] !== 'runs' || !/^\d+$/.test(parts[4]) ||
       url.search || url.hash) {
     throw new Error('يُقبل فقط رابط تشغيل GitHub Actions في مستودع NOVA المحدد.');
   }
