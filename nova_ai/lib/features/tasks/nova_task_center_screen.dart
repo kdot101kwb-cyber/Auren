@@ -124,8 +124,8 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('مراجعة واعتماد الإصلاح'),
-        content: SizedBox(
-          width: 560,
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
           child: SingleChildScrollView(
             child: SelectableText(
               '${preview.toString()}\n\nبالموافقة ستنشئ NOVA commit واحداً في فرع nova/repairs/ منفصل. لن تفتح PR ولن تدمج أو تنشر.',
