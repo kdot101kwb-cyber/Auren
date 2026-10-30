@@ -30,6 +30,40 @@ function safeOutputUrl(value) {
   return url.toString();
 }
 
+async function readTextBounded(response, maxBytes = 1500000) {
+  if (response.body && typeof response.body.getReader === 'function') {
+    const reader = response.body.getReader();
+    const chunks = [];
+    let total = 0;
+    let truncated = false;
+    try {
+      while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+        const remaining = maxBytes - total;
+        if (value.byteLength > remaining) {
+          if (remaining > 0) chunks.push(value.slice(0, remaining));
+          total += Math.max(0, remaining);
+          truncated = true;
+          await reader.cancel();
+          break;
+        }
+        chunks.push(value);
+        total += value.byteLength;
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    const combined = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) { combined.set(chunk, offset); offset += chunk.byteLength; }
+    return {text:new TextDecoder().decode(combined), truncated};
+  }
+  const text = await response.text();
+  const bytes = new TextEncoder().encode(text);
+  return {text:new TextDecoder().decode(bytes.slice(0, maxBytes)), truncated:bytes.byteLength > maxBytes};
+}
+
 function extractCircleCiMessages(payload) {
   let messages = [];
   try {
@@ -113,7 +147,8 @@ async function checkCircleCiJob(value, options = {}) {
           try {
             const outputResponse = await fetchImpl(outputUrl, {signal:controller.signal, redirect:'error'});
             if (!outputResponse.ok) throw new Error('CircleCI step output HTTP ' + outputResponse.status + '.');
-            const payload = await outputResponse.text();
+            const boundedOutput = await readTextBounded(outputResponse, 1500000);
+            const payload = boundedOutput.text;
             let messages = [];
             try {
               const parsed = JSON.parse(payload);
@@ -129,6 +164,7 @@ async function checkCircleCiJob(value, options = {}) {
           status:String(item.action.status || 'failed'),
           exitCode:item.action.exit_code ?? null,
           outputStatus,
+          truncated:Boolean(boundedOutput?.truncated),
           evidence,
         });
       }
@@ -150,6 +186,7 @@ async function checkCircleCiJob(value, options = {}) {
 }
 
 module.exports = {
+  readTextBounded,
   parseCircleCiJobUrl,
   safeOutputUrl,
   extractCircleCiMessages,
