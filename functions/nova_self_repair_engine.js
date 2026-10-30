@@ -139,15 +139,19 @@ function evaluateRepairValidation(proposal, result) {
   if (!proposal || !['applying', 'validation_pending'].includes(proposal.state)) {
     throw new Error('Repair validation requires an applied proposal.');
   }
-  if (!result || result.commitSha !== result.validatedCommitSha ||
-      !/^[a-f0-9]{40}$/i.test(String(result.validatedCommitSha || ''))) {
+  const expectedRepairSha = String(proposal.repairCommitSha || '');
+  if (!result || !/^[a-f0-9]{40}$/i.test(expectedRepairSha) ||
+      result.commitSha !== expectedRepairSha || result.validatedCommitSha !== expectedRepairSha) {
     return {...proposal, state:'failed', validation:{status:'failed', reason:'Validation did not target the exact repair commit.'}};
   }
   const checks = Array.isArray(result.checks) ? result.checks : [];
-  if (!checks.length || checks.some(check => check.conclusion !== 'success')) {
-    return {...proposal, state:'failed', validation:{status:'failed', checks:checks.slice(0,20)}};
+  const requiredChecks = Array.isArray(result.requiredChecks) ? result.requiredChecks : [];
+  const byName = new Map(checks.map(check => [String(check.name || ''), check]));
+  const missingOrFailed = requiredChecks.filter(name => byName.get(String(name))?.conclusion !== 'success');
+  if (!requiredChecks.length || !checks.length || missingOrFailed.length || checks.some(check => check.conclusion !== 'success')) {
+    return {...proposal, state:'failed', validation:{status:'failed', checks:checks.slice(0,20), missingOrFailed:missingOrFailed.slice(0,20)}};
   }
-  return {...proposal, state:'verified', validation:{status:'success', validatedCommitSha:result.validatedCommitSha, checks:checks.slice(0,20)}};
+  return {...proposal, state:'verified', validation:{status:'success', validatedCommitSha:result.validatedCommitSha, checks:checks.slice(0,20), requiredChecks:requiredChecks.slice(0,20)}};
 }
 
 module.exports = {
