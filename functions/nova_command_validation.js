@@ -3,7 +3,7 @@
 const ALLOWED_TYPES = new Set([
   'chat', 'plan', 'research', 'opportunity_scan', 'content_draft',
   'image_generation', 'video_generation', 'social_publish',
-  'github_ci_check', 'circleci_check', 'integration_health', 'finance_report',
+  'github_ci_check', 'circleci_check', 'self_repair_plan', 'integration_health', 'finance_report',
 ]);
 const APPROVAL_TYPES = new Set(['social_publish', 'image_generation', 'video_generation']);
 
