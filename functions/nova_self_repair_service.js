@@ -90,9 +90,7 @@ async function createIsolatedRepairCommit(proposal, token, proposalId, fetchImpl
   if (!token) throw new Error('NOVA_GITHUB_REPAIR_TOKEN is not configured.');
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60000);
-  const originalFetch = global.fetch;
   try {
-    // Keep API calls injectable for tests without changing global fetch.
     const request = async (path, options = {}) => {
       const response = await fetchImpl(API + path, {
         method:options.method || 'GET',
@@ -152,7 +150,6 @@ async function createIsolatedRepairCommit(proposal, token, proposalId, fetchImpl
     return {branch, commitSha:commit.sha};
   } finally {
     clearTimeout(timeout);
-    void originalFetch;
   }
 }
 
@@ -307,9 +304,7 @@ exports.checkNovaRepairValidation = onCall(
   },
 );
 
-module.exports = {
-  extractVerifiedEvidence,
-  validateFailedTask,
-  buildValidationResult,
-  createIsolatedRepairCommit,
-};
+exports.extractVerifiedEvidence = extractVerifiedEvidence;
+exports.validateFailedTask = validateFailedTask;
+exports.buildValidationResult = buildValidationResult;
+exports.createIsolatedRepairCommit = createIsolatedRepairCommit;
