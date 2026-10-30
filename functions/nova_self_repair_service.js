@@ -491,6 +491,7 @@ exports.checkNovaRepairValidation = onCall(
   },
 );
 
+exports.parseModelJson = parseModelJson;
 exports.extractVerifiedEvidence = extractVerifiedEvidence;
 exports.validateFailedTask = validateFailedTask;
 exports.buildValidationResult = buildValidationResult;
