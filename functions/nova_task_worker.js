@@ -10,6 +10,7 @@ const HIGGSFIELD_API_KEY_ID = defineSecret('HIGGSFIELD_API_KEY_ID');
 const HIGGSFIELD_API_KEY_SECRET = defineSecret('HIGGSFIELD_API_KEY_SECRET');
 const {submitVideoGeneration, getVideoGenerationStatus} = require('./nova_higgsfield_adapter');
 const {isTaskExecutable} = require('./nova_task_worker_policy');
+const {checkGithubActionsRun} = require('./nova_github_ci_adapter');
 const REGION = 'us-central1';
 
 async function runTextTask(prompt, type, apiKey) {
@@ -89,7 +90,44 @@ exports.processNovaTaskQueue = onSchedule(
       if (!claimed) continue;
 
       try {
-        if (task.type === 'video_generation') {
+        if (task.type === 'github_ci_check') {
+          const result = await checkGithubActionsRun(String(task.prompt || ''));
+          await db.runTransaction(async (tx) => {
+            const qs = await tx.get(queueRef);
+            const ts = await tx.get(taskRef);
+            if (!qs.exists || !ts.exists || qs.data()?.status !== 'running' || ts.data()?.status !== 'running') return;
+            tx.update(taskRef, {
+              status:result.state === 'failed' ? 'failed' : 'succeeded',
+              result:{
+                text:result.text,
+                provider:'github_actions',
+                evidenceUrl:result.runUrl,
+                runId:result.runId,
+                runStatus:result.status,
+                conclusion:result.conclusion,
+                verifiedSuccess:result.verifiedSuccess,
+                branch:result.branch,
+                commit:result.commit,
+                jobs:result.jobs,
+              },
+              error:result.state === 'failed' ? 'GitHub Actions run completed with a failure conclusion.' : null,
+              completedAt:FieldValue.serverTimestamp(),
+              updatedAt:FieldValue.serverTimestamp(),
+            });
+            tx.update(queueRef, {
+              status:result.state === 'failed' ? 'failed' : 'succeeded',
+              completedAt:FieldValue.serverTimestamp(),
+              updatedAt:FieldValue.serverTimestamp(),
+            });
+            tx.create(db.collection('users').doc(uid).collection('nova_audit').doc(), {
+              action:result.verifiedSuccess ? 'nova.github_ci.verified_success' : 'nova.github_ci.checked',
+              actorUid:'nova_worker', taskId, taskType:task.type,
+              runId:result.runId, runStatus:result.status, conclusion:result.conclusion,
+              verifiedSuccess:result.verifiedSuccess, evidenceUrl:result.runUrl,
+              createdAt:FieldValue.serverTimestamp(),
+            });
+          });
+        } else if (task.type === 'video_generation') {
           const endpoint = String(process.env.HIGGSFIELD_VIDEO_ENDPOINT || '').trim();
           const submitted = await submitVideoGeneration({
             endpoint,
@@ -143,7 +181,7 @@ exports.processNovaTaskQueue = onSchedule(
       } catch (error) {
         const message = String(error?.message || error).slice(0,500);
         const attempts = Number(initial.attempts || 0) + 1;
-        const terminal = task?.type === 'video_generation' || attempts >= 3 || message.includes('not configured');
+        const terminal = task?.type === 'video_generation' || task?.type === 'github_ci_check' || attempts >= 3 || message.includes('not configured');
         await db.runTransaction(async (tx) => {
           const qs = await tx.get(queueRef);
           const ts = await tx.get(taskRef);
