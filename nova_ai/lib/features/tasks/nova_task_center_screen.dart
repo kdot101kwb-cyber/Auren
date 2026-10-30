@@ -48,6 +48,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
         _tasks = raw.map((item) => Map<String, dynamic>.from(item as Map)).toList();
         _message = 'تم تحديث المهام من الخادم.';
       });
+      await _loadRepairProposals();
     } catch (error) {
       setState(() => _message = 'تعذر تحميل المهام: $error');
     } finally {
