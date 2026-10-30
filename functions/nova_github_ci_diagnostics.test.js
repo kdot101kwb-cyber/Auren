@@ -13,9 +13,9 @@ test('extracts bounded failure evidence and redacts credentials', () => {
   const evidence = extractFailureEvidence([
     'Build started',
     'Error: request failed with token ghp_abcdefghijklmnopqrstuvwxyz123456',
-    'Authorization: Bearer abcdefghijklmnopqrstuvwxyz',
+    'Error: Authorization: Bearer abcdefghijklmnopqrstuvwxyz',
     'All done',
-  ].join('\\n'));
+  ].join('\n'));
   assert.equal(evidence.length, 2);
   assert.match(evidence[0].text, /REDACTED_GITHUB_TOKEN/);
   assert.doesNotMatch(evidence[0].text, /ghp_/);
@@ -46,7 +46,7 @@ test('downloads only a failed job log and returns compact evidence', async () =>
   const calls = [];
   const fetchImpl = async (url) => {
     calls.push(url);
-    if (url.endsWith('/logs')) return new Response('Step 1 ok\\nError: compilation failed\\nDone', {status:200});
+    if (url.endsWith('/logs')) return new Response('Step 1 ok\nError: compilation failed\nDone', {status:200});
     return new Response(JSON.stringify({
       id:456, run_id:123, name:'Flutter analyze', status:'completed', conclusion:'failure',
       steps:[{name:'Analyze', conclusion:'failure'}],
