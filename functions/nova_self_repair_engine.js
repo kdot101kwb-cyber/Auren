@@ -92,8 +92,8 @@ function createRepairProposal(input) {
     throw new Error('Repair proposal requires 1–12 bounded failure evidence items.');
   }
   const safeEvidence = evidence.map((item) => {
-    const text = String(item?.text || '').trim();
-    if (!text || text.length > 420) throw new Error('Failure evidence must be non-empty and bounded.');
+    const text = redactRepairEvidence(item?.text).trim();
+    if (!text) throw new Error('Failure evidence must be non-empty and bounded.');
     return {source:String(item.source || provider).slice(0, 40), line:Number.isInteger(item.line) ? item.line : null, text};
   });
   const patchSet = validatePatchSet(input.files);
@@ -155,6 +155,7 @@ module.exports = {
   MAX_PATCH_BYTES,
   ALLOWED_REPAIR_STATES,
   normalizeRepairPath,
+  redactRepairEvidence,
   validatePatchSet,
   createRepairProposal,
   approveRepairProposal,
