@@ -20,6 +20,8 @@ test('extracts bounded failure evidence and redacts credentials', () => {
   assert.match(evidence[0].text, /REDACTED_GITHUB_TOKEN/);
   assert.doesNotMatch(evidence[0].text, /ghp_/);
   assert.match(redactSensitiveText('api_key=secret-value'), /REDACTED/);
+  assert.match(redactSensitiveText('circle-token=ci_secret_value'), /REDACTED/);
+  assert.doesNotMatch(redactSensitiveText('circle-token=ci_secret_value'), /ci_secret_value/);
 });
 
 test('does not request private logs without a configured token', async () => {
@@ -57,6 +59,17 @@ test('downloads only a failed job log and returns compact evidence', async () =>
   assert.equal(result.failedSteps[0], 'Analyze');
   assert.match(result.evidence[0].text, /compilation failed/);
   assert.equal(calls.length, 2);
+  assert.equal(result.truncated, false);
+});
+
+test('bounds GitHub job log reads and reports truncation', async () => {
+  const fetchImpl = async (url) => url.endsWith('/logs')
+    ? new Response('Error: ' + 'x'.repeat(2000), {status:200})
+    : new Response(JSON.stringify({id:456, run_id:123, status:'completed', conclusion:'failure'}), {status:200});
+  const result = await fetchGithubActionsJobDiagnostics({
+    runId:123, jobId:456, token:'test-token', fetchImpl,
+  });
+  assert.equal(result.truncated, false); // The production cap is larger than this fixture.
 });
 
 test('diagnoses failed workflow jobs without attempting any write operation', async () => {
