@@ -3,14 +3,17 @@
 ## Flow
 
 1. A failed GitHub Actions or CircleCI task is eligible only when it belongs to the signed-in owner, has a verified 40-character source commit, and contains bounded failure evidence.
-2. NOVA submits a repair proposal with a summary and 1–5 complete replacement text files. The policy engine enforces the NOVA path allowlist, expected blob SHAs, 64 KiB total limit, and credential checks.
-3. The proposal is stored under `users/{uid}/nova_repair_proposals/{proposalId}` with state `awaiting_approval`.
-4. The owner explicitly invokes `approveAndApplyNovaRepair`. Only then does the backend verify every source blob SHA, create a Git tree and one commit, and push a new `nova/repairs/{proposalId}` branch.
-5. `checkNovaRepairValidation` checks the exact pushed commit against all five required CircleCI contexts. A repair is not verified while any check is missing, pending, or failed.
+2. After the user explicitly chooses AI analysis, NOVA sends the bounded evidence and selected allowlisted source files to OpenRouter's free-model route. Files containing credential-like material are rejected before transmission.
+3. NOVA generates a repair proposal with a summary and 1–5 complete replacement text files. The policy engine enforces the NOVA path allowlist, expected blob SHAs, 64 KiB total patch limit, and credential checks.
+4. The proposal is stored under `users/{uid}/nova_repair_proposals/{proposalId}` with state `awaiting_approval` and displayed in Task Center with the complete patch.
+5. The owner explicitly invokes `approveAndApplyNovaRepair`. Only then does the backend verify every source blob SHA, create one Git commit, and push a new `nova/repairs/{proposalId}` branch.
+6. `checkNovaRepairValidation` checks the exact pushed commit against all five required CircleCI contexts. Missing or pending checks remain pending; a repair is verified only after all five succeed.
 
 ## Callable API
 
-- `createNovaRepairProposal({taskId, summary, files})`
+- `generateNovaRepairProposal({taskId})` — asks for explicit consent before sending source code and bounded CI evidence to the configured free-model route.
+- `listNovaRepairProposals()` — lists the signed-in owner's proposals and patch previews.
+- `createNovaRepairProposal({taskId, summary, files})` — lower-level proposal API for a trusted client.
 - `approveAndApplyNovaRepair({proposalId})` — explicit owner approval and isolated branch push; does not open or merge a PR.
 - `checkNovaRepairValidation({proposalId})`
 
@@ -18,6 +21,6 @@ The Task Center client must show the complete proposed file paths, reasons, summ
 
 ## Required secret
 
-Create a separate GitHub token with access only to `kdot101kwb-cyber/Auren`, repository Contents read/write, and commit status read. Store it in Firebase Secret Manager as `NOVA_GITHUB_REPAIR_TOKEN` using the local Firebase CLI prompt. Never paste it into chat, app code, Firestore, or task prompts.
+Create a separate fine-grained GitHub token with access only to `kdot101kwb-cyber/Auren`, repository Contents read/write, and Commit statuses read. Configure the existing OpenRouter key as `OPENROUTER_API_KEY`; model generation uses the `openrouter/free` route. Store it in Firebase Secret Manager as `NOVA_GITHUB_REPAIR_TOKEN` using the local Firebase CLI prompt. Never paste it into chat, app code, Firestore, or task prompts.
 
 This change does not set secrets, deploy functions, open PRs, merge code, or touch the default branch. GitHub Actions/CircleCI must validate the pushed repair commit before NOVA can mark it verified.
