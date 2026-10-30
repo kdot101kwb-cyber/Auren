@@ -8,6 +8,8 @@ test('safe research and content-drafting tasks can run autonomously', () => {
     assert.equal(SAFE_TEXT_TYPES.has(type), true, type + ' should be an allowed text task');
     assert.equal(isTaskExecutable({type}, 'owner-1'), true);
   }
+  assert.equal(SAFE_TEXT_TYPES.has('self_repair_plan'), true);
+  assert.equal(isTaskExecutable({type:'self_repair_plan'}, 'owner-1'), true);
   assert.equal(SAFE_TEXT_TYPES.has('social_publish'), false);
   assert.equal(SAFE_TEXT_TYPES.has('image_generation'), false);
   assert.equal(SAFE_TEXT_TYPES.has('video_generation'), false);

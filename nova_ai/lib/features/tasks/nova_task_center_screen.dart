@@ -161,6 +161,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
           DropdownMenuItem(value: 'content_draft', child: Text('مسودة محتوى')),
           DropdownMenuItem(value: 'github_ci_check', child: Text('فحص GitHub Actions — قراءة فقط')),
           DropdownMenuItem(value: 'circleci_check', child: Text('فحص CircleCI وسجلات الأخطاء — قراءة فقط')),
+          DropdownMenuItem(value: 'self_repair_plan', child: Text('خطة إصلاح أخطاء CI — اقتراح فقط')),
           DropdownMenuItem(value: 'video_generation', child: Text('توليد فيديو عبر Higgsfield — مدفوع ويتطلب موافقة')),
           DropdownMenuItem(value: 'social_publish', child: Text('نشر اجتماعي — يتطلب موافقة')),
         ],
@@ -171,7 +172,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
         controller: _prompt,
         minLines: 3,
         maxLines: 6,
-        decoration: InputDecoration(labelText: _type == 'github_ci_check' ? 'رابط تشغيل GitHub Actions' : _type == 'circleci_check' ? 'رابط وظيفة CircleCI' : 'شنو داير NOVA تنفّذ؟', hintText: _type == 'github_ci_check' ? 'https://github.com/kdot101kwb-cyber/Auren/actions/runs/41069266046' : _type == 'circleci_check' ? 'https://circleci.com/gh/kdot101kwb-cyber/Auren/28039' : 'اكتب هدف المهمة بالتفصيل', border: const OutlineInputBorder()),
+        decoration: InputDecoration(labelText: _type == 'github_ci_check' ? 'رابط تشغيل GitHub Actions' : _type == 'circleci_check' ? 'رابط وظيفة CircleCI' : _type == 'self_repair_plan' ? 'بيانات CI بصيغة JSON (المزود والرابط والأدلة)' : 'شنو داير NOVA تنفّذ؟', hintText: _type == 'github_ci_check' ? 'https://github.com/kdot101kwb-cyber/Auren/actions/runs/41069266046' : _type == 'circleci_check' ? 'https://circleci.com/gh/kdot101kwb-cyber/Auren/28039' : _type == 'self_repair_plan' ? '{"provider":"github_actions","runUrl":"https://github.com/kdot101kwb-cyber/Auren/actions/runs/123456","evidence":["ضع رسالة الخطأ هنا"]}' : 'اكتب هدف المهمة بالتفصيل', border: const OutlineInputBorder()),
       ),
       const SizedBox(height: 10),
       FilledButton.icon(
