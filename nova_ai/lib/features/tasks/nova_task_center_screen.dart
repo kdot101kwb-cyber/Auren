@@ -365,6 +365,10 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
                 Text('FILE: ${raw['path']}', style: const TextStyle(fontWeight: FontWeight.w600)),
                 Text('السبب: ${raw['reason'] ?? ''}', textDirection: TextDirection.rtl),
               ],
+            if (proposal['recoveryBranch'] is String)
+              SelectableText('Recovery branch: ${proposal['recoveryBranch']}', textDirection: TextDirection.ltr),
+            if (proposal['recoveryObservedCommitSha'] is String)
+              SelectableText('Observed commit: ${proposal['recoveryObservedCommitSha']}', textDirection: TextDirection.ltr),
             if (proposal['repairBranch'] is String)
               SelectableText('Repair branch: ${proposal['repairBranch']}', textDirection: TextDirection.ltr),
             if (proposal['repairCommitSha'] is String)
