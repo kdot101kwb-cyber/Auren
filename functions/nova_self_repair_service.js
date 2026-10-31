@@ -363,7 +363,6 @@ exports.listNovaRepairProposals = onCall(
         sourceCommitSha:item.sourceCommitSha,
         repairCommitSha:item.repairCommitSha || null,
         repairBranch:item.repairBranch || null,
-        applyStartedAt:item.applyStartedAt || null,
         recoveryBranch:item.recoveryBranch || null,
         recoveryObservedCommitSha:item.recoveryObservedCommitSha || null,
         files:(Array.isArray(item.files) ? item.files : []).map(file=>({
