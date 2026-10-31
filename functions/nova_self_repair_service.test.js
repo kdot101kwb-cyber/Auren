@@ -84,10 +84,13 @@ test('redacts CI evidence before it is formatted for AI analysis', () => {
     {source:'circleci', line:12, text:'Authorization: Bearer abcdefghijklmnopqrstuvwxyz123456'},
     {source:'github_actions', line:13, text:'OPENROUTER_API_KEY=sk-or-v1-1234567890abcdef'},
     {source:'circleci', line:14, text:'AKIA1234567890ABCDEF'},
+    {source:'circleci', line:15, text:'sk-or-v1-abcdefghijklmnopqrstuvwxyz1234567890'},
   ]);
   assert.doesNotMatch(formatted, /abcdefghijklmnopqrstuvwxyz123456/);
   assert.doesNotMatch(formatted, /sk-or-v1-1234567890abcdef/);
   assert.doesNotMatch(formatted, /AKIA1234567890ABCDEF/);
+  assert.doesNotMatch(formatted, /sk-or-v1-abcdefghijklmnopqrstuvwxyz1234567890/);
+  assert.equal(containsCredentialMaterial('raw log: sk-or-v1-abcdefghijklmnopqrstuvwxyz1234567890'), true);
   assert.match(formatted, /REDACTED/);
   assert.ok(formatted.length <= 5000);
 });
@@ -135,7 +138,11 @@ test('in-flight completion cannot overwrite a recovery quarantine', () => {
   const result = {branch:'nova/repairs/example', commitSha:'d'.repeat(40)};
   const recovered = buildApplyCompletionDisposition({state:'recovery_required'}, result);
   assert.equal(recovered.state, 'recovery_required');
-  assert.equal(recovered.recoveryOutcome, 'branch_found_after_recovery_check');
+  assert.equal(recovered.recoveryOutcome, 'apply_error_requires_manual_review');
+  assert.equal(recovered.recoveryObservedCommitSha, null);
+  const ambiguousRecovery = buildApplyCompletionDisposition({state:'recovery_required', recoveryOutcome:'apply_error_requires_manual_review'}, result);
+  assert.equal(ambiguousRecovery.recoveryObservedCommitSha, null);
+  assert.equal(ambiguousRecovery.recoveryOutcome, 'apply_error_requires_manual_review');
   assert.equal(recovered.repairCommitSha, result.commitSha);
   const normal = buildApplyCompletionDisposition({state:'applying'}, result);
   assert.equal(normal.state, 'validation_pending');
@@ -244,6 +251,8 @@ test('credential scanner catches bearer, CircleCI, API secrets and common provid
     '-----BEGIN RSA PRIVATE KEY-----',
     'ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890',
     'github_pat_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890',
+    'sk-or-v1-abcdefghijklmnopqrstuvwxyz1234567890',
+    'sk-proj-abcdefghijklmnopqrstuvwxyz1234567890',
   ];
   for (const sample of samples) {
     assert.equal(containsCredentialMaterial(sample), true, 'Expected secret pattern to be detected: ' + sample.slice(0, 24));
