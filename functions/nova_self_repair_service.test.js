@@ -138,7 +138,7 @@ test('in-flight completion cannot overwrite a recovery quarantine', () => {
   const result = {branch:'nova/repairs/example', commitSha:'d'.repeat(40)};
   const recovered = buildApplyCompletionDisposition({state:'recovery_required'}, result);
   assert.equal(recovered.state, 'recovery_required');
-  assert.equal(recovered.recoveryOutcome, 'branch_found_after_recovery_check');
+  assert.equal(recovered.recoveryOutcome, 'apply_error_requires_manual_review');
   assert.equal(recovered.recoveryObservedCommitSha, null);
   const ambiguousRecovery = buildApplyCompletionDisposition({state:'recovery_required', recoveryOutcome:'apply_error_requires_manual_review'}, result);
   assert.equal(ambiguousRecovery.recoveryObservedCommitSha, null);
