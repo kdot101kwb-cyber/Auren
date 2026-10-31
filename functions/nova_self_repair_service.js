@@ -513,11 +513,8 @@ exports.checkNovaRepairValidation = onCall(
 
 exports.parseModelJson = parseModelJson;
 exports.extractVerifiedEvidence = extractVerifiedEvidence;
-exports.formatRepairEvidence = formatRepairEvidence
-  const line = Number.isInteger(item?.line) ? item.line : '?';
-  const safeText = redactRepairEvidence(item?.text).slice(0, 420);
-  return source + ' L' + line + ': ' + safeText;
-}).join('\n').slice(0, 5000);
+exports.formatRepairEvidence = formatRepairEvidence;
 exports.validateFailedTask = validateFailedTask;
 exports.buildValidationResult = buildValidationResult;
 exports.createIsolatedRepairCommit = createIsolatedRepairCommit;
+exports.containsCredentialMaterial = containsCredentialMaterial;
