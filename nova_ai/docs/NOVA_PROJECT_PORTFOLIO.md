@@ -49,6 +49,10 @@ Blocking, deferring, cancelling, or completing a work item requires a reason or 
 - Creating a project, adding a work item, or approving a debate is not evidence that execution has started.
 - Any future execution adapter must have a separate permission and approval gate.
 
+## Strategic council linkage
+
+Opening **ناقش** from a project card sends that project's ID, current state, priority score, and description into the existing strategic debate screen. The debate record and its approval audit retain the project ID for traceability. Approving a debate records agreement only; it does not change the project's lifecycle state or start execution.
+
 ## Android entry point
 
 The screen is available in NOVA under the top-right **كل أقسام NOVA** menu as **محفظة المشاريع ومجلس القرارات**. It requires the verified owner claim and App Check to load private project data.
