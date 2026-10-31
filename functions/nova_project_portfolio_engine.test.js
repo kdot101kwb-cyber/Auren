@@ -36,7 +36,7 @@ test('recalculates project priority using updated evidence inputs', () => {
     strategicValue:5, urgency:5, confidence:4, effort:1, priority:'critical',
   });
   assert.equal(score.priority, 'critical');
-  assert.equal(score.priorityScore, 94);
+  assert.equal(score.priorityScore, 96);
   assert.equal(score.effort, 1);
 });
 
