@@ -472,10 +472,11 @@ exports.approveAndApplyNovaRepair = onCall(
         if (current.ownerUid !== uid) throw new HttpsError('permission-denied', 'Repair proposal ownership changed unexpectedly.');
         completion = buildApplyCompletionDisposition(current, result);
         tx.update(ref, {...completion, appliedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
-      });
-      await db.collection('users').doc(uid).collection('nova_audit').add({
-        action:completion.state === 'recovery_required' ? 'nova.repair.branch_pushed_during_recovery' : 'nova.repair.branch_pushed',
-        actorUid:'nova_worker', proposalId, repairBranch:result.branch, repairCommitSha:result.commitSha, createdAt:FieldValue.serverTimestamp(),
+        tx.create(db.collection('users').doc(uid).collection('nova_audit').doc(), {
+          action:completion.state === 'recovery_required' ? 'nova.repair.branch_pushed_during_recovery' : 'nova.repair.branch_pushed',
+          actorUid:'nova_worker', proposalId, repairBranch:result.branch, repairCommitSha:result.commitSha,
+          createdAt:FieldValue.serverTimestamp(),
+        });
       });
       return {ok:true, proposalId, state:completion.state, branch:result.branch, commitSha:result.commitSha, pullRequestCreated:false, requiresManualReview:completion.state === 'recovery_required'};
     } catch (error) {
@@ -486,12 +487,12 @@ exports.approveAndApplyNovaRepair = onCall(
         if (current.ownerUid !== uid) return;
         const failure = buildApplyFailureDisposition(current, error);
         tx.update(ref, {...failure, updatedAt:FieldValue.serverTimestamp()});
-      });
-      await db.collection('users').doc(uid).collection('nova_audit').add({
-        action:'nova.repair.apply_requires_manual_review', actorUid:'nova_worker', proposalId, error:String(error.message || error).slice(0,300), createdAt:FieldValue.serverTimestamp(),
+        tx.create(db.collection('users').doc(uid).collection('nova_audit').doc(), {
+          action:'nova.repair.apply_requires_manual_review', actorUid:'nova_worker', proposalId,
+          error:String(error.message || error).slice(0,300), createdAt:FieldValue.serverTimestamp(),
+        });
       });
       throw new HttpsError('failed-precondition', String(error.message || error).slice(0,300));
-    }
     }
   },
 );
@@ -567,7 +568,7 @@ exports.recoverNovaRepairApply = onCall(
       });
     });
     await db.collection('users').doc(uid).collection('nova_audit').add({
-      action:branchSha ? 'nova.repair.recovery_required' : 'nova.repair.apply_recovered',
+      action:'nova.repair.recovery_required',
       actorUid:uid,
       proposalId,
       recoveryBranch:branchSha ? branch : null,
