@@ -363,6 +363,9 @@ exports.listNovaRepairProposals = onCall(
         sourceCommitSha:item.sourceCommitSha,
         repairCommitSha:item.repairCommitSha || null,
         repairBranch:item.repairBranch || null,
+        applyStartedAt:item.applyStartedAt || null,
+        recoveryBranch:item.recoveryBranch || null,
+        recoveryObservedCommitSha:item.recoveryObservedCommitSha || null,
         files:(Array.isArray(item.files) ? item.files : []).map(file=>({
           path:file.path, reason:file.reason, content:file.content,
           expectedSha:file.expectedSha,
@@ -437,7 +440,7 @@ exports.approveAndApplyNovaRepair = onCall(
         throw new HttpsError('failed-precondition', 'Repair proposal failed the isolated-branch policy.');
       }
       proposal = {...approved, state:'applying'};
-      tx.update(ref, {state:'applying', approvedBy:uid, approvedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
+      tx.update(ref, {state:'applying', approvedBy:uid, approvedAt:FieldValue.serverTimestamp(), applyStartedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
       tx.create(db.collection('users').doc(uid).collection('nova_audit').doc(), {
         action:'nova.repair.approved', actorUid:uid, proposalId,
         createdAt:FieldValue.serverTimestamp(),
@@ -466,6 +469,92 @@ exports.approveAndApplyNovaRepair = onCall(
       });
       throw new HttpsError('failed-precondition', String(error.message || error).slice(0,300));
     }
+  },
+);
+
+const APPLY_STALE_AFTER_MS = 15 * 60 * 1000;
+
+function isStaleApplyingProposal(proposal, nowMs = Date.now()) {
+  if (!proposal || proposal.state !== 'applying') return false;
+  const started = proposal.applyStartedAt;
+  const startedMs = typeof started?.toMillis === 'function' ? started.toMillis() :
+    started instanceof Date ? started.getTime() : Number(started || 0);
+  return Number.isFinite(startedMs) && startedMs > 0 && nowMs - startedMs >= APPLY_STALE_AFTER_MS;
+}
+
+exports.recoverNovaRepairApply = onCall(
+  {region:REGION, timeoutSeconds:45, memory:'256MiB', enforceAppCheck:true, secrets:[NOVA_GITHUB_REPAIR_TOKEN]},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to recover a NOVA repair operation.');
+    const proposalId = String(request.data?.proposalId || '').trim();
+    if (!/^[A-Za-z0-9]{15,40}$/.test(proposalId)) throw new HttpsError('invalid-argument', 'Invalid repair proposal ID.');
+    const ref = db.collection('users').doc(uid).collection('nova_repair_proposals').doc(proposalId);
+    const snap = await ref.get();
+    if (!snap.exists) throw new HttpsError('not-found', 'Repair proposal was not found.');
+    const proposal = snap.data() || {};
+    if (proposal.ownerUid !== uid) throw new HttpsError('permission-denied', 'Only the proposal owner can recover it.');
+    if (!isStaleApplyingProposal(proposal)) {
+      throw new HttpsError('failed-precondition', 'The repair operation is not stale; wait for it to finish.');
+    }
+
+    const branch = 'nova/repairs/' + proposalId.toLowerCase();
+    let branchSha = null;
+    try {
+      const branchRef = await githubRequest('/repos/' + REPOSITORY + '/git/ref/heads/' + branch, NOVA_GITHUB_REPAIR_TOKEN.value().trim());
+      branchSha = String(branchRef?.object?.sha || '');
+      if (!/^[a-f0-9]{40}$/i.test(branchSha)) {
+        throw new HttpsError('failed-precondition', 'The existing repair branch returned an invalid commit SHA; manual review is required.');
+      }
+    } catch (error) {
+      if (error.status !== 404) throw error;
+    }
+
+    let resultState = branchSha ? 'recovery_required' : 'awaiting_approval';
+    await db.runTransaction(async tx => {
+      const latest = await tx.get(ref);
+      if (!latest.exists) throw new HttpsError('not-found', 'Repair proposal was not found.');
+      const current = latest.data() || {};
+      if (current.ownerUid !== uid) throw new HttpsError('permission-denied', 'Only the proposal owner can recover it.');
+      if (!isStaleApplyingProposal(current)) {
+        throw new HttpsError('aborted', 'Repair state changed while recovery was being checked.');
+      }
+      if (branchSha) {
+        tx.update(ref, {
+          state:'recovery_required',
+          recoveryBranch:branch,
+          recoveryObservedCommitSha:branchSha,
+          recoveryCheckedAt:FieldValue.serverTimestamp(),
+          updatedAt:FieldValue.serverTimestamp(),
+        });
+      } else {
+        tx.update(ref, {
+          state:'awaiting_approval',
+          approvedBy:FieldValue.delete(),
+          approvedAt:FieldValue.delete(),
+          applyStartedAt:FieldValue.delete(),
+          recoveryCheckedAt:FieldValue.serverTimestamp(),
+          updatedAt:FieldValue.serverTimestamp(),
+        });
+      }
+    });
+    await db.collection('users').doc(uid).collection('nova_audit').add({
+      action:branchSha ? 'nova.repair.recovery_required' : 'nova.repair.apply_recovered',
+      actorUid:uid,
+      proposalId,
+      recoveryBranch:branchSha ? branch : null,
+      recoveryObservedCommitSha:branchSha,
+      createdAt:FieldValue.serverTimestamp(),
+    });
+    return {
+      ok:true,
+      proposalId,
+      state:resultState,
+      branch:branchSha ? branch : null,
+      observedCommitSha:branchSha,
+      requiresManualReview:Boolean(branchSha),
+      requiresOwnerReapproval:!branchSha,
+    };
   },
 );
 
