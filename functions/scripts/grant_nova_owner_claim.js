@@ -28,6 +28,9 @@ async function main() {
   if (!uid || !expectedEmail) {
     throw new Error('Usage: node scripts/grant_nova_owner_claim.js <verified-firebase-uid> <expected-owner-email>');
   }
+  if (!['auren-90ccc', 'auren-staging'].includes(projectId)) {
+    throw new Error('Set GCLOUD_PROJECT explicitly to auren-90ccc or auren-staging.');
+  }
   if (!getApps().length) initializeApp({credential:applicationDefault(), projectId});
   const auth = getAuth();
   const user = await auth.getUser(uid);
