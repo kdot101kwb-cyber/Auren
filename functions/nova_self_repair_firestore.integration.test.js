@@ -50,6 +50,23 @@ test('Firestore transaction keeps recovery quarantine when a delayed worker comp
   assert.equal(final.recoveryOutcome, 'branch_found_after_recovery_check');
 });
 
+test('Firestore completion safely preserves manual-review quarantine when no recovery SHA was observed', async () => {
+  await ref.set({
+    ownerUid:uid,
+    state:'recovery_required',
+    sourceCommitSha:'a'.repeat(40),
+    recoveryOutcome:'apply_error_requires_manual_review',
+  });
+  const completion = await recordApplyCompletion(db, ref, uid, result);
+  const final = (await ref.get()).data();
+
+  assert.equal(completion.state, 'recovery_required');
+  assert.equal(final.state, 'recovery_required');
+  assert.equal(final.recoveryObservedCommitSha, null);
+  assert.equal(final.recoveryOutcome, 'apply_error_requires_manual_review');
+  assert.equal(final.repairCommitSha, result.commitSha);
+});
+
 test('concurrent Firestore recovery and worker completion never lose the pushed commit', async () => {
   await seedApplyingProposal();
 
