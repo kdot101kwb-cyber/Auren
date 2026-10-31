@@ -300,6 +300,16 @@ async function createIsolatedRepairCommit(proposal, token, proposalId, fetchImpl
   }
 }
 
+function buildApplyCompletionDisposition(current, result) {
+  if (current?.state === 'recovery_required') return {state:'recovery_required', recoveryBranch:result.branch, recoveryObservedCommitSha:result.commitSha, recoveryOutcome:'branch_found_after_recovery_check', repairBranch:result.branch, repairCommitSha:result.commitSha};
+  if (current?.state === 'applying') return {state:'validation_pending', repairBranch:result.branch, repairCommitSha:result.commitSha};
+  throw new Error('Repair proposal state changed before apply completion could be recorded.');
+}
+
+function buildApplyFailureDisposition(current, error) {
+  if (!['applying','recovery_required'].includes(String(current?.state || ''))) throw new Error('Repair proposal state changed before apply failure could be recorded.');
+  return {state:'recovery_required', recoveryOutcome:'apply_error_requires_manual_review', error:String(error?.message || error || 'Unknown apply error').slice(0,300)};
+}
 function buildValidationResult(proposal, statuses) {
   const byContext = new Map();
   for (const item of Array.isArray(statuses) ? statuses : []) {
@@ -454,26 +464,34 @@ exports.approveAndApplyNovaRepair = onCall(
     });
     try {
       const result = await createIsolatedRepairCommit(proposal, NOVA_GITHUB_REPAIR_TOKEN.value().trim(), proposalId);
-      await ref.update({
-        state:'validation_pending',
-        repairBranch:result.branch,
-        repairCommitSha:result.commitSha,
-        appliedAt:FieldValue.serverTimestamp(),
-        updatedAt:FieldValue.serverTimestamp(),
+      let completion;
+      await db.runTransaction(async tx => {
+        const latest = await tx.get(ref);
+        if (!latest.exists) throw new HttpsError('not-found', 'Repair proposal disappeared after the GitHub write.');
+        const current = latest.data() || {};
+        if (current.ownerUid !== uid) throw new HttpsError('permission-denied', 'Repair proposal ownership changed unexpectedly.');
+        completion = buildApplyCompletionDisposition(current, result);
+        tx.update(ref, {...completion, appliedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
       });
       await db.collection('users').doc(uid).collection('nova_audit').add({
-        action:'nova.repair.branch_pushed', actorUid:'nova_worker', proposalId,
-        repairBranch:result.branch, repairCommitSha:result.commitSha,
-        createdAt:FieldValue.serverTimestamp(),
+        action:completion.state === 'recovery_required' ? 'nova.repair.branch_pushed_during_recovery' : 'nova.repair.branch_pushed',
+        actorUid:'nova_worker', proposalId, repairBranch:result.branch, repairCommitSha:result.commitSha, createdAt:FieldValue.serverTimestamp(),
       });
-      return {ok:true, proposalId, state:'validation_pending', branch:result.branch, commitSha:result.commitSha, pullRequestCreated:false};
+      return {ok:true, proposalId, state:completion.state, branch:result.branch, commitSha:result.commitSha, pullRequestCreated:false, requiresManualReview:completion.state === 'recovery_required'};
     } catch (error) {
-      await ref.update({state:'failed', error:String(error.message || error).slice(0,300), updatedAt:FieldValue.serverTimestamp()});
+      await db.runTransaction(async tx => {
+        const latest = await tx.get(ref);
+        if (!latest.exists) return;
+        const current = latest.data() || {};
+        if (current.ownerUid !== uid) return;
+        const failure = buildApplyFailureDisposition(current, error);
+        tx.update(ref, {...failure, updatedAt:FieldValue.serverTimestamp()});
+      });
       await db.collection('users').doc(uid).collection('nova_audit').add({
-        action:'nova.repair.apply_failed', actorUid:'nova_worker', proposalId,
-        error:String(error.message || error).slice(0,300), createdAt:FieldValue.serverTimestamp(),
+        action:'nova.repair.apply_requires_manual_review', actorUid:'nova_worker', proposalId, error:String(error.message || error).slice(0,300), createdAt:FieldValue.serverTimestamp(),
       });
       throw new HttpsError('failed-precondition', String(error.message || error).slice(0,300));
+    }
     }
   },
 );
@@ -617,6 +635,8 @@ exports.extractVerifiedEvidence = extractVerifiedEvidence;
 exports.formatRepairEvidence = formatRepairEvidence;
 exports.validateFailedTask = validateFailedTask;
 exports.buildValidationResult = buildValidationResult;
+exports.buildApplyCompletionDisposition = buildApplyCompletionDisposition;
+exports.buildApplyFailureDisposition = buildApplyFailureDisposition;
 exports.createIsolatedRepairCommit = createIsolatedRepairCommit;
 exports.containsCredentialMaterial = containsCredentialMaterial;
 exports.readRepairSourceFile = readRepairSourceFile;
