@@ -65,7 +65,7 @@ function validateFailedTask(task, uid) {
 
 function requireAiDataTransferConsent(value) {
   if (value !== true) {
-    throw new Error('Explicit owner consent is required before sending source code and CI evidence to the AI provider.');
+    throw new HttpsError('failed-precondition', 'Explicit owner consent is required before sending source code and CI evidence to the AI provider.');
   }
 }
 
