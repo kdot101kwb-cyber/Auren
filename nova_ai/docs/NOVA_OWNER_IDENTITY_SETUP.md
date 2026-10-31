@@ -4,6 +4,8 @@ NOVA task submission, task management, and self-repair callables require a verif
 
 ## Preserve the existing account
 
+Before starting, enable the **Email/Password** provider in Firebase Authentication for the intended project. Do not change or disable the current anonymous provider while linking the existing account.
+
 1. Open NOVA's Task Center on the device that currently owns the NOVA data.
 2. In **حماية حساب مالك NOVA**, enter an email and a new password, then choose **ربط البريد بالحساب الحالي**.
 3. Firebase links the credential to the existing anonymous Firebase user. This preserves its UID and its existing `users/{uid}` Firestore data.
