@@ -7,6 +7,7 @@ const assert = require('node:assert/strict');
 const {
   parseModelJson,
   extractVerifiedEvidence,
+  formatRepairEvidence,
   validateFailedTask,
   buildValidationResult,
   createIsolatedRepairCommit,
@@ -37,6 +38,19 @@ test('accepts only owned failed CI tasks with available redacted evidence and a 
   assert.throws(() => validateFailedTask({...task, status:'succeeded'}, 'owner-1'), /failed CI/);
   assert.throws(() => validateFailedTask({...task, result:{...task.result, diagnostics:{status:'unavailable'}}}, 'owner-1'), /evidence is unavailable/);
   assert.throws(() => validateFailedTask({...task, result:{...task.result, commit:'abc'}}, 'owner-1'), /commit SHA/);
+});
+
+test('redacts CI evidence before it is formatted for AI analysis', () => {
+  const formatted = formatRepairEvidence([
+    {source:'circleci', line:12, text:'Authorization: Bearer abcdefghijklmnopqrstuvwxyz123456'},
+    {source:'github_actions', line:13, text:'OPENROUTER_API_KEY=sk-or-v1-1234567890abcdef'},
+    {source:'circleci', line:14, text:'AKIA1234567890ABCDEF'},
+  ]);
+  assert.doesNotMatch(formatted, /abcdefghijklmnopqrstuvwxyz123456/);
+  assert.doesNotMatch(formatted, /sk-or-v1-1234567890abcdef/);
+  assert.doesNotMatch(formatted, /AKIA1234567890ABCDEF/);
+  assert.match(formatted, /REDACTED/);
+  assert.ok(formatted.length <= 5000);
 });
 
 test('repair validation requires every CircleCI gate on the exact pushed commit', () => {
