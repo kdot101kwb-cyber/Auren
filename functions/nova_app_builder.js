@@ -1,4 +1,5 @@
 'use strict';
+const {requireNovaOwner} = require('./nova_owner_auth');
 
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const {getFirestore, FieldValue} = require('firebase-admin/firestore');
@@ -12,8 +13,7 @@ const {validateBuildRequest} = require('./nova_app_builder_validation');
 exports.submitNovaBuildJob = onCall(
   {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to create a build job.');
+    const uid = requireNovaOwner(request);
     const input = validateBuildRequest(request.data);
     const id = randomUUID().replace(/-/g, '');
     const ref = db.collection('users').doc(uid).collection(TASKS).doc(id);
@@ -48,8 +48,7 @@ exports.submitNovaBuildJob = onCall(
 exports.getNovaBuildJob = onCall(
   {region:REGION, timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
   async request => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to inspect build jobs.');
+    const uid = requireNovaOwner(request);
     const jobId = String(request.data?.jobId || '');
     if (!/^[a-f0-9]{32}$/.test(jobId)) throw new HttpsError('invalid-argument', 'Invalid build job ID.');
     const snap = await db.collection('users').doc(uid).collection(TASKS).doc(jobId).get();

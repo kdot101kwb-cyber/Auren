@@ -1,4 +1,5 @@
 'use strict';
+const {requireNovaOwner} = require('./nova_owner_auth');
 
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const {defineSecret} = require('firebase-functions/params');
@@ -38,8 +39,7 @@ exports.novaStrategicDebate = onCall({
   enforceAppCheck: true,
   secrets: [OPENROUTER_API_KEY],
 }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) throw new HttpsError('unauthenticated', 'يجب تسجيل الدخول لاستخدام مجلس نقاش NOVA.');
+  const uid = requireNovaOwner(request);
   let input;
   try {
     input = normalizeDebateInput(request.data || {});
@@ -97,6 +97,7 @@ exports.novaStrategicDebate = onCall({
   const record = {
     prompt: input.prompt,
     context: input.context,
+    projectId: input.projectId || null,
     strategy: input.strategy,
     reviewRoles: input.roles.map((role) => role.id),
     debate,
@@ -111,6 +112,7 @@ exports.novaStrategicDebate = onCall({
   return {
     status: 'awaiting_user_agreement',
     debateId: ref.id,
+    projectId: input.projectId || null,
     debate,
     disclaimer: 'هذه مراجعة متعددة المنظورات من استدعاء نموذج واحد وليست أربعة وكلاء مستقلين. لم يبدأ التنفيذ.',
   };
@@ -122,8 +124,7 @@ exports.novaApproveDebatePlan = onCall({
   memory: '256MiB',
   enforceAppCheck: true,
 }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) throw new HttpsError('unauthenticated', 'يجب تسجيل الدخول لاعتماد الخطة.');
+  const uid = requireNovaOwner(request);
   const debateId = String(request.data?.debateId || '').trim();
   if (!/^[A-Za-z0-9]{16,32}$/.test(debateId)) {
     throw new HttpsError('invalid-argument', 'معرّف مراجعة غير صالح.');
@@ -149,6 +150,7 @@ exports.novaApproveDebatePlan = onCall({
       action: 'nova.debate.plan_approved',
       actorUid: uid,
       debateId,
+      projectId: record.projectId || null,
       planStepCount: record.debate.plan.length,
       executionStarted: false,
       note: 'Approval recorded only; no repository changes or external side effects were executed.',

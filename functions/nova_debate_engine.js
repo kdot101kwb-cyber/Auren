@@ -19,9 +19,14 @@ function normalizeDebateInput(data = {}) {
   if (!prompt) throw new Error('اكتب القرار أو الخطة التي تريد مناقشتها.');
   if (String(data.prompt).length > MAX_PROMPT_LENGTH) throw new Error('النص أطول من الحد المسموح.');
   const context = cleanText(data.context, MAX_CONTEXT_LENGTH);
+  const projectId = cleanText(data.projectId, 128);
+  if (projectId && !/^[A-Za-z0-9_-]{12,128}$/.test(projectId)) {
+    throw new Error('معرّف المشروع المرتبط بالنقاش غير صالح.');
+  }
   return {
     prompt,
     context,
+    projectId:projectId || null,
     strategy: 'strategic',
     boardEnabled: true,
     executionPolicy: 'approved',
@@ -45,6 +50,7 @@ function buildDebateMessages(input) {
   ].join('\n');
   const user = JSON.stringify({
     request: normalized.prompt,
+    projectId: normalized.projectId,
     context: normalized.context || '(No additional context supplied)',
     strategy: normalized.strategy,
     reviewBoard: normalized.roles,

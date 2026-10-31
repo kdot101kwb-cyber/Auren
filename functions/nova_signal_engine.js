@@ -1,4 +1,5 @@
 'use strict';
+const {requireNovaOwner} = require('./nova_owner_auth');
 
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const {onSchedule} = require('firebase-functions/v2/scheduler');
@@ -116,7 +117,7 @@ async function scanSignals(now = new Date()) {
 exports.getNovaSignalOpportunities = onCall(
   {region:REGION, timeoutSeconds:120, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
-    if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Sign in to view NOVA signal opportunities.');
+    requireNovaOwner(request);
     const snap = await db.collection(SIGNALS_COLLECTION).doc(LATEST_DOC).get();
     const cached = snap.data();
     if (cached?.generatedAt && Date.now() - Date.parse(cached.generatedAt) < 20 * 60 * 60 * 1000) {

@@ -3,7 +3,17 @@ import 'package:flutter/material.dart';
 import 'nova_debate_result_view.dart';
 
 class NovaDebateScreen extends StatefulWidget {
-  const NovaDebateScreen({super.key});
+  const NovaDebateScreen({
+    super.key,
+    this.initialPrompt = '',
+    this.initialContext = '',
+    this.initialProjectId,
+  });
+
+  final String initialPrompt;
+  final String initialContext;
+  final String? initialProjectId;
+
   @override
   State<NovaDebateScreen> createState() => _NovaDebateScreenState();
 }
@@ -20,6 +30,13 @@ class _NovaDebateScreenState extends State<NovaDebateScreen> {
   String? approvalMessage;
 
   @override
+  void initState() {
+    super.initState();
+    prompt.text = widget.initialPrompt;
+    contextNotes.text = widget.initialContext;
+  }
+
+  @override
   void dispose() {
     prompt.dispose();
     contextNotes.dispose();
@@ -32,7 +49,11 @@ class _NovaDebateScreenState extends State<NovaDebateScreen> {
     setState(() { loading = true; error = null; result = null; approved = false; approvalMessage = null; });
     try {
       final callable = FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('novaStrategicDebate');
-      final response = await callable.call(<String, dynamic>{'prompt': prompt.text.trim(), 'context': contextNotes.text.trim()});
+      final response = await callable.call(<String, dynamic>{
+        'prompt': prompt.text.trim(),
+        'context': contextNotes.text.trim(),
+        if (widget.initialProjectId != null) 'projectId': widget.initialProjectId,
+      });
       final data = Map<String, dynamic>.from(response.data as Map);
       if (!mounted) return;
       setState(() {

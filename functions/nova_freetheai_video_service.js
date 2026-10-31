@@ -1,4 +1,5 @@
 'use strict';
+const {requireNovaOwner} = require('./nova_owner_auth');
 
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const {defineSecret, defineString} = require('firebase-functions/params');
@@ -75,7 +76,7 @@ function safeStatus(value) {
 exports.listNovaFreeTheAIVideoModels = onCall(
   {region: REGION, timeoutSeconds: 30, memory: '256MiB', enforceAppCheck: true, secrets: [FREETHEAI_API_KEY]},
   async (request) => {
-    if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Sign in to inspect available NOVA video models.');
+    requireNovaOwner(request);
     try {
       const payload = await requestFreeTheAI('/v1/models');
       const models = Array.isArray(payload) ? payload : (Array.isArray(payload.models) ? payload.models : (Array.isArray(payload.data) ? payload.data : []));
@@ -107,8 +108,7 @@ exports.listNovaFreeTheAIVideoModels = onCall(
 exports.submitNovaFreeTheAIVideo = onCall(
   {region: REGION, timeoutSeconds: 35, memory: '256MiB', enforceAppCheck: true, consumeAppCheckToken: true, secrets: [FREETHEAI_API_KEY],},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to generate a NOVA video.');
+    const uid = requireNovaOwner(request);
     let input;
     try { input = normalizePrompt(request.data || {}); }
     catch (error) { throw new HttpsError('invalid-argument', error.message); }
@@ -160,8 +160,7 @@ exports.submitNovaFreeTheAIVideo = onCall(
 exports.getNovaFreeTheAIVideoStatus = onCall(
   {region: REGION, timeoutSeconds: 30, memory: '256MiB', enforceAppCheck: true, secrets: [FREETHEAI_API_KEY]},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to view NOVA video generations.');
+    const uid = requireNovaOwner(request);
     const taskId = String(request.data?.taskId || '').trim();
     if (!/^[A-Za-z0-9_-]{12,100}$/.test(taskId)) throw new HttpsError('invalid-argument', 'Invalid video task ID.');
     const taskRef = db.collection('users').doc(uid).collection('nova_video_generations').doc(taskId);

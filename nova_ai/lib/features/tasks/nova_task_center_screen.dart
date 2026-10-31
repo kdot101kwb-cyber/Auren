@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../firebase_runtime.dart';
+import 'nova_owner_identity.dart';
 
 class NovaTaskCenterScreen extends StatefulWidget {
   const NovaTaskCenterScreen({super.key});
@@ -13,6 +14,10 @@ class NovaTaskCenterScreen extends StatefulWidget {
 
 class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
   final _prompt = TextEditingController();
+  final _ownerEmail = TextEditingController();
+  final _ownerPassword = TextEditingController();
+  bool _identityBusy = false;
+  String? _identityMessage;
   String _type = 'research';
   bool _busy = false;
   String? _message;
@@ -22,7 +27,129 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
   @override
   void dispose() {
     _prompt.dispose();
+    _ownerEmail.dispose();
+    _ownerPassword.dispose();
     super.dispose();
+  }
+
+  Future<void> _linkOwnerIdentity() async {
+    final email = _ownerEmail.text.trim();
+    final password = _ownerPassword.text;
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _identityMessage = 'أدخل بريداً إلكترونياً صحيحاً.');
+      return;
+    }
+    setState(() { _identityBusy = true; _identityMessage = null; });
+    try {
+      final auth = FirebaseAuth.instance;
+      var user = auth.currentUser;
+      if (user == null) user = (await auth.signInAnonymously()).user;
+      if (user == null) throw StateError('تعذر إنشاء جلسة NOVA الحالية.');
+
+      var newlyLinked = false;
+      final providerIds = user.providerData
+          .map((provider) => provider.providerId)
+          .toList(growable: false);
+      if (!user.isAnonymous && !matchesNovaOwnerEmail(user.email, email)) {
+        throw StateError('هذا الحساب مرتبط ببريد مختلف. لم نبدّل الحساب حتى لا نفقد ملكية البيانات الحالية.');
+      }
+      final needsPasswordLink = shouldLinkNovaPasswordProvider(
+        isAnonymous: user.isAnonymous,
+        providerIds: providerIds,
+      );
+      if (needsPasswordLink && password.length < 8) {
+        throw StateError('أدخل كلمة مرور جديدة من 8 أحرف على الأقل لإكمال ربط البريد بالحساب الحالي.');
+      }
+      if (needsPasswordLink) {
+        final credential = EmailAuthProvider.credential(email: email, password: password);
+        try {
+          final linked = await user.linkWithCredential(credential);
+          user = linked.user;
+          if (user == null) {
+            throw StateError('نجح طلب الربط دون إرجاع جلسة مستخدم؛ أعد فتح الصفحة للتحقق من الحالة.');
+          }
+          newlyLinked = true;
+        } on FirebaseAuthException catch (error) {
+          if (error.code != 'provider-already-linked') rethrow;
+          await user.reload();
+          final refreshed = auth.currentUser;
+          if (refreshed == null ||
+              !hasNovaPasswordProvider(refreshed.providerData.map((provider) => provider.providerId)) ||
+              !matchesNovaOwnerEmail(refreshed.email, email)) {
+            throw StateError('مزوّد البريد موجود لكن تعذّر التحقق من ارتباطه بالحساب الحالي. لم نغيّر الحساب.');
+          }
+          user = refreshed;
+        }
+      }
+
+      // An existing permanent account is not a new link. Avoid claiming that
+      // it was linked now, and do not send duplicate verification emails.
+      if (!user.emailVerified) {
+        await user.sendEmailVerification();
+      }
+      final message = newlyLinked
+          ? (user.emailVerified
+              ? 'تم ربط البريد بالحساب الحالي مع الحفاظ على UID. البريد موثق بالفعل؛ يمكنك تحديث صلاحية المالك.'
+              : 'تم ربط البريد بنفس UID الحالي وإرسال رسالة التحقق. افتح بريدك ثم ارجع واضغط تحديث صلاحية المالك.')
+          : (user.emailVerified
+              ? 'هذا البريد مرتبط بالحساب الحالي بالفعل وموثق. لم ننشئ ربطاً جديداً أو نغيّر UID؛ يمكنك تحديث صلاحية المالك.'
+              : 'هذا البريد مرتبط بالحساب الحالي بالفعل لكنه غير موثق. أرسلنا رسالة تحقق جديدة؛ افتح بريدك ثم حدّث صلاحية المالك.');
+      if (mounted) setState(() => _identityMessage = message);
+    } on FirebaseAuthException catch (error) {
+      final message = error.code == 'email-already-in-use'
+          ? 'هذا البريد مرتبط بحساب آخر. لم ندمج الحسابات أو نغيّر UID حتى لا نفقد بياناتك.'
+          : error.code == 'provider-already-linked'
+              ? 'مزوّد البريد مرتبط بالحساب بالفعل. لم ننشئ ربطاً جديداً؛ اضغط تحديث صلاحية المالك للتحقق من حالة الحساب.'
+              : 'تعذر ربط الحساب (رمز الخطأ: ${error.code}).';
+      if (mounted) setState(() => _identityMessage = message);
+    } on StateError catch (error) {
+      if (mounted) setState(() => _identityMessage = error.message.toString());
+    } catch (_) {
+      if (mounted) {
+        setState(() => _identityMessage =
+            'تعذر تأمين الحساب. لم نبدّل الحساب أو ندمجه؛ تحقق من الاتصال والإعدادات ثم أعد المحاولة.');
+      }
+    } finally {
+      if (mounted) {
+        _ownerPassword.clear();
+        setState(() => _identityBusy = false);
+      }
+    }
+  }
+
+  Future<void> _refreshOwnerClaim() async {
+    setState(() { _identityBusy = true; _identityMessage = null; });
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null || user.isAnonymous) {
+        throw StateError('اربط حساباً دائماً أولاً؛ الحساب المجهول لا يصلح كهوية مالك.');
+      }
+      await user.reload();
+      final current = FirebaseAuth.instance.currentUser;
+      if (current == null || current.isAnonymous) {
+        throw StateError('انتهت جلسة الحساب أثناء التحديث. افتح Task Center وسجّل الدخول مجدداً.');
+      }
+      final token = await current.getIdTokenResult(true);
+      final claims = token.claims ?? const <String, dynamic>{};
+      if (current.emailVerified && claims['novaOwner'] == true) {
+        if (mounted) setState(() => _identityMessage = 'هوية مالك NOVA مؤكدة على هذا الجهاز.');
+      } else {
+        if (mounted) setState(() => _identityMessage =
+            'الحساب الحالي: ${current.uid}. تحقق من البريد أولاً؛ وبعدها يحتاج UID إلى اعتماد مالك من إدارة Firebase. لا تمنح نفسك الصلاحية من التطبيق.');
+      }
+    } on FirebaseAuthException catch (error) {
+      if (mounted) {
+        setState(() => _identityMessage = 'تعذر تحديث صلاحية المالك (رمز الخطأ: ${error.code}).');
+      }
+    } on StateError catch (error) {
+      if (mounted) setState(() => _identityMessage = error.message.toString());
+    } catch (_) {
+      if (mounted) {
+        setState(() => _identityMessage = 'تعذر تحديث صلاحية المالك. تحقق من الاتصال ثم أعد المحاولة.');
+      }
+    } finally {
+      if (mounted) setState(() => _identityBusy = false);
+    }
   }
 
   Future<void> _ensureSignedIn() async {
@@ -279,6 +406,47 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
       const Text('مركز تنفيذ NOVA', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
       const SizedBox(height: 8),
       const Text('المهام تُحفظ في الخادم وتُعالج بالخلفية حتى لو أغلقت التطبيق، بعد نشر وظائف Firebase وضبط مفتاح مزود الذكاء الاصطناعي. العامل المجدول يفحص قائمة الانتظار كل دقيقة؛ مهام الفيديو المدفوعة تتطلب موافقة صريحة وإعداد أسرار Higgsfield ونشر وظائف Firebase.'),
+      const SizedBox(height: 12),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('حماية حساب مالك NOVA', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              const Text('اربط بريداً دائماً بالحساب الحالي. الربط يحافظ على UID وبياناتك؛ لا تسجّل الخروج ولا تنشئ حساباً جديداً لهذا الغرض.'),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _ownerEmail,
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const [AutofillHints.email],
+                decoration: const InputDecoration(labelText: 'بريدك الإلكتروني', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _ownerPassword,
+                obscureText: true,
+                autofillHints: const [AutofillHints.newPassword],
+                decoration: const InputDecoration(labelText: 'كلمة مرور جديدة (8 أحرف على الأقل عند الحاجة للربط)', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed: _identityBusy ? null : _linkOwnerIdentity,
+                icon: const Icon(Icons.verified_user_outlined),
+                label: const Text('ربط البريد بالحساب الحالي'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _identityBusy ? null : _refreshOwnerClaim,
+                icon: const Icon(Icons.refresh),
+                label: const Text('تحديث صلاحية المالك'),
+              ),
+              if (_identityMessage != null)
+                SelectableText(_identityMessage!, textDirection: TextDirection.rtl),
+            ],
+          ),
+        ),
+      ),
       const SizedBox(height: 12),
       Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
