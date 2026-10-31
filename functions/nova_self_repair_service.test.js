@@ -18,6 +18,7 @@ const {
   buildRecoveryDisposition,
   buildApplyCompletionDisposition,
   buildApplyFailureDisposition,
+  verifySourceSecretScan,
 } = require('./nova_self_repair_service');
 
 const sha = 'a'.repeat(40);
@@ -27,6 +28,32 @@ test('requires explicit consent before AI source transfer', () => {
   assert.throws(() => requireAiDataTransferConsent(undefined), /Explicit owner consent/);
   assert.throws(() => requireAiDataTransferConsent(false), /Explicit owner consent/);
   assert.doesNotThrow(() => requireAiDataTransferConsent(true));
+});
+
+test('requires Gitleaks success on the exact source commit before AI transfer', async () => {
+  const successFetch = async (url) => new Response(JSON.stringify({
+    sha,
+    statuses:[
+      {context:'ci/circleci: gitleaks_scan', state:'success'},
+      {context:'ci/circleci: functions_tests', state:'failure'},
+    ],
+  }), {status:200});
+  const verified = await verifySourceSecretScan(sha, 'test-token', successFetch);
+  assert.equal(verified.commitSha, sha);
+  assert.equal(verified.state, 'success');
+
+  const missingFetch = async () => new Response(JSON.stringify({sha, statuses:[]}), {status:200});
+  await assert.rejects(() => verifySourceSecretScan(sha, 'test-token', missingFetch), /must pass the Gitleaks/);
+
+  const failedFetch = async () => new Response(JSON.stringify({
+    sha, statuses:[{context:'ci/circleci: gitleaks_scan', state:'failure'}],
+  }), {status:200});
+  await assert.rejects(() => verifySourceSecretScan(sha, 'test-token', failedFetch), /must pass the Gitleaks/);
+
+  const wrongShaFetch = async () => new Response(JSON.stringify({
+    sha:'f'.repeat(40), statuses:[{context:'ci/circleci: gitleaks_scan', state:'success'}],
+  }), {status:200});
+  await assert.rejects(() => verifySourceSecretScan(sha, 'test-token', wrongShaFetch), /did not match/);
 });
 
 test('parses bounded JSON model output and rejects malformed responses', () => {
@@ -148,6 +175,7 @@ test('repair validation requires every CircleCI gate on the exact pushed commit'
     'ci/circleci: plugin_worker_tests',
     'ci/circleci: action_executor_tests',
     'ci/circleci: plugin_worker_image',
+    'ci/circleci: gitleaks_scan',
   ];
   const passed = buildValidationResult(proposal, required.map(context => ({context, state:'success'})));
   assert.equal(passed.state, 'verified');
