@@ -61,6 +61,22 @@ function normalizeNovaProjectInput(data = {}) {
     ownerDecisionRequired: true,
   };
 }
+function normalizeProjectScoring(data = {}) {
+  const strategicValue = boundedScore(data.strategicValue);
+  const urgency = boundedScore(data.urgency);
+  const confidence = boundedScore(data.confidence);
+  const effort = boundedScore(data.effort);
+  const priority = PRIORITIES.includes(data.priority) ? data.priority : 'normal';
+  return {
+    priority,
+    strategicValue,
+    urgency,
+    confidence,
+    effort,
+    priorityScore:priorityScore({strategicValue, urgency, confidence, effort}),
+  };
+}
+
 function normalizeNovaWorkItemInput(data = {}) {
   const title = clean(data.title, 180);
   if (!title) throw new Error('اكتب عنوان المهمة أولاً.');
@@ -118,6 +134,7 @@ module.exports = {
   PRIORITIES,
   normalizeNovaProjectInput,
   normalizeNovaWorkItemInput,
+  normalizeProjectScoring,
   validateProjectTransition,
   validateWorkItemTransition,
   normalizeProjectId,
