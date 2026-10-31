@@ -65,6 +65,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
     } catch (error) {
       if (mounted) setState(() => _identityMessage = 'تعذر تأمين الحساب: $error');
     } finally {
+      _ownerPassword.clear();
       if (mounted) setState(() => _identityBusy = false);
     }
   }
