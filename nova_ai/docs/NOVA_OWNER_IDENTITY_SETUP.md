@@ -4,15 +4,17 @@ NOVA task submission, task management, and self-repair callables require a verif
 
 ## Preserve the existing account
 
-Before starting, enable the **Email/Password** provider in Firebase Authentication for the intended project. Do not change or disable the current anonymous provider while linking the existing account.
+Before starting, enable the **Email/Password** provider in Firebase Authentication for the intended project. Do not sign out, switch accounts, or disable the current anonymous provider while linking the existing identity.
 
 1. Open NOVA's Task Center on the device that currently owns the NOVA data.
-2. In **حماية حساب مالك NOVA**, enter an email and a new password, then choose **ربط البريد بالحساب الحالي**.
-3. Firebase links the credential to the existing anonymous Firebase user. This preserves its UID and its existing `users/{uid}` Firestore data.
-4. Open the verification email and verify the address.
-5. Return to NOVA and choose **تحديث صلاحية المالك**. The screen shows the current UID and whether the owner claim is present.
+2. In **حماية حساب مالك NOVA**, enter the email belonging to the current account and a password, then choose **ربط البريد بالحساب الحالي**.
+3. If the current account is anonymous, NOVA links the credential to that same Firebase user. If it is already a permanent Google/federated account, NOVA only attempts to link Email/Password when the entered email matches that account; it never signs into another account.
+4. The flow verifies that the password provider is actually present before reporting an existing link. It reloads the current session when Firebase reports that the provider is already linked.
+5. Open the verification email if the account is not yet verified, then return to NOVA and choose **تحديث صلاحية المالك**. The screen refreshes the token and checks the server-issued owner claim.
 
-If Firebase reports that the email is already in use, stop. Do not sign out or create a replacement account: that would not automatically transfer the existing UID's data.
+Both supported linking paths preserve the current UID and its existing `users/{uid}` Firestore data.
+
+If Firebase reports that the email is already in use, or the current account's email differs from the address entered, stop. Do not sign out or create a replacement account: that would not automatically transfer the existing UID's data.
 
 ## Grant the owner claim (one-time administrator operation)
 
