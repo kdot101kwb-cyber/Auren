@@ -3,11 +3,11 @@
 ## Flow
 
 1. A failed GitHub Actions or CircleCI task is eligible only when it belongs to the signed-in owner, has a verified 40-character source commit, and contains bounded failure evidence.
-2. After the user explicitly chooses AI analysis, NOVA sends the bounded evidence and selected allowlisted source files to OpenRouter's free-model route. Files containing credential-like material are rejected before transmission.
+2. Before any AI request, NOVA verifies that the exact source commit has a successful `ci/circleci: gitleaks_scan` status. Missing, pending, failed, or mismatched scan status blocks transfer. NOVA then sends bounded evidence and selected allowlisted source files to OpenRouter's free-model route; files containing credential-like material are rejected before transmission.
 3. NOVA generates a repair proposal with a summary and 1–5 complete replacement text files. The policy engine enforces the NOVA path allowlist, expected blob SHAs, 64 KiB total patch limit, and credential checks.
 4. The proposal is stored under `users/{uid}/nova_repair_proposals/{proposalId}` with state `awaiting_approval` and displayed in Task Center with the complete patch.
 5. The owner explicitly invokes `approveAndApplyNovaRepair`. Only then does the backend verify every source blob SHA, create one Git commit, and push a new `nova/repairs/{proposalId}` branch.
-6. `checkNovaRepairValidation` checks the exact pushed commit against all five required CircleCI contexts. Missing or pending checks remain pending; a repair is verified only after all five succeed.
+6. `checkNovaRepairValidation` checks the exact pushed commit against all six required CircleCI contexts, including `gitleaks_scan`. Missing or pending checks remain pending; a repair is verified only after all six succeed.
 
 ## Callable API
 
@@ -28,6 +28,6 @@ A stale `applying` operation is quarantined as `recovery_required` whether or no
 
 If a GitHub write is still in flight when recovery is requested, its eventual completion must preserve `recovery_required` and record the observed branch/commit for manual reconciliation. Any ambiguous apply error is also quarantined; do not automatically retry or re-approve it.
 
-The CircleCI `gitleaks_scan` job installs the pinned Gitleaks v8.30.1 release and scans the production source paths that can be selected for repair. The Firestore Emulator integration gate exercises the real completion/recovery transactions under deterministic and concurrent ordering.
+The CircleCI `gitleaks_scan` job installs the pinned Gitleaks v8.30.1 release and scans production source paths that may be selected for repair. The same exact-commit scan is required again before an owner-approved GitHub write. The Firestore Emulator integration gate exercises the production completion/recovery transaction helpers under deterministic and concurrent ordering.
 
 This change does not set secrets, deploy functions, open PRs, merge code, or touch the default branch. GitHub Actions/CircleCI must validate the pushed repair commit before NOVA can mark it verified.
