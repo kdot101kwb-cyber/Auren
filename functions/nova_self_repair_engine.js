@@ -16,7 +16,7 @@ function normalizeRepairPath(value) {
   }
 
   const allowedNova = /^nova_ai\/(?:lib|test)\/[A-Za-z0-9_./-]+\.(?:dart|yaml)$/;
-  const allowedFunctions = /^functions\/nova_[A-Za-z0-9_-]+(?:\.test)?\.js$/;
+  const allowedFunctions = /^functions\/nova_[A-Za-z0-9_-]+\.js$/;
   if (!allowedNova.test(path) && !allowedFunctions.test(path)) {
     throw new Error('Repair patch path is outside the NOVA source/test allowlist.');
   }
