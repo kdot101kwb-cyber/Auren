@@ -17,6 +17,38 @@ void main() {
     });
   });
 
+  group('shouldLinkNovaPasswordProvider', () {
+    test('links anonymous users to preserve their existing UID', () {
+      expect(
+        shouldLinkNovaPasswordProvider(
+          isAnonymous: true,
+          providerIds: const ['anonymous'],
+        ),
+        isTrue,
+      );
+    });
+
+    test('allows a matching federated account to add email/password to the same UID', () {
+      expect(
+        shouldLinkNovaPasswordProvider(
+          isAnonymous: false,
+          providerIds: const ['google.com'],
+        ),
+        isTrue,
+      );
+    });
+
+    test('does not relink an account that already has password auth', () {
+      expect(
+        shouldLinkNovaPasswordProvider(
+          isAnonymous: false,
+          providerIds: const ['password', 'google.com'],
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('matchesNovaOwnerEmail', () {
     test('matches case-insensitively after trimming', () {
       expect(matchesNovaOwnerEmail(' Owner@Example.com ', 'owner@example.com'), isTrue);
