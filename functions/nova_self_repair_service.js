@@ -382,6 +382,7 @@ exports.listNovaRepairProposals = onCall(
         repairBranch:item.repairBranch || null,
         recoveryBranch:item.recoveryBranch || null,
         recoveryObservedCommitSha:item.recoveryObservedCommitSha || null,
+        recoveryOutcome:item.recoveryOutcome || null,
         files:(Array.isArray(item.files) ? item.files : []).map(file=>({
           path:file.path, reason:file.reason, content:file.content,
           expectedSha:file.expectedSha,
