@@ -15,6 +15,7 @@ const {
   containsCredentialMaterial,
   readRepairSourceFile,
   isStaleApplyingProposal,
+  buildRecoveryDisposition,
 } = require('./nova_self_repair_service');
 
 const sha = 'a'.repeat(40);
@@ -99,6 +100,22 @@ test('only recovers applying operations after the 15-minute stale threshold', ()
   assert.equal(isStaleApplyingProposal({state:'applying', applyStartedAt:now - 900_000}, now), true);
   assert.equal(isStaleApplyingProposal({state:'applying'}, now), false);
   assert.equal(isStaleApplyingProposal({state:'applying', applyStartedAt:now + 1000}, now), false);
+});
+
+test('stale recovery always quarantines and never automatically re-approves', () => {
+  const found = buildRecoveryDisposition('c'.repeat(40));
+  assert.equal(found.state, 'recovery_required');
+  assert.equal(found.branchFound, true);
+  assert.equal(found.requiresManualReview, true);
+  assert.equal(found.requiresOwnerReapproval, false);
+  assert.equal(found.recoveryOutcome, 'branch_found');
+
+  const notFound = buildRecoveryDisposition(null);
+  assert.equal(notFound.state, 'recovery_required');
+  assert.equal(notFound.branchFound, false);
+  assert.equal(notFound.requiresManualReview, true);
+  assert.equal(notFound.requiresOwnerReapproval, false);
+  assert.equal(notFound.recoveryOutcome, 'branch_not_found_at_check');
 });
 
 test('repair validation requires every CircleCI gate on the exact pushed commit', () => {
