@@ -22,10 +22,10 @@ With Firebase Admin Application Default Credentials configured for the intended 
 
 ```bash
 cd functions
-GCLOUD_PROJECT=auren-90ccc node scripts/grant_nova_owner_claim.js <verified-firebase-uid>
+GCLOUD_PROJECT=auren-90ccc node scripts/grant_nova_owner_claim.js <verified-firebase-uid> <expected-owner-email>
 ```
 
-For staging, explicitly use `GCLOUD_PROJECT=auren-staging`. The script refuses anonymous or unverified accounts and preserves existing custom claims.
+For staging, explicitly use `GCLOUD_PROJECT=auren-staging`. The script requires both the exact Firebase UID and expected owner email, compares that email with the account returned by Firebase Auth, refuses anonymous or unverified accounts, and preserves existing custom claims. Confirm the UID and email belong to the device owner before running it.
 
 After the claim is granted, return to NOVA and choose **تحديث صلاحية المالك** to force-refresh the Firebase ID token. The server still checks the claim, verified email, and non-anonymous provider on every protected callable.
 
