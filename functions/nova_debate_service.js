@@ -1,4 +1,5 @@
 'use strict';
+const {requireNovaOwner} = require('./nova_owner_auth');
 
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const {defineSecret} = require('firebase-functions/params');
@@ -38,8 +39,7 @@ exports.novaStrategicDebate = onCall({
   enforceAppCheck: true,
   secrets: [OPENROUTER_API_KEY],
 }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) throw new HttpsError('unauthenticated', 'يجب تسجيل الدخول لاستخدام مجلس نقاش NOVA.');
+  const uid = requireNovaOwner(request);
   let input;
   try {
     input = normalizeDebateInput(request.data || {});
@@ -122,8 +122,7 @@ exports.novaApproveDebatePlan = onCall({
   memory: '256MiB',
   enforceAppCheck: true,
 }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) throw new HttpsError('unauthenticated', 'يجب تسجيل الدخول لاعتماد الخطة.');
+  const uid = requireNovaOwner(request);
   const debateId = String(request.data?.debateId || '').trim();
   if (!/^[A-Za-z0-9]{16,32}$/.test(debateId)) {
     throw new HttpsError('invalid-argument', 'معرّف مراجعة غير صالح.');
