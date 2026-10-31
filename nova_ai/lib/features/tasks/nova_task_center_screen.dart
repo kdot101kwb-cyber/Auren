@@ -35,8 +35,8 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
   Future<void> _linkOwnerIdentity() async {
     final email = _ownerEmail.text.trim();
     final password = _ownerPassword.text;
-    if (email.isEmpty || !email.contains('@') || password.length < 8) {
-      setState(() => _identityMessage = 'أدخل بريداً صحيحاً وكلمة مرور من 8 أحرف على الأقل.');
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _identityMessage = 'أدخل بريداً إلكترونياً صحيحاً.');
       return;
     }
     setState(() { _identityBusy = true; _identityMessage = null; });
@@ -53,10 +53,14 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
       if (!user.isAnonymous && !matchesNovaOwnerEmail(user.email, email)) {
         throw StateError('هذا الحساب مرتبط ببريد مختلف. لم نبدّل الحساب حتى لا نفقد ملكية البيانات الحالية.');
       }
-      if (shouldLinkNovaPasswordProvider(
+      final needsPasswordLink = shouldLinkNovaPasswordProvider(
         isAnonymous: user.isAnonymous,
         providerIds: providerIds,
-      )) {
+      );
+      if (needsPasswordLink && password.length < 8) {
+        throw StateError('أدخل كلمة مرور جديدة من 8 أحرف على الأقل لإكمال ربط البريد بالحساب الحالي.');
+      }
+      if (needsPasswordLink) {
         final credential = EmailAuthProvider.credential(email: email, password: password);
         try {
           final linked = await user.linkWithCredential(credential);
@@ -424,7 +428,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
                 controller: _ownerPassword,
                 obscureText: true,
                 autofillHints: const [AutofillHints.newPassword],
-                decoration: const InputDecoration(labelText: 'كلمة مرور جديدة (8 أحرف على الأقل)', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'كلمة مرور جديدة (8 أحرف على الأقل عند الحاجة للربط)', border: OutlineInputBorder()),
               ),
               const SizedBox(height: 8),
               FilledButton.icon(
