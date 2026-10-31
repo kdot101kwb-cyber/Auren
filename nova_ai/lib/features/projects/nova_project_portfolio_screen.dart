@@ -52,7 +52,6 @@ class _NovaProjectPortfolioScreenState extends State<NovaProjectPortfolioScreen>
   }
 
   Future<void> loadProjects() async {
-    if (busy) return;
     setState(() { busy=true; message=null; });
     try {
       await ensureOwner();
@@ -119,6 +118,54 @@ class _NovaProjectPortfolioScreenState extends State<NovaProjectPortfolioScreen>
     } catch (error) { if (mounted) setState(()=>message=safeError(error)); }
     finally { if (mounted) setState(()=>busy=false); }
   }
+
+  Future<void> editPriority(Map<String,dynamic> project) async {
+    var strategicValue=(project['strategicValue'] as num?)?.toInt() ?? 3;
+    var urgency=(project['urgency'] as num?)?.toInt() ?? 3;
+    var confidence=(project['confidence'] as num?)?.toInt() ?? 3;
+    var effort=(project['effort'] as num?)?.toInt() ?? 3;
+    var selectedPriority='${project['priority'] ?? 'normal'}';
+    final accepted=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,refresh)=>AlertDialog(
+      title:const Text('تقييم أولوية المشروع'),
+      content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+        _prioritySlider('القيمة الاستراتيجية',strategicValue,(v)=>refresh(()=>strategicValue=v)),
+        _prioritySlider('الاستعجال',urgency,(v)=>refresh(()=>urgency=v)),
+        _prioritySlider('الثقة في النجاح',confidence,(v)=>refresh(()=>confidence=v)),
+        _prioritySlider('الجهد المطلوب',effort,(v)=>refresh(()=>effort=v)),
+        DropdownButtonFormField<String>(
+          initialValue:selectedPriority,
+          decoration:const InputDecoration(labelText:'تصنيف الأولوية'),
+          items:priorities.entries.map((e)=>DropdownMenuItem(value:e.key,child:Text(e.value))).toList(),
+          onChanged:(v)=>refresh(()=>selectedPriority=v ?? 'normal'),
+        ),
+      ])),
+      actions:[
+        TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),
+        FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('حفظ التقييم')),
+      ],
+    )));
+    if (accepted!=true || !mounted) return;
+    setState(()=>busy=true);
+    try {
+      await ensureOwner();
+      final response=await functions.httpsCallable('updateNovaProjectPriority').call({
+        'projectId':project['projectId'],
+        'strategicValue':strategicValue,'urgency':urgency,'confidence':confidence,
+        'effort':effort,'priority':selectedPriority,
+      });
+      final data=Map<String,dynamic>.from(response.data as Map);
+      if (mounted) setState(()=>message='تم تحديث التقييم. درجة الأولوية: ${data['priorityScore']}/100.');
+      await loadProjects();
+    } catch (error) { if (mounted) setState(()=>message=safeError(error)); }
+    finally { if (mounted) setState(()=>busy=false); }
+  }
+
+  Widget _prioritySlider(String label,int value,ValueChanged<int> onChanged)=>Column(
+    crossAxisAlignment:CrossAxisAlignment.start,children:[
+      Row(children:[Expanded(child:Text(label)),Text('$value/5')]),
+      Slider(value:value.toDouble(),min:1,max:5,divisions:4,onChanged:(v)=>onChanged(v.round())),
+    ],
+  );
 
   Future<void> addWorkItem() async {
     if (selectedId==null || workTitle.text.trim().isEmpty || busy) return;
@@ -196,7 +243,7 @@ class _NovaProjectPortfolioScreenState extends State<NovaProjectPortfolioScreen>
           Text('${areas[project['area']] ?? project['area']} • ${priorities[project['priority']] ?? project['priority']} • ${projectStates[project['status']] ?? project['status']}'),
           if (project['description']!=null && '${project['description']}'.isNotEmpty) Text('${project['description']}',maxLines:2,overflow:TextOverflow.ellipsis,textDirection:TextDirection.rtl),
           Row(children:[
-            TextButton(onPressed:busy?null:()=>showDialog<void>(context:context,builder:(ctx)=>AlertDialog(title:const Text('تقييم الأولوية'),content:Text('يمكن إعادة التقييم من واجهة الإدارة التفصيلية. الدرجة الحالية: ${project['priorityScore']}/100.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('إغلاق'))])),child:const Text('تفاصيل التقييم')),
+            TextButton(onPressed:busy?null:()=>editPriority(project),child:const Text('تقييم الأولوية')),
             const Spacer(),
             PopupMenuButton<String>(enabled:!busy && projectTransitions('${project['status']}').isNotEmpty,onSelected:(s)=>changeProject(project,s),itemBuilder:(ctx)=>projectTransitions('${project['status']}').map((s)=>PopupMenuItem(value:s,child:Text(projectStates[s] ?? s))).toList()),
           ]),
