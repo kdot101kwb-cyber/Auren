@@ -7,12 +7,12 @@ const db = getFirestore();
 const REGION = 'us-central1';
 const TASK_COLLECTION = 'nova_tasks';
 const {normalizeNovaTaskInput} = require('./nova_command_validation');
+const {requireNovaOwner} = require('./nova_owner_auth');
 
 exports.submitNovaTask = onCall(
   {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to submit NOVA tasks.');
+    const uid = requireNovaOwner(request);
     const input = normalizeNovaTaskInput(request.data, HttpsError);
     const id = input.idempotencyKey;
     const taskRef = db.collection('users').doc(uid).collection(TASK_COLLECTION).doc(id);
@@ -67,8 +67,7 @@ exports.submitNovaTask = onCall(
 exports.getNovaTask = onCall(
   {region:REGION, timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to view NOVA tasks.');
+    const uid = requireNovaOwner(request);
     const taskId = String(request.data?.taskId || '').trim();
     if (!/^[A-Za-z0-9_-]{12,128}$/.test(taskId)) throw new HttpsError('invalid-argument', 'Invalid task ID.');
     const snap = await db.collection('users').doc(uid).collection(TASK_COLLECTION).doc(taskId).get();
@@ -92,8 +91,7 @@ exports.getNovaTask = onCall(
 exports.approveNovaTask = onCall(
   {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to approve NOVA tasks.');
+    const uid = requireNovaOwner(request);
     const taskId = String(request.data?.taskId || '').trim();
     if (!/^[A-Za-z0-9_-]{12,128}$/.test(taskId)) throw new HttpsError('invalid-argument', 'Invalid task ID.');
     const taskRef = db.collection('users').doc(uid).collection(TASK_COLLECTION).doc(taskId);
@@ -130,8 +128,7 @@ exports.approveNovaTask = onCall(
 exports.cancelNovaTask = onCall(
   {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to cancel NOVA tasks.');
+    const uid = requireNovaOwner(request);
     const taskId = String(request.data?.taskId || '').trim();
     if (!/^[A-Za-z0-9_-]{12,128}$/.test(taskId)) throw new HttpsError('invalid-argument', 'Invalid task ID.');
     const taskRef = db.collection('users').doc(uid).collection(TASK_COLLECTION).doc(taskId);
@@ -164,8 +161,7 @@ exports.cancelNovaTask = onCall(
 exports.listNovaTasks = onCall(
   {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to view NOVA tasks.');
+    const uid = requireNovaOwner(request);
     const limit = Math.min(50, Math.max(1, Number(request.data?.limit) || 20));
     const snap = await db.collection('users').doc(uid).collection(TASK_COLLECTION)
       .orderBy('createdAt', 'desc').limit(limit).get();
