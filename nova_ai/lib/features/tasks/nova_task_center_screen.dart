@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../firebase_runtime.dart';
+import 'nova_owner_identity.dart';
 
 class NovaTaskCenterScreen extends StatefulWidget {
   const NovaTaskCenterScreen({super.key});
@@ -46,14 +47,32 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
       if (user == null) throw StateError('تعذر إنشاء جلسة NOVA الحالية.');
 
       var newlyLinked = false;
-      if (user.isAnonymous) {
-        final credential = EmailAuthProvider.credential(email: email, password: password);
-        final linked = await user.linkWithCredential(credential);
-        user = linked.user;
-        if (user == null) throw StateError('نجح طلب الربط دون إرجاع جلسة مستخدم؛ أعد فتح الصفحة للتحقق من الحالة.');
-        newlyLinked = true;
-      } else if ((user.email ?? '').toLowerCase() != email.toLowerCase()) {
+      final hasPasswordProvider = hasNovaPasswordProvider(
+        user.providerData.map((provider) => provider.providerId),
+      );
+      if (!user.isAnonymous && !matchesNovaOwnerEmail(user.email, email)) {
         throw StateError('هذا الحساب مرتبط ببريد مختلف. لم نبدّل الحساب حتى لا نفقد ملكية البيانات الحالية.');
+      }
+      if (user.isAnonymous || !hasPasswordProvider) {
+        final credential = EmailAuthProvider.credential(email: email, password: password);
+        try {
+          final linked = await user.linkWithCredential(credential);
+          user = linked.user;
+          if (user == null) {
+            throw StateError('نجح طلب الربط دون إرجاع جلسة مستخدم؛ أعد فتح الصفحة للتحقق من الحالة.');
+          }
+          newlyLinked = true;
+        } on FirebaseAuthException catch (error) {
+          if (error.code != 'provider-already-linked') rethrow;
+          await user.reload();
+          final refreshed = auth.currentUser;
+          if (refreshed == null ||
+              !hasNovaPasswordProvider(refreshed.providerData.map((provider) => provider.providerId)) ||
+              !matchesNovaOwnerEmail(refreshed.email, email)) {
+            throw StateError('مزوّد البريد موجود لكن تعذّر التحقق من ارتباطه بالحساب الحالي. لم نغيّر الحساب.');
+          }
+          user = refreshed;
+        }
       }
 
       // An existing permanent account is not a new link. Avoid claiming that
@@ -79,8 +98,10 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
     } catch (error) {
       if (mounted) setState(() => _identityMessage = 'تعذر تأمين الحساب: $error');
     } finally {
-      _ownerPassword.clear();
-      if (mounted) setState(() => _identityBusy = false);
+      if (mounted) {
+        _ownerPassword.clear();
+        setState(() => _identityBusy = false);
+      }
     }
   }
 
@@ -92,7 +113,10 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
         throw StateError('اربط حساباً دائماً أولاً؛ الحساب المجهول لا يصلح كهوية مالك.');
       }
       await user.reload();
-      final current = FirebaseAuth.instance.currentUser!;
+      final current = FirebaseAuth.instance.currentUser;
+      if (current == null || current.isAnonymous) {
+        throw StateError('انتهت جلسة الحساب أثناء التحديث. افتح Task Center وسجّل الدخول مجدداً.');
+      }
       final token = await current.getIdTokenResult(true);
       final claims = token.claims ?? const <String, dynamic>{};
       if (current.emailVerified && claims['novaOwner'] == true) {
