@@ -2,6 +2,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../firebase_runtime.dart';
+import '../debate/nova_debate_screen.dart';
 
 class NovaProjectPortfolioScreen extends StatefulWidget {
   const NovaProjectPortfolioScreen({super.key});
@@ -117,6 +118,22 @@ class _NovaProjectPortfolioScreenState extends State<NovaProjectPortfolioScreen>
       await loadProjects();
     } catch (error) { if (mounted) setState(()=>message=safeError(error)); }
     finally { if (mounted) setState(()=>busy=false); }
+  }
+
+  void openCouncil(Map<String,dynamic> project) {
+    final promptText='راجع مشروع ${project['title']}، وناقش هل نبدأ أو نؤجل أو نعيد تصميمه. لا تفترض أن المشروع معتمد للتنفيذ.';
+    final contextText=[
+      'Project ID: ${project['projectId']}',
+      'Area: ${project['area']}',
+      'Current status: ${project['status']}',
+      'Priority: ${project['priority']}',
+      'Priority score: ${project['priorityScore']}/100',
+      'Description: ${project['description'] ?? ''}',
+      'Owner decision is required for every lifecycle change. Debate approval must not start execution.',
+    ].join('\n');
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder:(_)=>NovaDebateScreen(initialPrompt:promptText,initialContext:contextText),
+    ));
   }
 
   Future<void> editPriority(Map<String,dynamic> project) async {
@@ -247,6 +264,7 @@ class _NovaProjectPortfolioScreenState extends State<NovaProjectPortfolioScreen>
           if (project['description']!=null && '${project['description']}'.isNotEmpty) Text('${project['description']}',maxLines:2,overflow:TextOverflow.ellipsis,textDirection:TextDirection.rtl),
           Row(children:[
             TextButton(onPressed:busy?null:()=>editPriority(project),child:const Text('تقييم الأولوية')),
+            TextButton.icon(onPressed:()=>openCouncil(project),icon:const Icon(Icons.balance),label:const Text('ناقش')),
             const Spacer(),
             PopupMenuButton<String>(enabled:!busy && projectTransitions('${project['status']}').isNotEmpty,onSelected:(s)=>changeProject(project,s),itemBuilder:(ctx)=>projectTransitions('${project['status']}').map((s)=>PopupMenuItem(value:s,child:Text(projectStates[s] ?? s))).toList()),
           ]),
