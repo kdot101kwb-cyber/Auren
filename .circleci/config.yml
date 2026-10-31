@@ -33,6 +33,15 @@ jobs:
             cat nova_flutter_analyze.log
             exit 0
       - run:
+          name: Test nova_ai
+          command: |
+            set +e
+            (cd nova_ai && flutter test) > nova_flutter_test.log 2>&1
+            status=$?
+            echo "$status" > /tmp/nova_flutter_test_status
+            cat nova_flutter_test.log
+            exit 0
+      - run:
           name: Prepare Android NDK
           command: |
             set -e
@@ -129,6 +138,8 @@ jobs:
       - store_artifacts:
           path: nova_flutter_analyze.log
       - store_artifacts:
+          path: nova_flutter_test.log
+      - store_artifacts:
           path: flutter_test.log
       - store_artifacts:
           path: flutter_android_build.log
@@ -137,15 +148,18 @@ jobs:
           command: |
             analyze_status=0
             nova_analyze_status=0
+            nova_test_status=0
             test_status=0
             build_status=0
             read analyze_status < /tmp/flutter_analyze_status
             read nova_analyze_status < /tmp/nova_flutter_analyze_status
+            read nova_test_status < /tmp/nova_flutter_test_status
             read test_status < /tmp/flutter_test_status
             read build_status < /tmp/flutter_android_build_status
             echo "========== FLUTTER CI SUMMARY =========="
             echo "Flutter analyze: ${analyze_status}"
             echo "Nova AI analyze: ${nova_analyze_status}"
+            echo "Nova AI tests: ${nova_test_status}"
             echo "Flutter test: ${test_status}"
             echo "Android debug build: ${build_status}"
             echo
@@ -154,6 +168,9 @@ jobs:
             echo
             echo "========== NOVA AI ANALYZE ERRORS =========="
             grep -E "^[[:space:]]*(error|warning)[[:space:]]|^[[:space:]]*error •|^[[:space:]]*warning •" nova_flutter_analyze.log | tail -n 80 || true
+            echo
+            echo "========== NOVA AI TEST FAILURES =========="
+            grep -E "FAILED|Error:|Exception:|Test failed|Some tests failed|Expected:|Actual:" nova_flutter_test.log | tail -n 80 || true
             echo
             echo "========== TEST FAILURES =========="
             grep -E "FAILED|Error:|Exception:|Test failed|Some tests failed|Expected:|Actual:" flutter_test.log | tail -n 80 || true
@@ -167,12 +184,15 @@ jobs:
             echo "========== LAST NOVA AI ANALYZE LINES =========="
             tail -n 20 nova_flutter_analyze.log
             echo
+            echo "========== LAST NOVA AI TEST LINES =========="
+            tail -n 40 nova_flutter_test.log
+            echo
             echo "========== LAST TEST LINES =========="
             tail -n 40 flutter_test.log
             echo
             echo "========== LAST BUILD LINES =========="
             tail -n 60 flutter_android_build.log
-            if [ "${analyze_status}" -ne 0 ] || [ "${nova_analyze_status}" -ne 0 ] || [ "${test_status}" -ne 0 ] || [ "${build_status}" -ne 0 ]; then
+            if [ "${analyze_status}" -ne 0 ] || [ "${nova_analyze_status}" -ne 0 ] || [ "${nova_test_status}" -ne 0 ] || [ "${test_status}" -ne 0 ] || [ "${build_status}" -ne 0 ]; then
               exit 1
             fi
 
