@@ -10,6 +10,7 @@ const {
   validateFailedTask,
   buildValidationResult,
   createIsolatedRepairCommit,
+  containsCredentialMaterial,
 } = require('./nova_self_repair_service');
 
 const sha = 'a'.repeat(40);
@@ -99,4 +100,32 @@ test('refuses to write when a source blob changed after proposal creation', asyn
     sourceCommitSha:sha,
     files:[{path:'functions/nova_example.js', content:'x', expectedSha:fileSha}],
   }, 'test-token', 'repairid123456789', fetchImpl), /Source file changed/);
+});
+
+test('credential scanner catches bearer, CircleCI, API secrets and common provider keys', () => {
+  const samples = [
+    'Authorization: Bearer abcdefghijklmnopqrstuvwxyz123456',
+    'circle-token: circleci_abcdefghijklmnop',
+    'const api_key = "this-is-a-long-hardcoded-secret-value";',
+    'const access_token = "abcdefghijklmnopqrstuvwx";',
+    'const secret = "abcdefghijklmnopqrstuvwx";',
+    'const password = "abcdefghijklmnopqrstuvwx";',
+    'AKIA1234567890ABCDEF',
+    'AIza1234567890abcdefghijklmnopqrstuv',
+    '-----BEGIN RSA PRIVATE KEY-----',
+    'ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890',
+    'github_pat_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890',
+  ];
+  for (const sample of samples) {
+    assert.equal(containsCredentialMaterial(sample), true, 'Expected secret pattern to be detected: ' + sample.slice(0, 24));
+  }
+  for (const safe of [
+    'Authorization: Bearer [REDACTED]',
+    'const api_key = process.env.API_KEY;',
+    'const password = "";',
+    'CircleCI job failed while running tests',
+    'ordinary application source code',
+  ]) {
+    assert.equal(containsCredentialMaterial(safe), false, 'Unexpected secret detection: ' + safe);
+  }
 });
