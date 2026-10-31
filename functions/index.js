@@ -20,6 +20,9 @@ const HF_TOKEN = defineSecret('HF_TOKEN');
 // NOVA strategic debate callable (authenticated, rate-limited, server-side AI key).
 Object.assign(exports, require('./nova_debate_service'));
 
+// NOVA owner-controlled project portfolio and work-item lifecycle APIs.
+Object.assign(exports, require('./nova_project_portfolio_service'));
+
 async function recordAurenAiProviderHealth(provider, ok, message) {
   await db.collection('ai_provider_health').doc(provider).set({
     lastError: ok ? '' : String(message || '').slice(0, 500),
