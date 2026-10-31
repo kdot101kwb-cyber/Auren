@@ -8,3 +8,10 @@ bool matchesNovaOwnerEmail(String? accountEmail, String requestedEmail) {
   final requested = requestedEmail.trim().toLowerCase();
   return account.isNotEmpty && requested.isNotEmpty && account == requested;
 }
+
+bool shouldLinkNovaPasswordProvider({
+  required bool isAnonymous,
+  required Iterable<String> providerIds,
+}) {
+  return isAnonymous || !hasNovaPasswordProvider(providerIds);
+}
