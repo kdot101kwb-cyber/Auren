@@ -241,7 +241,7 @@ jobs:
             export PATH="$(go env GOPATH)/bin:$PATH"
             SCAN_DIR="$(mktemp -d)"
             mkdir -p "${SCAN_DIR}/functions" "${SCAN_DIR}/nova_ai"
-            find functions -maxdepth 1 -type f -name 'nova_*.js' ! -name '*.test.js' -exec cp {} "${SCAN_DIR}/functions/" \\;
+            find functions -maxdepth 1 -type f -name 'nova_*.js' ! -name '*.test.js' -exec cp {} "${SCAN_DIR}/functions/" \;
             if [ -d nova_ai/lib ]; then cp -a nova_ai/lib "${SCAN_DIR}/nova_ai/lib"; fi
             gitleaks detect --source="${SCAN_DIR}" --no-git --redact --exit-code 1
 
