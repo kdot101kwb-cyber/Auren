@@ -112,8 +112,8 @@ async function readRepairSourceFile(path, commitSha, token) {
   }
   const content = Buffer.from(payload.content.replace(/\s/g, ''), 'base64').toString('utf8');
   if (Buffer.byteLength(content, 'utf8') > 16000) throw new Error('Source file is too large for safe AI review: ' + path);
-  if (/(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|(?:api[_-]?key|access[_-]?token|secret|password)\s*[:=]\s*['"][^'"]{12,})/i.test(content)) {
-  if (/(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|authorization\s*:\s*bearer\s+\S{20,}|circle-token\s*[:=]\s*\S{12,}|(?:api[_-]?key|access[_-]?token|secret|password)\s*[:=]\s*['"][^'"]{12,}['"])/i.test(content)) {
+  if (/(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|authorization\\s*:\\s*bearer\\s+\\S{20,}|circle-token\\s*[:=]\\s*\\S{12,}|(?:api[_-]?key|access[_-]?token|secret|password)\\s*[:=]\\s*['"][^'"]{12,}['"])/i.test(content)) {
+    throw new Error('Source file contains credential-like material and cannot be sent to the repair model.');
   }
   return {path, sha:payload.sha, content};
 }
