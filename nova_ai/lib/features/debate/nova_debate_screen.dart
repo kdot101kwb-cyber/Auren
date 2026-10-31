@@ -7,10 +7,12 @@ class NovaDebateScreen extends StatefulWidget {
     super.key,
     this.initialPrompt = '',
     this.initialContext = '',
+    this.initialProjectId,
   });
 
   final String initialPrompt;
   final String initialContext;
+  final String? initialProjectId;
 
   @override
   State<NovaDebateScreen> createState() => _NovaDebateScreenState();
@@ -47,7 +49,11 @@ class _NovaDebateScreenState extends State<NovaDebateScreen> {
     setState(() { loading = true; error = null; result = null; approved = false; approvalMessage = null; });
     try {
       final callable = FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('novaStrategicDebate');
-      final response = await callable.call(<String, dynamic>{'prompt': prompt.text.trim(), 'context': contextNotes.text.trim()});
+      final response = await callable.call(<String, dynamic>{
+        'prompt': prompt.text.trim(),
+        'context': contextNotes.text.trim(),
+        if (widget.initialProjectId != null) 'projectId': widget.initialProjectId,
+      });
       final data = Map<String, dynamic>.from(response.data as Map);
       if (!mounted) return;
       setState(() {
