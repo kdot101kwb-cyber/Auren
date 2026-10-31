@@ -13,6 +13,7 @@ const {
   createIsolatedRepairCommit,
   containsCredentialMaterial,
   readRepairSourceFile,
+  isStaleApplyingProposal,
 } = require('./nova_self_repair_service');
 
 const sha = 'a'.repeat(40);
@@ -82,6 +83,15 @@ test('allows a clean source file after verifying its GitHub blob metadata', asyn
   assert.equal(result.content, cleanContent);
   assert.equal(result.sha, fileSha);
   assert.match(requestedUrl, /ref=/);
+});
+
+test('only recovers applying operations after the 15-minute stale threshold', () => {
+  const now = 2_000_000_000_000;
+  assert.equal(isStaleApplyingProposal({state:'awaiting_approval', applyStartedAt:now - 900_000}, now), false);
+  assert.equal(isStaleApplyingProposal({state:'applying', applyStartedAt:now - 899_999}, now), false);
+  assert.equal(isStaleApplyingProposal({state:'applying', applyStartedAt:now - 900_000}, now), true);
+  assert.equal(isStaleApplyingProposal({state:'applying'}, now), false);
+  assert.equal(isStaleApplyingProposal({state:'applying', applyStartedAt:now + 1000}, now), false);
 });
 
 test('repair validation requires every CircleCI gate on the exact pushed commit', () => {
