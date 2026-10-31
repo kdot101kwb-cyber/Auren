@@ -158,6 +158,26 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
     }
   }
 
+  Future<void> _recoverRepairProposal(Map<String, dynamic> proposal) async {
+    setState(() { _busy = true; _message = null; });
+    try {
+      await _ensureSignedIn();
+      final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('recoverNovaRepairApply').call(<String, dynamic>{
+        'proposalId': '${proposal['proposalId']}',
+      });
+      final data = Map<String, dynamic>.from(response.data as Map);
+      setState(() => _message = data['requiresManualReview'] == true
+          ? 'وجدت NOVA فرع إصلاح موجوداً بعد تعطل العملية. أوقفت إعادة الكتابة ووضعت الحالة للمراجعة اليدوية: ${data['branch']}'
+          : 'لم يُعثر على فرع إصلاح منشور. أعادت NOVA الاقتراح إلى انتظار موافقتك من جديد.');
+      await _loadRepairProposals();
+    } catch (error) {
+      if (mounted) setState(() => _message = 'تعذر استعادة عملية الإصلاح: $error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _checkRepairProposal(Map<String, dynamic> proposal) async {
     setState(() { _busy = true; _message = null; });
     try {
@@ -359,6 +379,13 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
                   onPressed: _busy ? null : () => _approveRepairProposal(proposal),
                   child: const Text('مراجعة وموافقة على الإصلاح'),
                 ),
+              if (proposal['state'] == 'applying')
+                OutlinedButton(
+                  onPressed: _busy ? null : () => _recoverRepairProposal(proposal),
+                  child: const Text('استعادة عملية متوقفة'),
+                ),
+              if (proposal['state'] == 'recovery_required')
+                const Text('تم العثور على فرع موجود؛ أوقفت NOVA إعادة الكتابة وتحتاج هذه الحالة إلى مراجعة يدوية.'),
               if (proposal['state'] == 'validation_pending')
                 OutlinedButton(
                   onPressed: _busy ? null : () => _checkRepairProposal(proposal),
