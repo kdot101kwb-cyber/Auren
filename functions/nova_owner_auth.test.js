@@ -35,6 +35,13 @@ test('rejects owner claims when the email is not verified', () => {
   })), {code:'permission-denied'});
 });
 
+test('rejects a token without an explicit sign-in provider', () => {
+  assert.throws(() => requireNovaOwner(request('user-1', {
+    novaOwner:true,
+    email_verified:true,
+  })), {code:'permission-denied'});
+});
+
 test('accepts only a verified, non-anonymous account with the server-issued owner claim', () => {
   assert.equal(requireNovaOwner(request('owner-1', {
     novaOwner:true,
