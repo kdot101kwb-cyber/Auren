@@ -25,4 +25,7 @@ Create a separate fine-grained GitHub token with access only to `kdot101kwb-cybe
 
 A stale `applying` operation is quarantined as `recovery_required` whether or not its branch is visible at the recovery check. A missing branch is not proof that the original worker stopped; NOVA never resets that operation for automatic re-approval or a second push. Manual reconciliation is required.
 
+
+If a GitHub write is still in flight when recovery is requested, its eventual completion must preserve `recovery_required` and record the observed branch/commit for manual reconciliation. Any ambiguous apply error is also quarantined; do not automatically retry or re-approve it.
+
 This change does not set secrets, deploy functions, open PRs, merge code, or touch the default branch. GitHub Actions/CircleCI must validate the pushed repair commit before NOVA can mark it verified.
