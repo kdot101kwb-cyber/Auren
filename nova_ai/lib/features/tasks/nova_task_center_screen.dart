@@ -95,6 +95,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
       final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
           .httpsCallable('generateNovaRepairProposal').call(<String, dynamic>{
         'taskId': '${task['taskId']}',
+        'aiDataTransferConsent': true,
       });
       final data = Map<String, dynamic>.from(response.data as Map);
       setState(() => _message =
@@ -168,8 +169,10 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
       });
       final data = Map<String, dynamic>.from(response.data as Map);
       setState(() => _message = data['requiresManualReview'] == true
-          ? 'وجدت NOVA فرع إصلاح موجوداً بعد تعطل العملية. أوقفت إعادة الكتابة ووضعت الحالة للمراجعة اليدوية: ${data['branch']}'
-          : 'لم يُعثر على فرع إصلاح منشور. أعادت NOVA الاقتراح إلى انتظار موافقتك من جديد.');
+          ? (data['branchFound'] == true
+              ? 'وجدت NOVA فرع إصلاح بعد تعطل العملية. أوقفت أي إعادة كتابة ووضعت الحالة للمراجعة اليدوية: ${data['branch']}'
+              : 'لم يظهر فرع إصلاح عند الفحص، لكن العملية الأصلية قد تكون ما زالت تعمل. أبقت NOVA الحالة للمراجعة اليدوية ومنعت إعادة الموافقة والكتابة.')
+          : 'تعذر تحديد حالة عملية الإصلاح.');
       await _loadRepairProposals();
     } catch (error) {
       if (mounted) setState(() => _message = 'تعذر استعادة عملية الإصلاح: $error');
