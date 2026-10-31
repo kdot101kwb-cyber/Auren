@@ -480,6 +480,17 @@ exports.approveAndApplyNovaRepair = onCall(
 
 const APPLY_STALE_AFTER_MS = 15 * 60 * 1000;
 
+function buildRecoveryDisposition(branchSha) {
+  const branchFound = /^[a-f0-9]{40}$/i.test(String(branchSha || ''));
+  return {
+    state:'recovery_required',
+    branchFound,
+    recoveryOutcome:branchFound ? 'branch_found' : 'branch_not_found_at_check',
+    requiresManualReview:true,
+    requiresOwnerReapproval:false,
+  };
+}
+
 function isStaleApplyingProposal(proposal, nowMs = Date.now()) {
   if (!proposal || proposal.state !== 'applying') return false;
   const started = proposal.applyStartedAt;
@@ -518,7 +529,8 @@ exports.recoverNovaRepairApply = onCall(
 
     // A stale timestamp does not prove the original worker is dead. Quarantine either
     // outcome instead of resetting to awaiting_approval and risking a second concurrent push.
-    const resultState = 'recovery_required';
+    const disposition = buildRecoveryDisposition(branchSha);
+    const resultState = disposition.state;
     await db.runTransaction(async tx => {
       const latest = await tx.get(ref);
       if (!latest.exists) throw new HttpsError('not-found', 'Repair proposal was not found.');
@@ -531,7 +543,7 @@ exports.recoverNovaRepairApply = onCall(
         state:'recovery_required',
         recoveryBranch:branch,
         recoveryObservedCommitSha:branchSha,
-        recoveryOutcome:branchSha ? 'branch_found' : 'branch_not_found_at_check',
+        recoveryOutcome:disposition.recoveryOutcome,
         recoveryCheckedAt:FieldValue.serverTimestamp(),
         updatedAt:FieldValue.serverTimestamp(),
       });
@@ -550,9 +562,9 @@ exports.recoverNovaRepairApply = onCall(
       state:resultState,
       branch:branchSha ? branch : null,
       observedCommitSha:branchSha,
-      branchFound:Boolean(branchSha),
-      requiresManualReview:true,
-      requiresOwnerReapproval:false,
+      branchFound:disposition.branchFound,
+      requiresManualReview:disposition.requiresManualReview,
+      requiresOwnerReapproval:disposition.requiresOwnerReapproval,
     };
   },
 );
@@ -609,3 +621,4 @@ exports.createIsolatedRepairCommit = createIsolatedRepairCommit;
 exports.containsCredentialMaterial = containsCredentialMaterial;
 exports.readRepairSourceFile = readRepairSourceFile;
 exports.isStaleApplyingProposal = isStaleApplyingProposal;
+exports.buildRecoveryDisposition = buildRecoveryDisposition;
