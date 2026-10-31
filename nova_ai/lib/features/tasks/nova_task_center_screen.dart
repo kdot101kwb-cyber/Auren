@@ -392,7 +392,9 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
                   child: const Text('استعادة عملية متوقفة'),
                 ),
               if (proposal['state'] == 'recovery_required')
-                const Text('تم العثور على فرع موجود؛ أوقفت NOVA إعادة الكتابة وتحتاج هذه الحالة إلى مراجعة يدوية.'),
+                Text(proposal['recoveryOutcome'] == 'branch_found' || proposal['recoveryOutcome'] == 'branch_found_after_recovery_check'
+                    ? 'تم العثور على فرع إصلاح. أوقفت NOVA أي كتابة إضافية وتحتاج الحالة إلى مراجعة يدوية.'
+                    : 'لم يظهر فرع إصلاح عند آخر فحص. قد تكون العملية الأصلية ما زالت تعمل؛ لذلك أوقفت NOVA إعادة الموافقة والكتابة وتحتاج الحالة إلى مراجعة يدوية.'),
               if (proposal['state'] == 'validation_pending')
                 OutlinedButton(
                   onPressed: _busy ? null : () => _checkRepairProposal(proposal),
