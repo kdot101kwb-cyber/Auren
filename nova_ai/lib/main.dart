@@ -14,6 +14,7 @@ import 'features/auren/auren_management_dashboard_screen.dart';
 import 'features/creative/creative_tool_library_screen.dart';
 import 'features/brain/nova_autonomous_brain_screen.dart';
 import 'features/opportunities/global_opportunity_radar_screen.dart';
+import 'features/projects/nova_project_portfolio_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -145,6 +146,7 @@ class _NovaHomeState extends State<NovaHome> {
       const GitHubCiScreen(),
       const NovaAutonomousBrainScreen(),
       const NovaGlobalOpportunityRadarScreen(),
+      const NovaProjectPortfolioScreen(),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -165,6 +167,7 @@ class _NovaHomeState extends State<NovaHome> {
               PopupMenuItem(value: 13, child: Text('حالة GitHub Actions المباشرة')),
               PopupMenuItem(value: 14, child: Text('العقل التنفيذي الذاتي')),
               PopupMenuItem(value: 15, child: Text('الرادار العالمي متعدد اللغات')), 
+              PopupMenuItem(value: 16, child: Text('محفظة المشاريع ومجلس القرارات')),
             ],
           ),
           IconButton(onPressed: () => showAboutDialog(context: context, applicationName: 'NOVA AI', applicationVersion: '0.2.0', children: const [Text('نسخة أولية قيد التحقق. بعض الأدوات تحتاج ربط خدمات وخادم آمن.')]), icon: const Icon(Icons.info_outline)),
