@@ -48,6 +48,19 @@ test('redacts credential evidence and rejects patches containing known secret fo
   assert.doesNotMatch(awsEvidence.evidence[0].text, /AKIA1234567890ABCDEF/);
 });
 
+test('rejects quoted and unquoted hardcoded credentials in repair patches', () => {
+  for (const content of [
+    'api_key: sk_live_1234567890abcdef',
+    'OPENROUTER_API_KEY=sk-or-v1-1234567890abcdef',
+    'password: long-password-value-123',
+    'token = abcdefghijklmnopqrstuvwxyz123456',
+    'const access_token = "this-is-a-long-hardcoded-secret";',
+  ]) {
+    assert.throws(() => validatePatchSet([{...validFile, content}]), /credential material/);
+  }
+  assert.doesNotThrow(() => validatePatchSet([{...validFile, content:'const token = process.env.API_KEY;'}]));
+});
+
 test('validates patch count, content size, expected SHA and duplicate paths', () => {
   assert.equal(validatePatchSet([validFile]).files.length, 1);
   assert.throws(() => validatePatchSet([{...validFile, expectedSha:'bad'}]), /blob SHA/);
