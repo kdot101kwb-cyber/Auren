@@ -12,6 +12,7 @@ const {
   buildValidationResult,
   createIsolatedRepairCommit,
   containsCredentialMaterial,
+  readRepairSourceFile,
 } = require('./nova_self_repair_service');
 
 const sha = 'a'.repeat(40);
@@ -51,6 +52,36 @@ test('redacts CI evidence before it is formatted for AI analysis', () => {
   assert.doesNotMatch(formatted, /AKIA1234567890ABCDEF/);
   assert.match(formatted, /REDACTED/);
   assert.ok(formatted.length <= 5000);
+});
+
+test('blocks credential-bearing source files before they can be passed to the repair model', async () => {
+  const secretContent = 'const OPENROUTER_API_KEY = "sk-or-v1-1234567890abcdef";';
+  const fetchImpl = async () => new Response(JSON.stringify({
+    encoding:'base64',
+    content:Buffer.from(secretContent, 'utf8').toString('base64'),
+    sha:fileSha,
+  }), {status:200});
+  await assert.rejects(
+    () => readRepairSourceFile('functions/nova_example.js', sha, 'test-token', fetchImpl),
+    /credential-like material and cannot be sent/,
+  );
+});
+
+test('allows a clean source file after verifying its GitHub blob metadata', async () => {
+  const cleanContent = 'const token = process.env.API_KEY;\\nmodule.exports = true;';
+  let requestedUrl = '';
+  const fetchImpl = async (url) => {
+    requestedUrl = url;
+    return new Response(JSON.stringify({
+      encoding:'base64',
+      content:Buffer.from(cleanContent, 'utf8').toString('base64'),
+      sha:fileSha,
+    }), {status:200});
+  };
+  const result = await readRepairSourceFile('functions/nova_example.js', sha, 'test-token', fetchImpl);
+  assert.equal(result.content, cleanContent);
+  assert.equal(result.sha, fileSha);
+  assert.match(requestedUrl, /ref=/);
 });
 
 test('repair validation requires every CircleCI gate on the exact pushed commit', () => {
