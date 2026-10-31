@@ -13,6 +13,10 @@ class NovaTaskCenterScreen extends StatefulWidget {
 
 class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
   final _prompt = TextEditingController();
+  final _ownerEmail = TextEditingController();
+  final _ownerPassword = TextEditingController();
+  bool _identityBusy = false;
+  String? _identityMessage;
   String _type = 'research';
   bool _busy = false;
   String? _message;
@@ -22,7 +26,71 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
   @override
   void dispose() {
     _prompt.dispose();
+    _ownerEmail.dispose();
+    _ownerPassword.dispose();
     super.dispose();
+  }
+
+  Future<void> _linkOwnerIdentity() async {
+    final email = _ownerEmail.text.trim();
+    final password = _ownerPassword.text;
+    if (email.isEmpty || !email.contains('@') || password.length < 8) {
+      setState(() => _identityMessage = 'أدخل بريداً صحيحاً وكلمة مرور من 8 أحرف على الأقل.');
+      return;
+    }
+    setState(() { _identityBusy = true; _identityMessage = null; });
+    try {
+      final auth = FirebaseAuth.instance;
+      var user = auth.currentUser;
+      if (user == null) user = (await auth.signInAnonymously()).user;
+      if (user == null) throw StateError('تعذر إنشاء جلسة NOVA الحالية.');
+      if (user.isAnonymous) {
+        final credential = EmailAuthProvider.credential(email: email, password: password);
+        final linked = await user.linkWithCredential(credential);
+        user = linked.user;
+      } else if (user.email != email) {
+        throw StateError('هذا الحساب مرتبط ببريد مختلف. لم نبدّل الحساب حتى لا نفقد ملكية البيانات الحالية.');
+      }
+      await user?.sendEmailVerification();
+      _ownerPassword.clear();
+      if (mounted) setState(() => _identityMessage =
+          'تم ربط البريد بنفس UID الحالي وإرسال رسالة التحقق. افتح بريدك ثم ارجع واضغط تحديث صلاحية المالك.');
+    } on FirebaseAuthException catch (error) {
+      final message = error.code == 'email-already-in-use'
+          ? 'هذا البريد مرتبط بحساب آخر. لم ندمج الحسابات أو نغيّر UID حتى لا نفقد بياناتك.'
+          : error.code == 'provider-already-linked'
+              ? 'الحساب مرتبط مسبقاً بمزوّد تسجيل دخول.'
+              : 'تعذر ربط الحساب: ${error.message ?? error.code}';
+      if (mounted) setState(() => _identityMessage = message);
+    } catch (error) {
+      if (mounted) setState(() => _identityMessage = 'تعذر تأمين الحساب: $error');
+    } finally {
+      if (mounted) setState(() => _identityBusy = false);
+    }
+  }
+
+  Future<void> _refreshOwnerClaim() async {
+    setState(() { _identityBusy = true; _identityMessage = null; });
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null || user.isAnonymous) {
+        throw StateError('اربط حساباً دائماً أولاً؛ الحساب المجهول لا يصلح كهوية مالك.');
+      }
+      await user.reload();
+      final current = FirebaseAuth.instance.currentUser!;
+      final token = await current.getIdTokenResult(true);
+      final claims = token.claims ?? const <String, dynamic>{};
+      if (current.emailVerified && claims['novaOwner'] == true) {
+        if (mounted) setState(() => _identityMessage = 'هوية مالك NOVA مؤكدة على هذا الجهاز.');
+      } else {
+        if (mounted) setState(() => _identityMessage =
+            'الحساب الحالي: ${current.uid}. تحقق من البريد أولاً؛ وبعدها يحتاج UID إلى اعتماد مالك من إدارة Firebase. لا تمنح نفسك الصلاحية من التطبيق.');
+      }
+    } catch (error) {
+      if (mounted) setState(() => _identityMessage = 'تعذر تحديث صلاحية المالك: $error');
+    } finally {
+      if (mounted) setState(() => _identityBusy = false);
+    }
   }
 
   Future<void> _ensureSignedIn() async {
@@ -279,6 +347,47 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
       const Text('مركز تنفيذ NOVA', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
       const SizedBox(height: 8),
       const Text('المهام تُحفظ في الخادم وتُعالج بالخلفية حتى لو أغلقت التطبيق، بعد نشر وظائف Firebase وضبط مفتاح مزود الذكاء الاصطناعي. العامل المجدول يفحص قائمة الانتظار كل دقيقة؛ مهام الفيديو المدفوعة تتطلب موافقة صريحة وإعداد أسرار Higgsfield ونشر وظائف Firebase.'),
+      const SizedBox(height: 12),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('حماية حساب مالك NOVA', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              const Text('اربط بريداً دائماً بالحساب الحالي. الربط يحافظ على UID وبياناتك؛ لا تسجّل الخروج ولا تنشئ حساباً جديداً لهذا الغرض.'),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _ownerEmail,
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const [AutofillHints.email],
+                decoration: const InputDecoration(labelText: 'بريدك الإلكتروني', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _ownerPassword,
+                obscureText: true,
+                autofillHints: const [AutofillHints.newPassword],
+                decoration: const InputDecoration(labelText: 'كلمة مرور جديدة (8 أحرف على الأقل)', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed: _identityBusy ? null : _linkOwnerIdentity,
+                icon: const Icon(Icons.verified_user_outlined),
+                label: const Text('ربط البريد بالحساب الحالي'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _identityBusy ? null : _refreshOwnerClaim,
+                icon: const Icon(Icons.refresh),
+                label: const Text('تحديث صلاحية المالك'),
+              ),
+              if (_identityMessage != null)
+                SelectableText(_identityMessage!, textDirection: TextDirection.rtl),
+            ],
+          ),
+        ),
+      ),
       const SizedBox(height: 12),
       Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
