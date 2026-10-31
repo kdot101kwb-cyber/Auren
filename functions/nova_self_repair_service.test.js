@@ -253,6 +253,15 @@ test('credential scanner catches bearer, CircleCI, API secrets and common provid
     'github_pat_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890',
     'sk-or-v1-abcdefghijklmnopqrstuvwxyz1234567890',
     'sk-proj-abcdefghijklmnopqrstuvwxyz1234567890',
+    'xoxb-' + 'A'.repeat(24),
+    'glpat-' + 'B'.repeat(24),
+    'npm_' + 'C'.repeat(24),
+    'sk_live_' + 'D'.repeat(24),
+    'rk_test_' + 'E'.repeat(24),
+    'ya29.' + 'F'.repeat(24),
+    'SG.' + 'G'.repeat(24) + '.' + 'H'.repeat(24),
+    'SK' + 'a'.repeat(32),
+    'Bearer ' + 'I'.repeat(48),
   ];
   for (const sample of samples) {
     assert.equal(containsCredentialMaterial(sample), true, 'Expected secret pattern to be detected: ' + sample.slice(0, 24));

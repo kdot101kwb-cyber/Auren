@@ -44,6 +44,12 @@ test('redacts credential evidence and rejects patches containing known secret fo
   assert.match(redactRepairEvidence('Authorization: Bearer verylongsecretvalue'), /REDACTED/);
   assert.doesNotMatch(redactRepairEvidence('CI log: sk-or-v1-abcdefghijklmnopqrstuvwxyz1234567890'), /sk-or-v1-/);
   assert.doesNotMatch(redactRepairEvidence('CI log: sk-proj-abcdefghijklmnopqrstuvwxyz1234567890'), /sk-proj-/);
+  const providerTokens = [
+    'xoxb-' + 'A'.repeat(24), 'glpat-' + 'B'.repeat(24), 'npm_' + 'C'.repeat(24),
+    'sk_live_' + 'D'.repeat(24), 'ya29.' + 'E'.repeat(24),
+    'SG.' + 'F'.repeat(24) + '.' + 'G'.repeat(24),
+  ];
+  for (const token of providerTokens) assert.doesNotMatch(redactRepairEvidence('CI output: ' + token), /A{24}|B{24}|C{24}|D{24}|E{24}|F{24}|G{24}/);
   assert.throws(() => validatePatchSet([{...validFile, content:'const token = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";'}]), /credential material/);
   assert.throws(() => validatePatchSet([{...validFile, content:'const api_key = "this-is-a-hardcoded-secret-value";'}]), /credential material/);
   const awsEvidence = createRepairProposal({...validInput, evidence:[{text:'Error: AKIA1234567890ABCDEF'}]});

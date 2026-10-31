@@ -110,7 +110,7 @@ async function callRepairModel(messages, apiKey) {
 
 function containsCredentialMaterial(value) {
   const text = String(value || '');
-  return /(?:sk-or-v1-[A-Za-z0-9_-]{16,}|sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|authorization\s*:\s*bearer\s+\S{20,}|circle-token\s*[:=]\s*\S{12,}|(?:api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|token|secret|password)\s*[:=]\s*['\"][^'\"]{12,}['\"])/i.test(text) ||
+  return /(?:sk-or-v1-[A-Za-z0-9_-]{16,}|sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|xox[baprs]-[A-Za-z0-9-]{10,}|glpat-[A-Za-z0-9_-]{20,}|gldt-[A-Za-z0-9_-]{20,}|glrt-[A-Za-z0-9_-]{20,}|npm_[A-Za-z0-9]{20,}|(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}|ya29\.[A-Za-z0-9_-]{20,}|SK[0-9a-fA-F]{32}|SG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|authorization\s*:\s*(?:bearer|basic)\s+\S{20,}|\bBearer\s+[A-Za-z0-9._~+/=-]{20,}|circle-token\s*[:=]\s*\S{12,}|(?:api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|token|secret|password)\s*[:=]\s*['\"][^'\"]{12,}['\"])/i.test(text) ||
     /(?:api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|token|secret|password)\s*[:=]\s*['"]?(?!process\.env\b|env\.)[A-Za-z0-9_./+=-]{12,}/i.test(text);
 }
 
