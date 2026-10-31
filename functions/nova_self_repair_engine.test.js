@@ -25,7 +25,7 @@ const validInput = {
 
 test('allows only bounded NOVA source and test paths', () => {
   assert.equal(normalizeRepairPath('nova_ai/lib/features/tasks/repair.dart'), 'nova_ai/lib/features/tasks/repair.dart');
-  assert.equal(normalizeRepairPath('functions/nova_worker.test.js'), 'functions/nova_worker.test.js');
+  assert.throws(() => normalizeRepairPath('functions/nova_worker.test.js'), /outside/);
   for (const path of [
     '../functions/index.js',
     'functions/index.js',
