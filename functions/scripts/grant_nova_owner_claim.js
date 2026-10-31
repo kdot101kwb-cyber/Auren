@@ -7,8 +7,9 @@ const {getAuth} = require('firebase-admin/auth');
 
 async function main() {
   const uid = String(process.argv[2] || '').trim();
-  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) {
-    throw new Error('Usage: node scripts/grant_nova_owner_claim.js <verified-firebase-uid>');
+  const expectedEmail = String(process.argv[3] || '').trim().toLowerCase();
+  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(expectedEmail)) {
+    throw new Error('Usage: node scripts/grant_nova_owner_claim.js <verified-firebase-uid> <expected-owner-email>');
   }
 
   const projectId = process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT;
@@ -21,7 +22,8 @@ async function main() {
   const hasPasswordOrFederatedProvider = (user.providerData || [])
     .some((provider) => provider.providerId && provider.providerId !== 'anonymous');
 
-  if (!user.email || user.emailVerified !== true || !hasPasswordOrFederatedProvider) {
+  if (!user.email || user.email.toLowerCase() !== expectedEmail ||
+      user.emailVerified !== true || !hasPasswordOrFederatedProvider) {
     throw new Error('Refusing owner claim: account must have a verified email and a non-anonymous sign-in provider.');
   }
 
