@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
+  validateNovaOwnerAdminApp,
   validateNovaOwnerGrantTarget,
   grantNovaOwnerClaim,
 } = require('./grant_nova_owner_claim');
@@ -13,6 +14,18 @@ const validUser = {
   providerData:[{providerId:'password'}],
   customClaims:{existingRole:'admin'},
 };
+
+test('requires the initialized Admin app to target the explicitly selected project', () => {
+  assert.doesNotThrow(() => validateNovaOwnerAdminApp('auren-staging', 'auren-staging'));
+  assert.throws(
+    () => validateNovaOwnerAdminApp('auren-staging', 'auren-90ccc'),
+    /initialized Firebase Admin app must target/,
+  );
+  assert.throws(
+    () => validateNovaOwnerAdminApp('auren-staging', undefined),
+    /initialized Firebase Admin app must target/,
+  );
+});
 
 test('accepts the expected verified owner identity in an approved Firebase project', () => {
   assert.doesNotThrow(() => validateNovaOwnerGrantTarget(
