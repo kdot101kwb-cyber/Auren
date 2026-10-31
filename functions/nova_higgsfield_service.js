@@ -1,4 +1,5 @@
 'use strict';
+const {requireNovaOwner} = require('./nova_owner_auth');
 
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const {defineSecret} = require('firebase-functions/params');
@@ -57,8 +58,7 @@ async function higgsfieldRequest(url, method, body) {
 exports.submitNovaHiggsfieldVideo = onCall(
   {region:REGION, timeoutSeconds:35, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true, secrets:[HF_API_KEY_ID, HF_API_KEY_SECRET]},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to generate a NOVA video.');
+    const uid = requireNovaOwner(request);
     let input;
     try { input = normalizeVideoInput(request.data || {}); }
     catch (error) { throw new HttpsError('invalid-argument', error.message); }
@@ -117,8 +117,7 @@ exports.submitNovaHiggsfieldVideo = onCall(
 exports.getNovaHiggsfieldVideoStatus = onCall(
   {region:REGION, timeoutSeconds:30, memory:'256MiB', enforceAppCheck:true, secrets:[HF_API_KEY_ID, HF_API_KEY_SECRET]},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to view NOVA video generations.');
+    const uid = requireNovaOwner(request);
     const taskId = String(request.data?.taskId || '').trim();
     if (!/^[A-Za-z0-9_-]{12,100}$/.test(taskId)) throw new HttpsError('invalid-argument', 'Invalid video task ID.');
     const taskRef = db.collection('users').doc(uid).collection('nova_video_generations').doc(taskId);
