@@ -8,7 +8,7 @@ const {getAuth} = require('firebase-admin/auth');
 async function main() {
   const uid = String(process.argv[2] || '').trim();
   const expectedEmail = String(process.argv[3] || '').trim().toLowerCase();
-  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(expectedEmail)) {
+  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(expectedEmail)) {
     throw new Error('Usage: node scripts/grant_nova_owner_claim.js <verified-firebase-uid> <expected-owner-email>');
   }
 
