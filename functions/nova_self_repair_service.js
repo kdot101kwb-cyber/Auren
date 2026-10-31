@@ -110,7 +110,7 @@ async function callRepairModel(messages, apiKey) {
 
 function containsCredentialMaterial(value) {
   const text = String(value || '');
-  return /(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|authorization\s*:\s*bearer\s+\S{20,}|circle-token\s*[:=]\s*\S{12,}|(?:api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|token|secret|password)\s*[:=]\s*['"][^'"]{12,}['"])/i.test(text) ||
+  return /(?:sk-or-v1-[A-Za-z0-9_-]{16,}|sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|authorization\\s*:\\s*bearer\\s+\\S{20,}|circle-token\\s*[:=]\\s*\\S{12,}|(?:api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|token|secret|password)\\s*[:=]\\s*['\"][^'\"]{12,}['\"])/i.test(text) ||
     /(?:api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|token|secret|password)\s*[:=]\s*['"]?(?!process\.env\b|env\.)[A-Za-z0-9_./+=-]{12,}/i.test(text);
 }
 
@@ -324,7 +324,7 @@ async function createIsolatedRepairCommit(proposal, token, proposalId, fetchImpl
 }
 
 function buildApplyCompletionDisposition(current, result) {
-  if (current?.state === 'recovery_required') return {state:'recovery_required', recoveryBranch:result.branch, recoveryObservedCommitSha:current.recoveryObservedCommitSha, recoveryOutcome:'branch_found_after_recovery_check', repairBranch:result.branch, repairCommitSha:result.commitSha};
+  if (current?.state === 'recovery_required') return {state:'recovery_required', recoveryBranch:result.branch, recoveryObservedCommitSha:current.recoveryObservedCommitSha ?? null, recoveryOutcome:current.recoveryObservedCommitSha ? 'branch_found_after_recovery_check' : (current.recoveryOutcome || 'apply_error_requires_manual_review'), repairBranch:result.branch, repairCommitSha:result.commitSha};
   if (current?.state === 'applying') return {state:'validation_pending', repairBranch:result.branch, repairCommitSha:result.commitSha};
   throw new Error('Repair proposal state changed before apply completion could be recorded.');
 }
