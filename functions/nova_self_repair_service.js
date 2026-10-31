@@ -3,6 +3,7 @@
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const {defineSecret} = require('firebase-functions/params');
 const {getFirestore, FieldValue} = require('firebase-admin/firestore');
+const {requireNovaOwner} = require('./nova_owner_auth');
 const {
   createRepairProposal,
   approveRepairProposal,
@@ -430,8 +431,7 @@ function buildValidationResult(proposal, statuses) {
 exports.generateNovaRepairProposal = onCall(
   {region:REGION, timeoutSeconds:120, memory:'1GiB', enforceAppCheck:true, consumeAppCheckToken:true, secrets:[NOVA_GITHUB_REPAIR_TOKEN, OPENROUTER_API_KEY]},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to generate a NOVA repair proposal.');
+    const uid = requireNovaOwner(request);
     requireAiDataTransferConsent(request.data?.aiDataTransferConsent);
     const taskId = String(request.data?.taskId || '').trim();
     if (!/^[A-Za-z0-9_-]{12,128}$/.test(taskId)) throw new HttpsError('invalid-argument', 'Invalid source task ID.');
@@ -452,8 +452,7 @@ exports.generateNovaRepairProposal = onCall(
 exports.listNovaRepairProposals = onCall(
   {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to view NOVA repair proposals.');
+    const uid = requireNovaOwner(request);
     const snap = await db.collection('users').doc(uid).collection('nova_repair_proposals')
       .orderBy('createdAt', 'desc').limit(10).get();
     return {proposals:snap.docs.map(doc => {
@@ -482,8 +481,7 @@ exports.listNovaRepairProposals = onCall(
 exports.createNovaRepairProposal = onCall(
   {region:REGION, timeoutSeconds:30, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to create a NOVA repair proposal.');
+    const uid = requireNovaOwner(request);
     const taskId = String(request.data?.taskId || '').trim();
     if (!/^[A-Za-z0-9_-]{12,128}$/.test(taskId)) throw new HttpsError('invalid-argument', 'Invalid source task ID.');
     const taskSnap = await db.collection('users').doc(uid).collection('nova_tasks').doc(taskId).get();
@@ -525,8 +523,7 @@ exports.createNovaRepairProposal = onCall(
 exports.approveAndApplyNovaRepair = onCall(
   {region:REGION, timeoutSeconds:120, memory:'512MiB', enforceAppCheck:true, consumeAppCheckToken:true, secrets:[NOVA_GITHUB_REPAIR_TOKEN]},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to approve a NOVA repair.');
+    const uid = requireNovaOwner(request);
     const proposalId = String(request.data?.proposalId || '').trim();
     if (!/^[A-Za-z0-9]{15,40}$/.test(proposalId)) throw new HttpsError('invalid-argument', 'Invalid repair proposal ID.');
     const ref = db.collection('users').doc(uid).collection('nova_repair_proposals').doc(proposalId);
@@ -585,8 +582,7 @@ function isStaleApplyingProposal(proposal, nowMs = Date.now()) {
 exports.recoverNovaRepairApply = onCall(
   {region:REGION, timeoutSeconds:45, memory:'256MiB', enforceAppCheck:true, secrets:[NOVA_GITHUB_REPAIR_TOKEN]},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to recover a NOVA repair operation.');
+    const uid = requireNovaOwner(request);
     const proposalId = String(request.data?.proposalId || '').trim();
     if (!/^[A-Za-z0-9]{15,40}$/.test(proposalId)) throw new HttpsError('invalid-argument', 'Invalid repair proposal ID.');
     const ref = db.collection('users').doc(uid).collection('nova_repair_proposals').doc(proposalId);
@@ -630,8 +626,7 @@ exports.recoverNovaRepairApply = onCall(
 exports.checkNovaRepairValidation = onCall(
   {region:REGION, timeoutSeconds:45, memory:'256MiB', enforceAppCheck:true, secrets:[NOVA_GITHUB_REPAIR_TOKEN]},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to check a NOVA repair.');
+    const uid = requireNovaOwner(request);
     const proposalId = String(request.data?.proposalId || '').trim();
     if (!/^[A-Za-z0-9]{15,40}$/.test(proposalId)) throw new HttpsError('invalid-argument', 'Invalid repair proposal ID.');
     const ref = db.collection('users').doc(uid).collection('nova_repair_proposals').doc(proposalId);
