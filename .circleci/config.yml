@@ -218,7 +218,7 @@ jobs:
               sudo apt-get update
               sudo apt-get install -y openjdk-21-jre-headless
             fi
-            npx --yes firebase-tools emulators:exec --project auren-emulator --only firestore "node --test functions/action_rules.integration.test.js" 2>&1 | tee firestore_action_rules.log
+            npx --yes firebase-tools emulators:exec --project auren-emulator --only firestore "node --test functions/action_rules.integration.test.js functions/nova_self_repair_firestore.integration.test.js" 2>&1 | tee firestore_action_rules.log
             status=${PIPESTATUS[0]}
             echo "firestore_action_rules_exit_code=${status}" >> firestore_action_rules.log
             exit ${status}
@@ -226,6 +226,25 @@ jobs:
           path: functions/functions_test.log
       - store_artifacts:
           path: firestore_action_rules.log
+
+
+  gitleaks_scan:
+    docker:
+      - image: cimg/go:1.25
+    steps:
+      - checkout
+      - run:
+          name: Install pinned Gitleaks and scan NOVA repair source paths
+          command: |
+            set -euo pipefail
+            go install github.com/zricethezav/gitleaks/v8@v8.30.1
+            export PATH="$(go env GOPATH)/bin:$PATH"
+            SCAN_DIR="$(mktemp -d)"
+            mkdir -p "${SCAN_DIR}/functions" "${SCAN_DIR}/nova_ai"
+            find functions -maxdepth 1 -type f -name 'nova_*.js' ! -name '*.test.js' -exec cp {} "${SCAN_DIR}/functions/" \;
+            if [ -d nova_ai/lib ]; then cp -a nova_ai/lib "${SCAN_DIR}/nova_ai/lib"; fi
+            if [ -d nova_ai/test ]; then cp -a nova_ai/test "${SCAN_DIR}/nova_ai/test"; fi
+            gitleaks dir "${SCAN_DIR}" --redact --exit-code 1
 
   action_executor_tests:
     docker:
@@ -307,3 +326,4 @@ workflows:
       - action_executor_tests
       - plugin_worker_tests
       - plugin_worker_image
+      - gitleaks_scan
