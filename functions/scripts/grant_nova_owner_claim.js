@@ -5,50 +5,68 @@
 const {initializeApp, applicationDefault, getApps} = require('firebase-admin/app');
 const {getAuth} = require('firebase-admin/auth');
 
+const ALLOWED_PROJECTS = ['auren-90ccc', 'auren-staging'];
+const UID_PATTERN = /^[A-Za-z0-9:_-]{1,128}$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function validateNovaOwnerGrantTarget(uid, expectedEmail, projectId, user) {
-  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(String(uid || '')) ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(expectedEmail || ''))) {
+  if (!UID_PATTERN.test(String(uid || '')) ||
+      !EMAIL_PATTERN.test(String(expectedEmail || ''))) {
     throw new Error('A valid Firebase UID and expected owner email are required.');
   }
-  if (!['auren-90ccc', 'auren-staging'].includes(projectId)) {
+  if (!ALLOWED_PROJECTS.includes(projectId)) {
     throw new Error('Set GCLOUD_PROJECT explicitly to auren-90ccc or auren-staging.');
   }
   const hasPasswordOrFederatedProvider = (user?.providerData || [])
     .some((provider) => provider.providerId && provider.providerId !== 'anonymous');
-  if (!user?.email || user.email.toLowerCase() !== expectedEmail ||
+  if (!user?.email || user.email.toLowerCase() !== expectedEmail.toLowerCase() ||
       user.emailVerified !== true || !hasPasswordOrFederatedProvider) {
     throw new Error('Refusing owner claim: UID and expected email must match a verified, non-anonymous account.');
   }
+}
+
+async function grantNovaOwnerClaim(auth, uid, expectedEmail, projectId) {
+  if (!auth || typeof auth.getUser !== 'function' ||
+      typeof auth.setCustomUserClaims !== 'function') {
+    throw new Error('A Firebase Admin Auth client is required.');
+  }
+  // Validate the target before changing any account claims.
+  validateNovaOwnerGrantTarget(uid, expectedEmail, projectId, {
+    email: expectedEmail,
+    emailVerified: true,
+    providerData: [{providerId:'password'}],
+  });
+  const user = await auth.getUser(uid);
+  validateNovaOwnerGrantTarget(uid, expectedEmail, projectId, user);
+
+  const nextClaims = {
+    ...(user.customClaims || {}),
+    novaOwner:true,
+  };
+  await auth.setCustomUserClaims(uid, nextClaims);
+  return {uid, customClaims:nextClaims};
 }
 
 async function main() {
   const uid = String(process.argv[2] || '').trim();
   const expectedEmail = String(process.argv[3] || '').trim().toLowerCase();
   const projectId = process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT;
-  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(expectedEmail)) {
+  if (!UID_PATTERN.test(uid) || !EMAIL_PATTERN.test(expectedEmail)) {
     throw new Error('Usage: node scripts/grant_nova_owner_claim.js <verified-firebase-uid> <expected-owner-email>');
   }
-  if (!['auren-90ccc', 'auren-staging'].includes(projectId)) {
+  if (!ALLOWED_PROJECTS.includes(projectId)) {
     throw new Error('Set GCLOUD_PROJECT explicitly to auren-90ccc or auren-staging.');
   }
   if (!getApps().length) initializeApp({credential:applicationDefault(), projectId});
-  const auth = getAuth();
-  const user = await auth.getUser(uid);
-  validateNovaOwnerGrantTarget(uid, expectedEmail, projectId, user);
-
-  await auth.setCustomUserClaims(uid, {
-    ...(user.customClaims || {}),
-    novaOwner:true,
-  });
-
-  process.stdout.write('NOVA owner claim granted to verified UID ' + uid + '. Refresh the user ID token in the app.\n');
+  const result = await grantNovaOwnerClaim(getAuth(), uid, expectedEmail, projectId);
+  process.stdout.write('NOVA owner claim granted to verified UID ' + result.uid + '. Refresh the user ID token in the app.\\n');
 }
 
 if (require.main === module) {
   main().catch((error) => {
-    process.stderr.write(String(error.message || error) + '\n');
+    process.stderr.write(String(error.message || error) + '\\n');
     process.exitCode = 1;
   });
 }
 
-module.exports = {validateNovaOwnerGrantTarget};
+module.exports = {validateNovaOwnerGrantTarget, grantNovaOwnerClaim};
