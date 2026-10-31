@@ -608,3 +608,4 @@ exports.buildValidationResult = buildValidationResult;
 exports.createIsolatedRepairCommit = createIsolatedRepairCommit;
 exports.containsCredentialMaterial = containsCredentialMaterial;
 exports.readRepairSourceFile = readRepairSourceFile;
+exports.isStaleApplyingProposal = isStaleApplyingProposal;
