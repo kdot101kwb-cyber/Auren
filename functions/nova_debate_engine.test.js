@@ -15,6 +15,14 @@ test('requires a non-empty bounded prompt and fixes the approved policy', () => 
   assert.equal(input.roles.length, 4);
 });
 
+test('validates and carries an optional project reference into the council prompt', () => {
+  const input = normalizeDebateInput({prompt:'راجع المشروع',projectId:'project_123456'});
+  assert.equal(input.projectId,'project_123456');
+  assert.throws(() => normalizeDebateInput({prompt:'راجع المشروع',projectId:'../other'}), /معرّف المشروع/);
+  const messages = buildDebateMessages({prompt:'راجع المشروع',projectId:'project_123456'});
+  assert.match(messages[1].content, /project_123456/);
+});
+
 test('bounds context and builds an evidence-led multidisciplinary prompt', () => {
   const messages = buildDebateMessages({prompt:'أريد إطلاق ميزة', context:'x'.repeat(14000)});
   assert.equal(messages.length, 2);
