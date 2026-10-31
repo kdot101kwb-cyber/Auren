@@ -230,14 +230,14 @@ jobs:
 
   gitleaks_scan:
     docker:
-      - image: cimg/go:1.24
+      - image: cimg/go:1.25
     steps:
       - checkout
       - run:
           name: Install pinned Gitleaks and scan NOVA repair source paths
           command: |
             set -euo pipefail
-            go install github.com/gitleaks/gitleaks/v8@v8.30.1
+            go install github.com/zricethezav/gitleaks/v8@v8.30.1
             export PATH="$(go env GOPATH)/bin:$PATH"
             SCAN_DIR="$(mktemp -d)"
             mkdir -p "${SCAN_DIR}/functions" "${SCAN_DIR}/nova_ai"
