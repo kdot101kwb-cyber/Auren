@@ -243,6 +243,7 @@ jobs:
             mkdir -p "${SCAN_DIR}/functions" "${SCAN_DIR}/nova_ai"
             find functions -maxdepth 1 -type f -name 'nova_*.js' ! -name '*.test.js' -exec cp {} "${SCAN_DIR}/functions/" \;
             if [ -d nova_ai/lib ]; then cp -a nova_ai/lib "${SCAN_DIR}/nova_ai/lib"; fi
+            if [ -d nova_ai/test ]; then cp -a nova_ai/test "${SCAN_DIR}/nova_ai/test"; fi
             gitleaks dir "${SCAN_DIR}" --redact --exit-code 1
 
   action_executor_tests:
