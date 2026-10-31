@@ -1,4 +1,5 @@
 'use strict';
+const {requireNovaOwner} = require('./nova_owner_auth');
 
 const {formatIncomePlatformCatalog} = require('./nova_income_platform_catalog');
 
@@ -117,8 +118,7 @@ async function generateDailyPack(uid, preferences, dateKey) {
 exports.configureNovaRevenueEngine = onCall(
   {region: REGION, timeoutSeconds: 55, memory: '256MiB', enforceAppCheck: true, consumeAppCheckToken: true, secrets: [OPENROUTER_API_KEY]},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to configure the NOVA revenue engine.');
+    const uid = requireNovaOwner(request);
     let preferences;
     try { preferences = normalizePreferences(request.data || {}); }
     catch (error) { throw new HttpsError('invalid-argument', error.message); }
@@ -146,8 +146,7 @@ exports.configureNovaRevenueEngine = onCall(
 exports.getNovaRevenueDashboard = onCall(
   {region: REGION, timeoutSeconds: 15, memory: '256MiB', enforceAppCheck: true},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to view your NOVA revenue work pack.');
+    const uid = requireNovaOwner(request);
     const settingsRef = db.collection('users').doc(uid).collection(SETTINGS_COLLECTION).doc('config');
     const settings = await settingsRef.get();
     const dateKey = utcDateKey();
