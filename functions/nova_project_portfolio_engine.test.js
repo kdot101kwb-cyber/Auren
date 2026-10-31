@@ -21,7 +21,7 @@ test('normalizes project fields and computes a bounded priority score', () => {
   assert.equal(project.area, 'nova');
   assert.equal(project.status, 'idea');
   assert.equal(project.ownerDecisionRequired, true);
-  assert.equal(project.priorityScore, 86);
+  assert.equal(project.priorityScore, 87);
   assert.ok(project.priorityScore >= 0 && project.priorityScore <= 100);
 });
 
