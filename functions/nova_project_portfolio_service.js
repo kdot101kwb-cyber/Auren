@@ -6,6 +6,7 @@ const {requireNovaOwner} = require('./nova_owner_auth');
 const {
   normalizeNovaProjectInput,
   normalizeNovaWorkItemInput,
+  normalizeProjectScoring,
   validateProjectTransition,
   validateWorkItemTransition,
   normalizeProjectId,
@@ -99,6 +100,70 @@ exports.listNovaProjects = onCall(
     projects.sort((a,b) => b.priorityScore - a.priorityScore ||
       String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
     return {projects, count:projects.length, limit};
+  }
+);
+
+exports.listNovaProjectWorkItems = onCall(
+  {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid = requireNovaOwner(request);
+    const id = projectIdFrom(request.data);
+    const projectRef = projectCollection(uid).doc(id);
+    const project = await projectRef.get();
+    if (!project.exists) throw new HttpsError('not-found', 'لم يتم العثور على المشروع.');
+    const snapshot = await projectRef.collection('workItems').orderBy('updatedAt','desc').limit(100).get();
+    const workItems = snapshot.docs.map((doc) => {
+      const data = doc.data() || {};
+      return {
+        workItemId:doc.id,
+        title:data.title,
+        description:data.description || '',
+        priority:data.priority || 'normal',
+        status:data.status || 'backlog',
+        requiresOwnerApproval:data.requiresOwnerApproval !== false,
+        decisionNote:data.decisionNote || '',
+        createdAt:timestamp(data.createdAt),
+        updatedAt:timestamp(data.updatedAt),
+      };
+    });
+    return {projectId:id, workItems, count:workItems.length};
+  }
+);
+
+exports.updateNovaProjectPriority = onCall(
+  {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = requireNovaOwner(request);
+    const id = projectIdFrom(request.data);
+    const projectRef = projectCollection(uid).doc(id);
+    const auditRef = auditCollection(uid).doc();
+    return db.runTransaction(async (tx) => {
+      const snapshot = await tx.get(projectRef);
+      if (!snapshot.exists) throw new HttpsError('not-found', 'لم يتم العثور على المشروع.');
+      const current = snapshot.data() || {};
+      const scoring = normalizeProjectScoring({
+        strategicValue:request.data?.strategicValue ?? current.strategicValue,
+        urgency:request.data?.urgency ?? current.urgency,
+        confidence:request.data?.confidence ?? current.confidence,
+        effort:request.data?.effort ?? current.effort,
+        priority:request.data?.priority ?? current.priority,
+      });
+      tx.update(projectRef, {...scoring, priorityReviewedBy:uid,
+        priorityReviewedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
+      tx.create(auditRef, {
+        action:'nova.project.priority_updated',
+        actorUid:uid,
+        projectId:id,
+        priority:scoring.priority,
+        priorityScore:scoring.priorityScore,
+        strategicValue:scoring.strategicValue,
+        urgency:scoring.urgency,
+        confidence:scoring.confidence,
+        effort:scoring.effort,
+        createdAt:FieldValue.serverTimestamp(),
+      });
+      return {ok:true, projectId:id, ...scoring};
+    });
   }
 );
 
