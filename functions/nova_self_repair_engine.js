@@ -42,6 +42,12 @@ function containsCredentialMaterial(value) {
   return /(gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|authorization\s*:\s*bearer\s+\S{20,}|circle-token\s*[:=]\s*\S{12,}|(?:api[_-]?key|access[_-]?token|secret|password)\s*[:=]\s*['"][^'"]{12,}['"])/i.test(String(value || ''));
 }
 
+function containsCredentialMaterial(value) {
+  const text = String(value || '');
+  return /(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|authorization\s*:\s*bearer\s+\S{20,}|circle-token\s*[:=]\s*\S{12,}|(?:api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|token|secret|password)\s*[:=]\s*['"][^'"]{12,}['"])/i.test(text) ||
+    /(?:api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|token|secret|password)\s*[:=]\s*['"]?(?!process\.env\b|env\.)[A-Za-z0-9_./+=-]{12,}/i.test(text);
+}
+
 function validatePatchSet(files) {
   if (!Array.isArray(files) || files.length < 1 || files.length > MAX_PATCH_FILES) {
     throw new Error('A repair patch must contain between 1 and ' + MAX_PATCH_FILES + ' files.');
