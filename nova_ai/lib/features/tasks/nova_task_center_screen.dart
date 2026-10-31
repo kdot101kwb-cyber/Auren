@@ -93,10 +93,15 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
           ? 'هذا البريد مرتبط بحساب آخر. لم ندمج الحسابات أو نغيّر UID حتى لا نفقد بياناتك.'
           : error.code == 'provider-already-linked'
               ? 'مزوّد البريد مرتبط بالحساب بالفعل. لم ننشئ ربطاً جديداً؛ اضغط تحديث صلاحية المالك للتحقق من حالة الحساب.'
-              : 'تعذر ربط الحساب: ${error.message ?? error.code}';
+              : 'تعذر ربط الحساب (رمز الخطأ: ${error.code}).';
       if (mounted) setState(() => _identityMessage = message);
-    } catch (error) {
-      if (mounted) setState(() => _identityMessage = 'تعذر تأمين الحساب: $error');
+    } on StateError catch (error) {
+      if (mounted) setState(() => _identityMessage = error.message.toString());
+    } catch (_) {
+      if (mounted) {
+        setState(() => _identityMessage =
+            'تعذر تأمين الحساب. لم نبدّل الحساب أو ندمجه؛ تحقق من الاتصال والإعدادات ثم أعد المحاولة.');
+      }
     } finally {
       if (mounted) {
         _ownerPassword.clear();
@@ -125,8 +130,16 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
         if (mounted) setState(() => _identityMessage =
             'الحساب الحالي: ${current.uid}. تحقق من البريد أولاً؛ وبعدها يحتاج UID إلى اعتماد مالك من إدارة Firebase. لا تمنح نفسك الصلاحية من التطبيق.');
       }
-    } catch (error) {
-      if (mounted) setState(() => _identityMessage = 'تعذر تحديث صلاحية المالك: $error');
+    } on FirebaseAuthException catch (error) {
+      if (mounted) {
+        setState(() => _identityMessage = 'تعذر تحديث صلاحية المالك (رمز الخطأ: ${error.code}).');
+      }
+    } on StateError catch (error) {
+      if (mounted) setState(() => _identityMessage = error.message.toString());
+    } catch (_) {
+      if (mounted) {
+        setState(() => _identityMessage = 'تعذر تحديث صلاحية المالك. تحقق من الاتصال ثم أعد المحاولة.');
+      }
     } finally {
       if (mounted) setState(() => _identityBusy = false);
     }
