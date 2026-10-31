@@ -25,7 +25,7 @@ const validInput = {
 
 test('allows only bounded NOVA source and test paths', () => {
   assert.equal(normalizeRepairPath('nova_ai/lib/features/tasks/repair.dart'), 'nova_ai/lib/features/tasks/repair.dart');
-  assert.equal(normalizeRepairPath('functions/nova_worker.test.js'), 'functions/nova_worker.test.js');
+  assert.throws(() => normalizeRepairPath('functions/nova_worker.test.js'), /outside/);
   for (const path of [
     '../functions/index.js',
     'functions/index.js',
@@ -42,7 +42,26 @@ test('redacts credential evidence and rejects patches containing known secret fo
   assert.equal(proposal.evidence[0].text.includes('ci_secret_value'), false);
   assert.equal(proposal.evidence[0].text.includes('ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'), false);
   assert.match(redactRepairEvidence('Authorization: Bearer verylongsecretvalue'), /REDACTED/);
+  assert.doesNotMatch(redactRepairEvidence('CI log: sk-or-v1-abcdefghijklmnopqrstuvwxyz1234567890'), /sk-or-v1-/);
+  assert.doesNotMatch(redactRepairEvidence('CI log: sk-proj-abcdefghijklmnopqrstuvwxyz1234567890'), /sk-proj-/);
   assert.throws(() => validatePatchSet([{...validFile, content:'const token = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";'}]), /credential material/);
+  assert.throws(() => validatePatchSet([{...validFile, content:'const api_key = "this-is-a-hardcoded-secret-value";'}]), /credential material/);
+  const awsEvidence = createRepairProposal({...validInput, evidence:[{text:'Error: AKIA1234567890ABCDEF'}]});
+  assert.doesNotMatch(awsEvidence.evidence[0].text, /AKIA1234567890ABCDEF/);
+});
+
+test('rejects quoted and unquoted hardcoded credentials in repair patches', () => {
+  for (const content of [
+    'api_key: sk_live_1234567890abcdef',
+    'OPENROUTER_API_KEY=sk-or-v1-1234567890abcdef',
+    'password: long-password-value-123',
+    'token = abcdefghijklmnopqrstuvwxyz123456',
+    'const access_token = "this-is-a-long-hardcoded-secret";',
+  ]) {
+    assert.throws(() => validatePatchSet([{...validFile, content}]), /credential material/);
+  }
+  assert.doesNotThrow(() => validatePatchSet([{...validFile, content:'const token = process.env.API_KEY;'}]));
+  assert.throws(() => validatePatchSet([{...validFile, content:'console.error("sk-or-v1-abcdefghijklmnopqrstuvwxyz1234567890");'}]), /credential material/);
 });
 
 test('validates patch count, content size, expected SHA and duplicate paths', () => {

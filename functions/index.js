@@ -4981,6 +4981,9 @@ Object.assign(module.exports, require('./nova_command_center'));
 // NOVA AI scheduled text-task worker.
 Object.assign(module.exports, require('./nova_task_worker'));
 
+// NOVA owner-approved self-repair proposals and isolated GitHub repair branches.
+Object.assign(module.exports, require('./nova_self_repair_service'));
+
 // NOVA AI app and web builder job APIs.
 Object.assign(module.exports, require('./nova_app_builder'));
 

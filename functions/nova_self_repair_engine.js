@@ -4,7 +4,7 @@ const MAX_PATCH_FILES = 5;
 const MAX_PATCH_BYTES = 64 * 1024;
 const ALLOWED_REPAIR_STATES = new Set([
   'proposed', 'awaiting_approval', 'approved', 'applying',
-  'validation_pending', 'verified', 'rejected', 'failed',
+  'validation_pending', 'verified', 'recovery_required', 'rejected', 'failed',
 ]);
 
 function normalizeRepairPath(value) {
@@ -16,7 +16,7 @@ function normalizeRepairPath(value) {
   }
 
   const allowedNova = /^nova_ai\/(?:lib|test)\/[A-Za-z0-9_./-]+\.(?:dart|yaml)$/;
-  const allowedFunctions = /^functions\/nova_[A-Za-z0-9_-]+(?:\.test)?\.js$/;
+  const allowedFunctions = /^functions\/nova_[A-Za-z0-9_-]+\.js$/;
   if (!allowedNova.test(path) && !allowedFunctions.test(path)) {
     throw new Error('Repair patch path is outside the NOVA source/test allowlist.');
   }
@@ -30,14 +30,19 @@ function redactRepairEvidence(value) {
   return String(value || '')
     .replace(/(authorization\s*[:=]\s*bearer\s+)[^\s,;]+/ig, '$1[REDACTED]')
     .replace(/(circle-token\s*[:=]\s*)[^\s,;]+/ig, '$1[REDACTED]')
+    .replace(/\b(?:sk-or-v1-[A-Za-z0-9_-]{16,}|sk-[A-Za-z0-9_-]{20,})\b/g, '[REDACTED_AI_TOKEN]')
     .replace(/(gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})/g, '[REDACTED_TOKEN]')
+    .replace(/\bAKIA[0-9A-Z]{16}\b/g, '[REDACTED_AWS_KEY]')
+    .replace(/\bAIza[0-9A-Za-z_-]{30,}\b/g, '[REDACTED_GOOGLE_KEY]')
     .replace(/((?:api[_-]?key|access[_-]?token|token|secret|password)\s*[:=]\s*)[^\s,;]+/ig, '$1[REDACTED]')
     .replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----/g, '[REDACTED_PRIVATE_KEY]')
     .slice(0, 420);
 }
 
 function containsCredentialMaterial(value) {
-  return /(gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|authorization\s*:\s*bearer\s+\S{20,})/i.test(String(value || ''));
+  const text = String(value || '');
+  return /(?:sk-or-v1-[A-Za-z0-9_-]{16,}|sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|authorization\s*:\s*bearer\s+\S{20,}|circle-token\s*[:=]\s*\S{12,}|(?:api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|token|secret|password)\s*[:=]\s*['\"][^'\"]{12,}['\"])/i.test(text) ||
+    /(?:api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|token|secret|password)\s*[:=]\s*['"]?(?!process\.env\b|env\.)[A-Za-z0-9_./+=-]{12,}/i.test(text);
 }
 
 function validatePatchSet(files) {
