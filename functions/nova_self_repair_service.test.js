@@ -6,6 +6,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   parseModelJson,
+  requireAiDataTransferConsent,
   extractVerifiedEvidence,
   formatRepairEvidence,
   validateFailedTask,
@@ -18,6 +19,12 @@ const {
 
 const sha = 'a'.repeat(40);
 const fileSha = 'b'.repeat(40);
+
+test('requires explicit consent before AI source transfer', () => {
+  assert.throws(() => requireAiDataTransferConsent(undefined), /Explicit owner consent/);
+  assert.throws(() => requireAiDataTransferConsent(false), /Explicit owner consent/);
+  assert.doesNotThrow(() => requireAiDataTransferConsent(true));
+});
 
 test('parses bounded JSON model output and rejects malformed responses', () => {
   assert.deepEqual(parseModelJson('```json\n{"summary":"ok","files":[]}\n```'), {summary:'ok', files:[]});
