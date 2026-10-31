@@ -11,7 +11,7 @@
 
 ## Callable API
 
-- `generateNovaRepairProposal({taskId})` — asks for explicit consent before sending source code and bounded CI evidence to the configured free-model route.
+- `generateNovaRepairProposal({taskId, aiDataTransferConsent: true})` — requires an explicit owner consent flag on the server before sending source code and bounded CI evidence to the configured free-model route.
 - `listNovaRepairProposals()` — lists the signed-in owner's proposals and patch previews.
 - `createNovaRepairProposal({taskId, summary, files})` — lower-level proposal API for a trusted client.
 - `approveAndApplyNovaRepair({proposalId})` — explicit owner approval and isolated branch push; does not open or merge a PR.
@@ -22,5 +22,7 @@ The Task Center client must show the complete proposed file paths, reasons, summ
 ## Required secret
 
 Create a separate fine-grained GitHub token with access only to `kdot101kwb-cyber/Auren`, repository Contents read/write, and Commit statuses read. Configure the existing OpenRouter key as `OPENROUTER_API_KEY`; model generation uses the `openrouter/free` route. Store it in Firebase Secret Manager as `NOVA_GITHUB_REPAIR_TOKEN` using the local Firebase CLI prompt. Never paste it into chat, app code, Firestore, or task prompts.
+
+A stale `applying` operation is quarantined as `recovery_required` whether or not its branch is visible at the recovery check. A missing branch is not proof that the original worker stopped; NOVA never resets that operation for automatic re-approval or a second push. Manual reconciliation is required.
 
 This change does not set secrets, deploy functions, open PRs, merge code, or touch the default branch. GitHub Actions/CircleCI must validate the pushed repair commit before NOVA can mark it verified.
