@@ -42,6 +42,8 @@ test('redacts credential evidence and rejects patches containing known secret fo
   assert.equal(proposal.evidence[0].text.includes('ci_secret_value'), false);
   assert.equal(proposal.evidence[0].text.includes('ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'), false);
   assert.match(redactRepairEvidence('Authorization: Bearer verylongsecretvalue'), /REDACTED/);
+  assert.doesNotMatch(redactRepairEvidence('CI log: sk-or-v1-abcdefghijklmnopqrstuvwxyz1234567890'), /sk-or-v1-/);
+  assert.doesNotMatch(redactRepairEvidence('CI log: sk-proj-abcdefghijklmnopqrstuvwxyz1234567890'), /sk-proj-/);
   assert.throws(() => validatePatchSet([{...validFile, content:'const token = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";'}]), /credential material/);
   assert.throws(() => validatePatchSet([{...validFile, content:'const api_key = "this-is-a-hardcoded-secret-value";'}]), /credential material/);
   const awsEvidence = createRepairProposal({...validInput, evidence:[{text:'Error: AKIA1234567890ABCDEF'}]});
@@ -59,6 +61,7 @@ test('rejects quoted and unquoted hardcoded credentials in repair patches', () =
     assert.throws(() => validatePatchSet([{...validFile, content}]), /credential material/);
   }
   assert.doesNotThrow(() => validatePatchSet([{...validFile, content:'const token = process.env.API_KEY;'}]));
+  assert.throws(() => validatePatchSet([{...validFile, content:'console.error("sk-or-v1-abcdefghijklmnopqrstuvwxyz1234567890");'}]), /credential material/);
 });
 
 test('validates patch count, content size, expected SHA and duplicate paths', () => {
