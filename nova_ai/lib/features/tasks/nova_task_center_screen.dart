@@ -44,22 +44,36 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
       var user = auth.currentUser;
       if (user == null) user = (await auth.signInAnonymously()).user;
       if (user == null) throw StateError('تعذر إنشاء جلسة NOVA الحالية.');
+
+      var newlyLinked = false;
       if (user.isAnonymous) {
         final credential = EmailAuthProvider.credential(email: email, password: password);
         final linked = await user.linkWithCredential(credential);
         user = linked.user;
-      } else if (user.email != email) {
+        if (user == null) throw StateError('نجح طلب الربط دون إرجاع جلسة مستخدم؛ أعد فتح الصفحة للتحقق من الحالة.');
+        newlyLinked = true;
+      } else if ((user.email ?? '').toLowerCase() != email.toLowerCase()) {
         throw StateError('هذا الحساب مرتبط ببريد مختلف. لم نبدّل الحساب حتى لا نفقد ملكية البيانات الحالية.');
       }
-      await user?.sendEmailVerification();
-      _ownerPassword.clear();
-      if (mounted) setState(() => _identityMessage =
-          'تم ربط البريد بنفس UID الحالي وإرسال رسالة التحقق. افتح بريدك ثم ارجع واضغط تحديث صلاحية المالك.');
+
+      // An existing permanent account is not a new link. Avoid claiming that
+      // it was linked now, and do not send duplicate verification emails.
+      if (!user.emailVerified) {
+        await user.sendEmailVerification();
+      }
+      final message = newlyLinked
+          ? (user.emailVerified
+              ? 'تم ربط البريد بالحساب الحالي مع الحفاظ على UID. البريد موثق بالفعل؛ يمكنك تحديث صلاحية المالك.'
+              : 'تم ربط البريد بنفس UID الحالي وإرسال رسالة التحقق. افتح بريدك ثم ارجع واضغط تحديث صلاحية المالك.')
+          : (user.emailVerified
+              ? 'هذا البريد مرتبط بالحساب الحالي بالفعل وموثق. لم ننشئ ربطاً جديداً أو نغيّر UID؛ يمكنك تحديث صلاحية المالك.'
+              : 'هذا البريد مرتبط بالحساب الحالي بالفعل لكنه غير موثق. أرسلنا رسالة تحقق جديدة؛ افتح بريدك ثم حدّث صلاحية المالك.');
+      if (mounted) setState(() => _identityMessage = message);
     } on FirebaseAuthException catch (error) {
       final message = error.code == 'email-already-in-use'
           ? 'هذا البريد مرتبط بحساب آخر. لم ندمج الحسابات أو نغيّر UID حتى لا نفقد بياناتك.'
           : error.code == 'provider-already-linked'
-              ? 'الحساب مرتبط مسبقاً بمزوّد تسجيل دخول.'
+              ? 'مزوّد البريد مرتبط بالحساب بالفعل. لم ننشئ ربطاً جديداً؛ اضغط تحديث صلاحية المالك للتحقق من حالة الحساب.'
               : 'تعذر ربط الحساب: ${error.message ?? error.code}';
       if (mounted) setState(() => _identityMessage = message);
     } catch (error) {
