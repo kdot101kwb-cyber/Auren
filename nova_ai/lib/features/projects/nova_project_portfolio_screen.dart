@@ -132,7 +132,7 @@ class _NovaProjectPortfolioScreenState extends State<NovaProjectPortfolioScreen>
       'Owner decision is required for every lifecycle change. Debate approval must not start execution.',
     ].join('\n');
     Navigator.of(context).push(MaterialPageRoute<void>(
-      builder:(_)=>NovaDebateScreen(initialPrompt:promptText,initialContext:contextText),
+      builder:(_)=>NovaDebateScreen(initialPrompt:promptText,initialContext:contextText,initialProjectId:'${project['projectId']}'),
     ));
   }
 
