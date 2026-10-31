@@ -32,6 +32,13 @@ const callableModules = [
     'novaStrategicDebate',
     'novaApproveDebatePlan',
   ]],
+  ['./nova_project_portfolio_service', [
+    'createNovaProject',
+    'listNovaProjects',
+    'updateNovaProjectStatus',
+    'addNovaProjectWorkItem',
+    'updateNovaProjectWorkItem',
+  ]],
   ['./nova_app_builder', [
     'submitNovaBuildJob',
     'getNovaBuildJob',
@@ -145,5 +152,5 @@ test('integration coverage includes every declared private NOVA callable endpoin
   const covered = new Set(endpoints.map((endpoint) => endpoint.name));
   assert.deepEqual([...declared].sort(), [...covered].sort(),
     'Every exported onCall in a NOVA module must be exercised by this authorization suite.');
-  assert.equal(endpoints.length, 23);
+  assert.equal(endpoints.length, 28);
 });
