@@ -10,7 +10,8 @@ function requireNovaOwner(request) {
 
   const token = auth.token || {};
   const provider = token.firebase?.sign_in_provider;
-  if (token.novaOwner !== true || token.email_verified !== true || provider === 'anonymous') {
+  if (token.novaOwner !== true || token.email_verified !== true ||
+      typeof provider !== 'string' || provider.length === 0 || provider === 'anonymous') {
     throw new HttpsError(
       'permission-denied',
       'This private NOVA workspace is restricted to its verified owner account.',
