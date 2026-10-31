@@ -107,8 +107,8 @@ function containsCredentialMaterial(value) {
     /(?:api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|token|secret|password)\s*[:=]\s*['"]?(?!process\.env\b|env\.)[A-Za-z0-9_./+=-]{12,}/i.test(text);
 }
 
-async function readRepairSourceFile(path, commitSha, token) {
-  const response = await fetch(API + '/repos/' + REPOSITORY + '/contents/' + apiPath(path) + '?ref=' + encodeURIComponent(commitSha), {
+async function readRepairSourceFile(path, commitSha, token, fetchImpl = fetch) {
+  const response = await fetchImpl(API + '/repos/' + REPOSITORY + '/contents/' + apiPath(path) + '?ref=' + encodeURIComponent(commitSha), {
     headers:{accept:'application/vnd.github+json', authorization:'Bearer ' + token, 'x-github-api-version':'2022-11-28'},
   });
   if (!response.ok) throw new Error('Could not read proposed source file ' + path + ' (HTTP ' + response.status + ').');
@@ -518,3 +518,4 @@ exports.validateFailedTask = validateFailedTask;
 exports.buildValidationResult = buildValidationResult;
 exports.createIsolatedRepairCommit = createIsolatedRepairCommit;
 exports.containsCredentialMaterial = containsCredentialMaterial;
+exports.readRepairSourceFile = readRepairSourceFile;
