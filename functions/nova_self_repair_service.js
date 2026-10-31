@@ -63,6 +63,12 @@ function validateFailedTask(task, uid) {
 }
 
 
+function requireAiDataTransferConsent(value) {
+  if (value !== true) {
+    throw new Error('Explicit owner consent is required before sending source code and CI evidence to the AI provider.');
+  }
+}
+
 function parseModelJson(value) {
   const raw = String(value || '').trim().replace(/^\`\`\`(?:json)?\s*/i, '').replace(/\s*\`\`\`$/, '');
   const start = raw.indexOf('{');
@@ -331,6 +337,7 @@ exports.generateNovaRepairProposal = onCall(
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', 'Sign in to generate a NOVA repair proposal.');
+    requireAiDataTransferConsent(request.data?.aiDataTransferConsent);
     const taskId = String(request.data?.taskId || '').trim();
     if (!/^[A-Za-z0-9_-]{12,128}$/.test(taskId)) throw new HttpsError('invalid-argument', 'Invalid source task ID.');
     const taskSnap = await db.collection('users').doc(uid).collection('nova_tasks').doc(taskId).get();
@@ -509,7 +516,9 @@ exports.recoverNovaRepairApply = onCall(
       if (error.status !== 404) throw error;
     }
 
-    let resultState = branchSha ? 'recovery_required' : 'awaiting_approval';
+    // A stale timestamp does not prove the original worker is dead. Quarantine either
+    // outcome instead of resetting to awaiting_approval and risking a second concurrent push.
+    const resultState = 'recovery_required';
     await db.runTransaction(async tx => {
       const latest = await tx.get(ref);
       if (!latest.exists) throw new HttpsError('not-found', 'Repair proposal was not found.');
@@ -518,24 +527,14 @@ exports.recoverNovaRepairApply = onCall(
       if (!isStaleApplyingProposal(current)) {
         throw new HttpsError('aborted', 'Repair state changed while recovery was being checked.');
       }
-      if (branchSha) {
-        tx.update(ref, {
-          state:'recovery_required',
-          recoveryBranch:branch,
-          recoveryObservedCommitSha:branchSha,
-          recoveryCheckedAt:FieldValue.serverTimestamp(),
-          updatedAt:FieldValue.serverTimestamp(),
-        });
-      } else {
-        tx.update(ref, {
-          state:'awaiting_approval',
-          approvedBy:FieldValue.delete(),
-          approvedAt:FieldValue.delete(),
-          applyStartedAt:FieldValue.delete(),
-          recoveryCheckedAt:FieldValue.serverTimestamp(),
-          updatedAt:FieldValue.serverTimestamp(),
-        });
-      }
+      tx.update(ref, {
+        state:'recovery_required',
+        recoveryBranch:branch,
+        recoveryObservedCommitSha:branchSha,
+        recoveryOutcome:branchSha ? 'branch_found' : 'branch_not_found_at_check',
+        recoveryCheckedAt:FieldValue.serverTimestamp(),
+        updatedAt:FieldValue.serverTimestamp(),
+      });
     });
     await db.collection('users').doc(uid).collection('nova_audit').add({
       action:branchSha ? 'nova.repair.recovery_required' : 'nova.repair.apply_recovered',
@@ -551,8 +550,9 @@ exports.recoverNovaRepairApply = onCall(
       state:resultState,
       branch:branchSha ? branch : null,
       observedCommitSha:branchSha,
-      requiresManualReview:Boolean(branchSha),
-      requiresOwnerReapproval:!branchSha,
+      branchFound:Boolean(branchSha),
+      requiresManualReview:true,
+      requiresOwnerReapproval:false,
     };
   },
 );
@@ -600,6 +600,7 @@ exports.checkNovaRepairValidation = onCall(
 );
 
 exports.parseModelJson = parseModelJson;
+exports.requireAiDataTransferConsent = requireAiDataTransferConsent;
 exports.extractVerifiedEvidence = extractVerifiedEvidence;
 exports.formatRepairEvidence = formatRepairEvidence;
 exports.validateFailedTask = validateFailedTask;
