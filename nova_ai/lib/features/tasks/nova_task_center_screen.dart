@@ -47,13 +47,16 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
       if (user == null) throw StateError('تعذر إنشاء جلسة NOVA الحالية.');
 
       var newlyLinked = false;
-      final hasPasswordProvider = hasNovaPasswordProvider(
-        user.providerData.map((provider) => provider.providerId),
-      );
+      final providerIds = user.providerData
+          .map((provider) => provider.providerId)
+          .toList(growable: false);
       if (!user.isAnonymous && !matchesNovaOwnerEmail(user.email, email)) {
         throw StateError('هذا الحساب مرتبط ببريد مختلف. لم نبدّل الحساب حتى لا نفقد ملكية البيانات الحالية.');
       }
-      if (user.isAnonymous || !hasPasswordProvider) {
+      if (shouldLinkNovaPasswordProvider(
+        isAnonymous: user.isAnonymous,
+        providerIds: providerIds,
+      )) {
         final credential = EmailAuthProvider.credential(email: email, password: password);
         try {
           final linked = await user.linkWithCredential(credential);
