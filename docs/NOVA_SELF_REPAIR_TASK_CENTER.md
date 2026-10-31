@@ -28,6 +28,6 @@ A stale `applying` operation is quarantined as `recovery_required` whether or no
 
 If a GitHub write is still in flight when recovery is requested, its eventual completion must preserve `recovery_required` and record the observed branch/commit for manual reconciliation. Any ambiguous apply error is also quarantined; do not automatically retry or re-approve it.
 
-The CircleCI `gitleaks_scan` job installs the pinned Gitleaks v8.30.1 release and scans production source paths that may be selected for repair. The same exact-commit scan is required again before an owner-approved GitHub write. The Firestore Emulator integration gate exercises the production completion/recovery transaction helpers under deterministic and concurrent ordering.
+The CircleCI `gitleaks_scan` job installs the pinned Gitleaks v8.30.1 release and scans every allowlisted repair source path (`nova_ai/lib`, `nova_ai/test`, and production `functions/nova_*.js`; Functions test files are not repair targets). The same exact-commit scan is required again before an owner-approved GitHub write. The Firestore Emulator integration gate exercises the production completion/recovery transaction helpers under deterministic and concurrent ordering.
 
 This change does not set secrets, deploy functions, open PRs, merge code, or touch the default branch. GitHub Actions/CircleCI must validate the pushed repair commit before NOVA can mark it verified.
