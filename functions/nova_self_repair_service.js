@@ -549,7 +549,9 @@ exports.approveAndApplyNovaRepair = onCall(
       });
     });
     try {
-      const result = await createIsolatedRepairCommit(proposal, NOVA_GITHUB_REPAIR_TOKEN.value().trim(), proposalId);
+      const githubToken = NOVA_GITHUB_REPAIR_TOKEN.value().trim();
+      await verifySourceSecretScan(proposal.sourceCommitSha, githubToken);
+      const result = await createIsolatedRepairCommit(proposal, githubToken, proposalId);
       const completion = await recordApplyCompletion(db, ref, uid, result);
       return {ok:true, proposalId, state:completion.state, branch:result.branch, commitSha:result.commitSha, pullRequestCreated:false, requiresManualReview:completion.state === 'recovery_required'};
     } catch (error) {
