@@ -2,6 +2,8 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const {getApps, initializeApp} = require('firebase-admin/app');
 
 // Callable handlers are invoked directly so authorization failures are tested
@@ -133,5 +135,15 @@ for (const {name, callable} of endpoints) {
 }
 
 test('integration coverage includes every declared private NOVA callable endpoint', () => {
+  const declared = new Set();
+  for (const file of fs.readdirSync(__dirname).filter((name) => /^nova_.*\\.js$/.test(name))) {
+    const source = fs.readFileSync(path.join(__dirname, file), 'utf8');
+    for (const match of source.matchAll(/exports\\.(\\w+)\\s*=\\s*onCall\\s*\\(/g)) {
+      declared.add(match[1]);
+    }
+  }
+  const covered = new Set(endpoints.map((endpoint) => endpoint.name));
+  assert.deepEqual([...declared].sort(), [...covered].sort(),
+    'Every exported onCall in a NOVA module must be exercised by this authorization suite.');
   assert.equal(endpoints.length, 23);
 });
