@@ -220,7 +220,10 @@ class _NovaProjectPortfolioScreenState extends State<NovaProjectPortfolioScreen>
 
   @override
   Widget build(BuildContext context) {
-    final selected=projects.where((p)=>p['projectId']==selectedId).firstOrNull;
+    Map<String,dynamic>? selected;
+    for (final project in projects) {
+      if (project['projectId']==selectedId) { selected=project; break; }
+    }
     return ListView(padding:const EdgeInsets.all(16),children:[
       const Text('محفظة مشاريع NOVA',style:TextStyle(fontSize:24,fontWeight:FontWeight.bold)),
       const SizedBox(height:6),
