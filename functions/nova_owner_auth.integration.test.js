@@ -136,9 +136,9 @@ for (const {name, callable} of endpoints) {
 
 test('integration coverage includes every declared private NOVA callable endpoint', () => {
   const declared = new Set();
-  for (const file of fs.readdirSync(__dirname).filter((name) => /^nova_.*\\.js$/.test(name))) {
+  for (const file of fs.readdirSync(__dirname).filter((name) => /^nova_.*\.js$/.test(name))) {
     const source = fs.readFileSync(path.join(__dirname, file), 'utf8');
-    for (const match of source.matchAll(/exports\\.(\\w+)\\s*=\\s*onCall\\s*\\(/g)) {
+    for (const match of source.matchAll(/exports\.(\w+)\s*=\s*onCall\s*\(/g)) {
       declared.add(match[1]);
     }
   }
