@@ -324,7 +324,7 @@ async function createIsolatedRepairCommit(proposal, token, proposalId, fetchImpl
 }
 
 function buildApplyCompletionDisposition(current, result) {
-  if (current?.state === 'recovery_required') return {state:'recovery_required', recoveryBranch:result.branch, recoveryObservedCommitSha:result.commitSha, recoveryOutcome:'branch_found_after_recovery_check', repairBranch:result.branch, repairCommitSha:result.commitSha};
+  if (current?.state === 'recovery_required') return {state:'recovery_required', recoveryBranch:result.branch, recoveryObservedCommitSha:current.recoveryObservedCommitSha, recoveryOutcome:'branch_found_after_recovery_check', repairBranch:result.branch, repairCommitSha:result.commitSha};
   if (current?.state === 'applying') return {state:'validation_pending', repairBranch:result.branch, repairCommitSha:result.commitSha};
   throw new Error('Repair proposal state changed before apply completion could be recorded.');
 }
