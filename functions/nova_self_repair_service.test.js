@@ -16,6 +16,8 @@ const {
   readRepairSourceFile,
   isStaleApplyingProposal,
   buildRecoveryDisposition,
+  buildApplyCompletionDisposition,
+  buildApplyFailureDisposition,
 } = require('./nova_self_repair_service');
 
 const sha = 'a'.repeat(40);
@@ -102,6 +104,26 @@ test('only recovers applying operations after the 15-minute stale threshold', ()
   assert.equal(isStaleApplyingProposal({state:'applying', applyStartedAt:now + 1000}, now), false);
 });
 
+test('in-flight completion cannot overwrite a recovery quarantine', () => {
+  const result = {branch:'nova/repairs/example', commitSha:'d'.repeat(40)};
+  const recovered = buildApplyCompletionDisposition({state:'recovery_required'}, result);
+  assert.equal(recovered.state, 'recovery_required');
+  assert.equal(recovered.recoveryOutcome, 'branch_found_after_recovery_check');
+  assert.equal(recovered.repairCommitSha, result.commitSha);
+  const normal = buildApplyCompletionDisposition({state:'applying'}, result);
+  assert.equal(normal.state, 'validation_pending');
+  assert.throws(() => buildApplyCompletionDisposition({state:'failed'}, result), /state changed/);
+});
+
+test('uncertain GitHub apply failures are quarantined instead of marked retryable', () => {
+  const failure = buildApplyFailureDisposition({state:'applying'}, new Error('network timeout'));
+  assert.equal(failure.state, 'recovery_required');
+  assert.equal(failure.recoveryOutcome, 'apply_error_requires_manual_review');
+  assert.match(failure.error, /network timeout/);
+  const alreadyRecovered = buildApplyFailureDisposition({state:'recovery_required'}, new Error('late error'));
+  assert.equal(alreadyRecovered.state, 'recovery_required');
+  assert.throws(() => buildApplyFailureDisposition({state:'awaiting_approval'}, new Error('x')), /state changed/);
+});
 test('stale recovery always quarantines and never automatically re-approves', () => {
   const found = buildRecoveryDisposition('c'.repeat(40));
   assert.equal(found.state, 'recovery_required');
