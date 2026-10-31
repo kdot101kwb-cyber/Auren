@@ -31,6 +31,15 @@ test('rejects empty or oversized project names and bounds descriptions', () => {
   assert.equal(normalizeNovaProjectInput({title:'X',description:'d'.repeat(3000)}).description.length, 2400);
 });
 
+test('recalculates project priority using updated evidence inputs', () => {
+  const score = require('./nova_project_portfolio_engine').normalizeProjectScoring({
+    strategicValue:5, urgency:5, confidence:4, effort:1, priority:'critical',
+  });
+  assert.equal(score.priority, 'critical');
+  assert.equal(score.priorityScore, 94);
+  assert.equal(score.effort, 1);
+});
+
 test('normalizes work items and defaults to owner approval', () => {
   const item = normalizeNovaWorkItemInput({title:'Build test'});
   assert.equal(item.status, 'backlog');
