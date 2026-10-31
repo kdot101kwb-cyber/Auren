@@ -4,7 +4,7 @@ const MAX_PATCH_FILES = 5;
 const MAX_PATCH_BYTES = 64 * 1024;
 const ALLOWED_REPAIR_STATES = new Set([
   'proposed', 'awaiting_approval', 'approved', 'applying',
-  'validation_pending', 'verified', 'rejected', 'failed',
+  'validation_pending', 'verified', 'recovery_required', 'rejected', 'failed',
 ]);
 
 function normalizeRepairPath(value) {
