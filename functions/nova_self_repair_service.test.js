@@ -119,6 +119,14 @@ test('credential scanner catches bearer, CircleCI, API secrets and common provid
   for (const sample of samples) {
     assert.equal(containsCredentialMaterial(sample), true, 'Expected secret pattern to be detected: ' + sample.slice(0, 24));
   }
+  for (const sample of [
+    'api_key: sk_live_1234567890abcdef',
+    'OPENROUTER_API_KEY=sk-or-v1-1234567890abcdef',
+    'password: long-password-value-123',
+    'token = abcdefghijklmnopqrstuvwxyz123456',
+  ]) {
+    assert.equal(containsCredentialMaterial(sample), true, 'Expected unquoted secret assignment to be detected: ' + sample);
+  }
   for (const safe of [
     'Authorization: Bearer [REDACTED]',
     'const api_key = process.env.API_KEY;',
