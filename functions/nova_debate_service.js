@@ -97,6 +97,7 @@ exports.novaStrategicDebate = onCall({
   const record = {
     prompt: input.prompt,
     context: input.context,
+    projectId: input.projectId || null,
     strategy: input.strategy,
     reviewRoles: input.roles.map((role) => role.id),
     debate,
@@ -111,6 +112,7 @@ exports.novaStrategicDebate = onCall({
   return {
     status: 'awaiting_user_agreement',
     debateId: ref.id,
+    projectId: input.projectId || null,
     debate,
     disclaimer: 'هذه مراجعة متعددة المنظورات من استدعاء نموذج واحد وليست أربعة وكلاء مستقلين. لم يبدأ التنفيذ.',
   };
@@ -148,6 +150,7 @@ exports.novaApproveDebatePlan = onCall({
       action: 'nova.debate.plan_approved',
       actorUid: uid,
       debateId,
+      projectId: record.projectId || null,
       planStepCount: record.debate.plan.length,
       executionStarted: false,
       note: 'Approval recorded only; no repository changes or external side effects were executed.',
