@@ -1,6 +1,6 @@
 'use strict';
 
-const {initializeApp, applicationDefault, getApps} = require('firebase-admin/app');
+const {initializeApp, applicationDefault, getApps, getApp} = require('firebase-admin/app');
 const {getAuth} = require('firebase-admin/auth');
 
 const ALLOWED_PROJECTS = ['auren-90ccc', 'auren-staging'];
@@ -14,6 +14,12 @@ function validateNovaOwnerGrantArguments(uid, expectedEmail, projectId) {
   }
   if (!ALLOWED_PROJECTS.includes(projectId)) {
     throw new Error('Set GCLOUD_PROJECT explicitly to auren-90ccc or auren-staging.');
+  }
+}
+
+function validateNovaOwnerAdminApp(projectId, appProjectId) {
+  if (!ALLOWED_PROJECTS.includes(projectId) || appProjectId !== projectId) {
+    throw new Error('Refusing owner claim: the initialized Firebase Admin app must target the explicitly selected project.');
   }
 }
 
@@ -50,8 +56,11 @@ async function main() {
   const projectId = process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT;
   validateNovaOwnerGrantArguments(uid, expectedEmail, projectId);
 
-  if (!getApps().length) initializeApp({credential:applicationDefault(), projectId});
-  const result = await grantNovaOwnerClaim(getAuth(), uid, expectedEmail, projectId);
+  const app = getApps().length
+    ? getApp()
+    : initializeApp({credential:applicationDefault(), projectId});
+  validateNovaOwnerAdminApp(projectId, app.options.projectId);
+  const result = await grantNovaOwnerClaim(getAuth(app), uid, expectedEmail, projectId);
   process.stdout.write('NOVA owner claim granted to verified UID ' + result.uid + '. Refresh the user ID token in the app.\n');
 }
 
@@ -64,6 +73,7 @@ if (require.main === module) {
 
 module.exports = {
   validateNovaOwnerGrantArguments,
+  validateNovaOwnerAdminApp,
   validateNovaOwnerGrantTarget,
   grantNovaOwnerClaim,
 };
