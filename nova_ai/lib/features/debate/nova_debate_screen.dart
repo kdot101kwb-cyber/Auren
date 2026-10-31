@@ -3,7 +3,15 @@ import 'package:flutter/material.dart';
 import 'nova_debate_result_view.dart';
 
 class NovaDebateScreen extends StatefulWidget {
-  const NovaDebateScreen({super.key});
+  const NovaDebateScreen({
+    super.key,
+    this.initialPrompt = '',
+    this.initialContext = '',
+  });
+
+  final String initialPrompt;
+  final String initialContext;
+
   @override
   State<NovaDebateScreen> createState() => _NovaDebateScreenState();
 }
@@ -18,6 +26,13 @@ class _NovaDebateScreenState extends State<NovaDebateScreen> {
   bool approving = false;
   bool approved = false;
   String? approvalMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    prompt.text = widget.initialPrompt;
+    contextNotes.text = widget.initialContext;
+  }
 
   @override
   void dispose() {
