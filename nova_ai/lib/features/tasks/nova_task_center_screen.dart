@@ -71,7 +71,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
           newlyLinked = true;
         } on FirebaseAuthException catch (error) {
           if (error.code != 'provider-already-linked') rethrow;
-          await user.reload();
+          await user?.reload();
           final refreshed = auth.currentUser;
           if (refreshed == null ||
               !hasNovaPasswordProvider(refreshed.providerData.map((provider) => provider.providerId)) ||
