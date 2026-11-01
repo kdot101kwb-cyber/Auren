@@ -59,6 +59,30 @@ String normalizeRadarText(String value) => value
     .replaceAll(RegExp(r'\s+'), ' ')
     .trim();
 
+enum RadarSudanEligibility {
+  explicitlyListsSudan,
+  worldwideNeedsConfirmation,
+  locationNotStated,
+  otherLocation,
+}
+
+/// Classifies only what the listing text explicitly says. A missing location
+/// must never be interpreted as worldwide or Sudan-eligible.
+RadarSudanEligibility classifySudanEligibility(String location) {
+  final value = normalizeRadarText(location);
+  if (value.isEmpty ||
+      RegExp(r'not stated|not specified|not provided|unknown|unspecified|eligibility not stated|country not stated').hasMatch(value)) {
+    return RadarSudanEligibility.locationNotStated;
+  }
+  if (RegExp(r'\\bsudan\\b|السودان').hasMatch(value)) {
+    return RadarSudanEligibility.explicitlyListsSudan;
+  }
+  if (RegExp(r'\\b(worldwide|anywhere|global|all countries)\\b').hasMatch(value)) {
+    return RadarSudanEligibility.worldwideNeedsConfirmation;
+  }
+  return RadarSudanEligibility.otherLocation;
+}
+
 /// Localized search terms are query expansions, not translations of arbitrary
 /// user text. The original query is always retained.
 const Map<String, List<String>> radarLocalizedTerms = {
@@ -114,8 +138,11 @@ List<GlobalOpportunityLead> rankGlobalLeads(
   final q = normalizeRadarText(query);
   final filtered = leads.where((lead) {
     final place = lead.country.toLowerCase();
-    final worldwide = RegExp(r'worldwide|anywhere|global|all countries|worldwide eligibility not stated').hasMatch(place);
-    final countryMatch = country == 'All countries' || place.contains(country.toLowerCase()) || (country == 'Sudan' && worldwide);
+    final eligibility = classifySudanEligibility(lead.country);
+    final worldwide = eligibility == RadarSudanEligibility.worldwideNeedsConfirmation;
+    final countryMatch = country == 'All countries' ||
+        place.contains(country.toLowerCase()) ||
+        (country == 'Sudan' && worldwide);
     if (!countryMatch) return false;
     final regionMatch = switch (region) {
       'Worldwide' => true,
@@ -165,7 +192,7 @@ GlobalOpportunityLead? parseRemotiveLead(Map<String, dynamic> json) {
     title: title,
     description: _stripHtml((json['description'] ?? '').toString()),
     company: (json['company_name'] ?? '').toString(),
-    country: (json['candidate_required_location'] ?? 'Worldwide eligibility not stated').toString(),
+    country: (json['candidate_required_location'] ?? 'Eligibility not stated').toString(),
     category: (json['category'] ?? '').toString(),
     source: 'Remotive',
     url: url,
