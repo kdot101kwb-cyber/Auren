@@ -76,6 +76,10 @@ Do not display a channel as connected just because it appears in analytics or be
 
 Never embed OAuth client secrets, API keys, long-lived access tokens, or service credentials in the APK or repository. Use official OAuth flows and server-side secret management.
 
+## Hard publish gate (implemented policy contract)
+
+A platform appearing in the capability registry does not mean it is connected or ready. Every individual post must fail closed unless all of these are explicitly true: platform enabled; official adapter configured; OAuth authorization verified; publish scope verified; account/page scope verified; this exact post approved by the owner; owner policy approved; emergency kill switch explicitly inactive; content/music/asset rights verified; selected media format supported; platform rate limit and quota available; audit logging ready; and any platform cost explicitly approved. Missing or unknown state blocks publishing with a specific reason. No implicit defaults may turn an unknown permission into approval. A paused or unknown kill-switch state blocks all new publishing.
+
 ## Permission model
 
 - **Read analytics:** separate opt-in for each account and data scope.
