@@ -209,9 +209,18 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
         Wrap(spacing: 6, runSpacing: 6, children: [
           Chip(label: Text(lead.source)),
           if (lead.country.isNotEmpty) Chip(label: Text(lead.country, overflow: TextOverflow.ellipsis)),
+          Chip(label: Text(switch (classifySudanEligibility(lead.country)) {
+            RadarSudanEligibility.explicitlyListsSudan => 'السودان مذكور في الإعلان',
+            RadarSudanEligibility.worldwideNeedsConfirmation => 'عالمي — تحقق من قبول السودان',
+            RadarSudanEligibility.locationNotStated => 'أهلية البلد غير مذكورة',
+            RadarSudanEligibility.otherLocation => 'تحقق من قيود البلد',
+          })),
           if (lead.remote) const Chip(label: Text('Remote')),
           if (lead.salary.isNotEmpty) Chip(label: Text(lead.salary, overflow: TextOverflow.ellipsis)),
         ]),
+        const SizedBox(height: 4),
+        const Text('وسيلة الدفع والسحب غير مذكورة في بيانات هذا المصدر. تحقق من قبول المتقدمين من السودان ووسيلة السحب قبل التسجيل أو تنفيذ أي عمل.',
+          style: TextStyle(color: Colors.orangeAccent, fontSize: 12)),
         if (lead.category.isNotEmpty) Text('المجال: ' + lead.category),
         if (lead.description.isNotEmpty) ...[const SizedBox(height: 6), Text(lead.description, maxLines: 4, overflow: TextOverflow.ellipsis)],
         const SizedBox(height: 8),
