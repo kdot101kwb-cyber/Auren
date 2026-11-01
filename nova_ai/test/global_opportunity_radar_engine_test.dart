@@ -4,6 +4,51 @@ import 'package:nova_ai/features/opportunities/global_opportunity_radar_engine.d
 
 void main() {
   group('global opportunity radar engine', () {
+    test('does not treat missing location as worldwide or Sudan-eligible', () {
+      expect(
+        classifySudanEligibility('Eligibility not stated'),
+        RadarSudanEligibility.locationNotStated,
+      );
+      expect(
+        classifySudanEligibility('Country not stated'),
+        RadarSudanEligibility.locationNotStated,
+      );
+      expect(
+        classifySudanEligibility('Worldwide'),
+        RadarSudanEligibility.worldwideNeedsConfirmation,
+      );
+      expect(
+        classifySudanEligibility('Sudan'),
+        RadarSudanEligibility.explicitlyListsSudan,
+      );
+    });
+
+    test('Sudan filter excludes unknown locations but retains worldwide for manual verification', () {
+      GlobalOpportunityLead lead(String id, String country) => GlobalOpportunityLead(
+        id: id, title: 'Remote data work', description: '', company: '',
+        country: country, category: 'AI & Data', source: 'Test',
+        url: 'https://example.com/$id', language: 'English', salary: '',
+        remote: true,
+      );
+      final results = rankGlobalLeads(
+        [lead('unknown', 'Eligibility not stated'), lead('world', 'Worldwide'), lead('sd', 'Sudan')],
+        country: 'Sudan',
+      );
+      expect(results.map((item) => item.id), containsAll(['world', 'sd']));
+      expect(results.map((item) => item.id), isNot(contains('unknown')));
+      expect(classifySudanEligibility(results.firstWhere((item) => item.id == 'world').country),
+          RadarSudanEligibility.worldwideNeedsConfirmation);
+    });
+
+    test('Remotive missing location is stored as unknown rather than worldwide', () {
+      final lead = parseRemotiveLead({
+        'title': 'Remote assistant',
+        'url': 'https://example.com/assistant',
+      });
+      expect(lead, isNotNull);
+      expect(lead!.country, 'Eligibility not stated');
+      expect(classifySudanEligibility(lead.country), RadarSudanEligibility.locationNotStated);
+    });
     test('expands categories into multiple language query terms', () {
       final queries = expandRadarQueries('', category: 'Translation');
       expect(queries, contains('ترجمة'));
