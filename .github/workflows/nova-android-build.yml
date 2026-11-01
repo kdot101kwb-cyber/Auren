@@ -14,8 +14,7 @@ on:
       - '.github/workflows/nova-android-build.yml'
   pull_request:
     branches:
-      - main
-      - feat/nova-github-ci-task-execution
+      - '**'
     paths:
       - 'nova_ai/**'
       - 'functions/**'
@@ -50,6 +49,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: nova_ai
@@ -129,11 +129,20 @@ jobs:
           Important: a successful APK build does not mean Firebase Functions are deployed or reachable.
           EOF
 
-      - name: Upload APK
+      - name: Verify APK and generate checksum
+        run: |
+          apk=build/app/outputs/flutter-apk/app-debug.apk
+          test -s "$apk"
+          sha256sum "$apk" > build/app-debug.apk.sha256
+          cat build/app-debug.apk.sha256
+
+      - name: Upload APK and checksum
         uses: actions/upload-artifact@v4
         with:
           name: nova-ai-debug-apk
-          path: nova_ai/build/app/outputs/flutter-apk/app-debug.apk
+          path: |
+            nova_ai/build/app/outputs/flutter-apk/app-debug.apk
+            nova_ai/build/app-debug.apk.sha256
           if-no-files-found: error
           retention-days: 14
 
