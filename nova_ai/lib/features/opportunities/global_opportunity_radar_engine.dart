@@ -74,10 +74,10 @@ RadarSudanEligibility classifySudanEligibility(String location) {
       RegExp(r'not stated|not specified|not provided|unknown|unspecified|eligibility not stated|country not stated').hasMatch(value)) {
     return RadarSudanEligibility.locationNotStated;
   }
-  if (RegExp(r'\\bsudan\\b|السودان').hasMatch(value)) {
+  if (RegExp(r'\bsudan\b|السودان').hasMatch(value)) {
     return RadarSudanEligibility.explicitlyListsSudan;
   }
-  if (RegExp(r'\\b(worldwide|anywhere|global|all countries)\\b').hasMatch(value)) {
+  if (RegExp(r'\b(worldwide|anywhere|global|all countries)\b').hasMatch(value)) {
     return RadarSudanEligibility.worldwideNeedsConfirmation;
   }
   return RadarSudanEligibility.otherLocation;
