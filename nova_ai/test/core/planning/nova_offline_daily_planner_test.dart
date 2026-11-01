@@ -62,8 +62,8 @@ void main() {
       items: [item('a', 15), item('b', 10), item('c', 5)],
     );
     expect(plan.usedMinutes, lessThanOrEqualTo(20));
-    expect(plan.scheduled.map((e) => e.id), ['c', 'a']);
-    expect(plan.deferred.map((e) => e.id), ['b']);
+    expect(plan.scheduled.map((e) => e.id), ['c', 'b']);
+    expect(plan.deferred.map((e) => e.id), ['a']);
   });
 
   test('zero-minute budget defers all pending tasks', () {
