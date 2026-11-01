@@ -11,6 +11,7 @@ class IncomePlatformAssessment {
   final PlatformCountryStatus countryStatus;
   final PlatformPayoutStatus payoutStatus;
   final String payoutMethod;
+  final bool payoutRouteUsableByOwner;
   final PlatformStartupCost startupCost;
   final String? countryEvidenceUrl;
   final String? payoutEvidenceUrl;
@@ -25,6 +26,7 @@ class IncomePlatformAssessment {
     required this.countryStatus,
     required this.payoutStatus,
     required this.payoutMethod,
+    this.payoutRouteUsableByOwner = false,
     required this.startupCost,
     this.countryEvidenceUrl,
     this.payoutEvidenceUrl,
@@ -64,6 +66,7 @@ class IncomePlatformAssessment {
         payoutStatus == PlatformPayoutStatus.verified &&
         startupCost == PlatformStartupCost.zero &&
         payoutMethod.trim().isNotEmpty &&
+        payoutRouteUsableByOwner &&
         hasCurrentOfficialEvidence(now: now)) {
       return PlatformRecommendation.readyToTest;
     }
@@ -92,6 +95,9 @@ class IncomePlatformAssessment {
                 !payoutEvidenceIsOfficial ||
                 payoutMethod.trim().isEmpty))) {
       missing.add('وسيلة السحب ورابط شروط الدفع الرسمي');
+    }
+    if (payoutStatus != PlatformPayoutStatus.unavailable && !payoutRouteUsableByOwner) {
+      missing.add('التأكد من إمكانية استلام وسيلة الدفع فعلياً');
     }
     if (startupCost == PlatformStartupCost.unknown) missing.add('التأكد من عدم وجود رسوم بدء أو تقديم');
     if (lastVerifiedAt == null || !hasCurrentOfficialEvidence(now: now)) {
