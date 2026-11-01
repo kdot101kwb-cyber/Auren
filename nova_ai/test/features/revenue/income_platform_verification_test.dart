@@ -74,6 +74,18 @@ void main() {
     expect(insecure.recommendation(now: now), PlatformRecommendation.researchOnly);
   });
 
+  test('HTTPS links alone are not accepted without official-source attestation', () {
+    final item = assessment(
+      country: PlatformCountryStatus.eligible,
+      payout: PlatformPayoutStatus.verified,
+      method: 'Bank transfer',
+      countryUrl: 'https://example.com/countries',
+      payoutUrl: 'https://example.com/payouts',
+      checkedAt: now,
+    );
+    expect(item.recommendation(now: now), PlatformRecommendation.researchOnly);
+  });
+
   test('unsupported country, unavailable payout, or paid startup is excluded', () {
     expect(assessment(country: PlatformCountryStatus.unsupported).recommendation(now: now),
         PlatformRecommendation.doNotRecommend);
