@@ -76,7 +76,8 @@ class NovaLocalWorkspaceStore {
     SharedPreferences? preferences,
     this.storageKey = 'nova.workspace.tasks.v1',
     this.maxTasks = 500,
-  }) : _providedPreferences = preferences;
+  })  : assert(maxTasks > 0),
+        _providedPreferences = preferences;
 
   final SharedPreferences? _providedPreferences;
   final String storageKey;
@@ -94,7 +95,10 @@ class NovaLocalWorkspaceStore {
       if (decoded is! List) return <NovaWorkspaceTask>[];
       final tasks = decoded.map(NovaWorkspaceTask.fromJson)
           .whereType<NovaWorkspaceTask>().toList()
-        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        ..sort((a, b) {
+        final byUpdated = b.updatedAt.compareTo(a.updatedAt);
+        return byUpdated != 0 ? byUpdated : a.id.compareTo(b.id);
+      });
       return tasks.take(maxTasks).toList(growable: false);
     } catch (_) {
       return <NovaWorkspaceTask>[];
@@ -109,7 +113,10 @@ class NovaLocalWorkspaceStore {
     } else {
       tasks.insert(0, task);
     }
-    tasks.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    tasks.sort((a, b) {
+      final byUpdated = b.updatedAt.compareTo(a.updatedAt);
+      return byUpdated != 0 ? byUpdated : a.id.compareTo(b.id);
+    });
     final preferences = await _preferences;
     return preferences.setString(
       storageKey,
@@ -145,6 +152,8 @@ class NovaLocalWorkspaceStore {
 
   Future<bool> clear() async {
     final preferences = await _preferences;
-    return preferences.remove(storageKey);
+    // Persist an explicit empty collection so the cleared state is observable
+    // consistently across SharedPreferences implementations and test stores.
+    return preferences.setString(storageKey, jsonEncode(<Object>[]));
   }
 }
