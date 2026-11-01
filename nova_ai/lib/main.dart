@@ -15,6 +15,7 @@ import 'features/creative/creative_tool_library_screen.dart';
 import 'features/brain/nova_autonomous_brain_screen.dart';
 import 'features/opportunities/global_opportunity_radar_screen.dart';
 import 'features/projects/nova_project_portfolio_screen.dart';
+import 'features/operations/nova_operations_hub_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -147,6 +148,7 @@ class _NovaHomeState extends State<NovaHome> {
       const NovaAutonomousBrainScreen(),
       const NovaGlobalOpportunityRadarScreen(),
       const NovaProjectPortfolioScreen(),
+      const NovaOperationsHubScreen(),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -168,6 +170,7 @@ class _NovaHomeState extends State<NovaHome> {
               PopupMenuItem(value: 14, child: Text('العقل التنفيذي الذاتي')),
               PopupMenuItem(value: 15, child: Text('الرادار العالمي متعدد اللغات')), 
               PopupMenuItem(value: 16, child: Text('محفظة المشاريع ومجلس القرارات')),
+              PopupMenuItem(value: 17, child: Text('مركز تشغيل NOVA')),
             ],
           ),
           IconButton(onPressed: () => showAboutDialog(context: context, applicationName: 'NOVA AI', applicationVersion: '0.2.0', children: const [Text('نسخة أولية قيد التحقق. بعض الأدوات تحتاج ربط خدمات وخادم آمن.')]), icon: const Icon(Icons.info_outline)),
@@ -218,6 +221,8 @@ class _NovaHomeState extends State<NovaHome> {
     FilledButton.icon(onPressed: () => setState(() => tab = 10), icon: const Icon(Icons.attach_money), label: const Text('فتح محرك فرص الدخل اليومي')),
     const SizedBox(height: 8),
     FilledButton.icon(onPressed: () => setState(() => tab = 15), icon: const Icon(Icons.public), label: const Text('فتح الرادار العالمي متعدد اللغات')),
+    const SizedBox(height: 8),
+    FilledButton.icon(onPressed: () => setState(() => tab = 17), icon: const Icon(Icons.hub_outlined), label: const Text('فتح مركز تشغيل NOVA')),
     const SizedBox(height: 8),
     FilledButton.icon(onPressed: openAurenManagementDashboard, icon: const Icon(Icons.account_balance), label: const Text('فتح لوحة إدارة AUREN ومجلس الإدارة')),
     const SizedBox(height: 18),
