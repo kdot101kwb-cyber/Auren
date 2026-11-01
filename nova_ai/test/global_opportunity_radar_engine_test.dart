@@ -49,6 +49,21 @@ void main() {
       expect(lead!.country, 'Eligibility not stated');
       expect(classifySudanEligibility(lead.country), RadarSudanEligibility.locationNotStated);
     });
+    test('deduplicates repeated records by source id or exact source URL', () {
+      GlobalOpportunityLead lead(String id, String url) => GlobalOpportunityLead(
+        id: id, title: 'Remote translator', description: 'Arabic work',
+        company: 'Example', country: 'Worldwide', category: 'Translation',
+        source: 'Test', url: url, language: 'Arabic', salary: '', remote: true,
+      );
+      final results = rankGlobalLeads([
+        lead('same-id', 'https://example.com/jobs/1'),
+        lead('same-id', 'https://example.com/jobs/1?tracking=1'),
+        lead('other-id', 'https://example.com/jobs/1'),
+      ]);
+      expect(results, hasLength(1));
+      expect(results.single.id, 'same-id');
+    });
+
     test('expands categories into multiple language query terms', () {
       final queries = expandRadarQueries('', category: 'Translation');
       expect(queries, contains('ترجمة'));
