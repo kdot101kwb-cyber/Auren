@@ -143,8 +143,9 @@ List<GlobalOpportunityLead> rankGlobalLeads(
     final eligibility = classifySudanEligibility(lead.country);
     final worldwide = eligibility == RadarSudanEligibility.worldwideNeedsConfirmation;
     final countryMatch = country == 'All countries' ||
-        place.contains(country.toLowerCase()) ||
-        (country == 'Sudan' && worldwide);
+        (country == 'Sudan'
+            ? eligibility == RadarSudanEligibility.explicitlyListsSudan || worldwide
+            : place.contains(country.toLowerCase()));
     if (!countryMatch) return false;
     final regionMatch = switch (region) {
       'Worldwide' => true,
