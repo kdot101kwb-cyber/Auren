@@ -29,15 +29,35 @@ function getSocialPlatformPolicy(platform) {
  * adapter is configured, OAuth is verified, publish scope is confirmed, the
  * owner enabled that platform, and any cost gate is satisfied.
  */
-function canPublishToSocialPlatform(platform, state = {}) {
+function getSocialPublishBlockers(platform, state = {}) {
   const policy = getSocialPlatformPolicy(platform);
-  if (!policy) return {allowed:false, reason:'unsupported_platform'};
-  if (state.enabled !== true) return {allowed:false, reason:'platform_not_enabled'};
-  if (state.adapterConfigured !== true) return {allowed:false, reason:'adapter_not_configured'};
-  if (state.authorizationVerified !== true) return {allowed:false, reason:'authorization_not_verified'};
-  if (state.publishScopeVerified !== true) return {allowed:false, reason:'publish_scope_not_verified'};
-  if (policy.costSensitive && state.costApproved !== true) return {allowed:false, reason:'cost_not_approved'};
-  if (state.ownerPolicyApproved !== true) return {allowed:false, reason:'owner_policy_not_approved'};
+  if (!policy) return ['unsupported_platform'];
+  const blockers = [];
+  if (state.enabled !== true) blockers.push('platform_not_enabled');
+  if (state.adapterConfigured !== true) blockers.push('adapter_not_configured');
+  if (state.authorizationVerified !== true) blockers.push('authorization_not_verified');
+  if (state.publishScopeVerified !== true) blockers.push('publish_scope_not_verified');
+  if (state.accountScopeVerified !== true) blockers.push('account_scope_not_verified');
+  if (state.postApproved !== true) blockers.push('post_not_approved');
+  if (state.ownerPolicyApproved !== true) blockers.push('owner_policy_not_approved');
+  if (state.ownerKillSwitchActive !== false) blockers.push('publishing_paused_or_kill_switch_unknown');
+  if (state.contentRightsVerified !== true) blockers.push('content_rights_not_verified');
+  if (state.mediaFormatSupported !== true) blockers.push('media_format_not_verified');
+  if (state.rateLimitAvailable !== true) blockers.push('rate_limit_not_verified');
+  if (state.quotaAvailable !== true) blockers.push('quota_not_verified');
+  if (state.auditLogReady !== true) blockers.push('audit_log_not_ready');
+  if (policy.costSensitive && state.costApproved !== true) blockers.push('cost_not_approved');
+  return blockers;
+}
+
+/**
+ * Fail closed: a post is publishable only after explicit per-post approval,
+ * verified account scopes, rights/format checks, quota, audit logging, and
+ * an explicitly inactive kill switch, in addition to official OAuth gates.
+ */
+function canPublishToSocialPlatform(platform, state = {}) {
+  const blockers = getSocialPublishBlockers(platform, state);
+  if (blockers.length > 0) return {allowed:false, reason:blockers[0]};
   return {allowed:true, reason:'ready', platform:normalizePlatform(platform)};
 }
 
@@ -46,4 +66,5 @@ module.exports = {
   normalizePlatform,
   getSocialPlatformPolicy,
   canPublishToSocialPlatform,
+  getSocialPublishBlockers,
 };
