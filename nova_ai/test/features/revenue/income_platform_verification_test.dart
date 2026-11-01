@@ -10,6 +10,8 @@ void main() {
     PlatformStartupCost cost = PlatformStartupCost.zero,
     String? countryUrl,
     String? payoutUrl,
+    bool countryOfficial = false,
+    bool payoutOfficial = false,
     String method = '',
     DateTime? checkedAt,
   }) => IncomePlatformAssessment(
@@ -21,6 +23,8 @@ void main() {
     startupCost: cost,
     countryEvidenceUrl: countryUrl,
     payoutEvidenceUrl: payoutUrl,
+    countryEvidenceIsOfficial: countryOfficial,
+    payoutEvidenceIsOfficial: payoutOfficial,
     lastVerifiedAt: checkedAt,
   );
 
@@ -39,6 +43,8 @@ void main() {
       method: 'Verified bank transfer',
       countryUrl: 'https://official.example/countries',
       payoutUrl: 'https://official.example/payouts',
+      countryOfficial: true,
+      payoutOfficial: true,
       checkedAt: now.subtract(const Duration(days: 2)),
     );
     expect(item.recommendation(now: now), PlatformRecommendation.readyToTest);
@@ -60,6 +66,8 @@ void main() {
       method: 'Bank transfer',
       countryUrl: 'http://official.example/countries',
       payoutUrl: 'https://official.example/payouts',
+      countryOfficial: true,
+      payoutOfficial: true,
       checkedAt: now,
     );
     expect(stale.recommendation(now: now), PlatformRecommendation.researchOnly);
@@ -82,6 +90,8 @@ void main() {
       method: 'Bank transfer',
       countryUrl: 'https://official.example/countries',
       payoutUrl: 'https://official.example/payouts',
+      countryOfficial: true,
+      payoutOfficial: true,
       checkedAt: now.add(const Duration(days: 1)),
     );
     expect(item.recommendation(now: now), PlatformRecommendation.researchOnly);
