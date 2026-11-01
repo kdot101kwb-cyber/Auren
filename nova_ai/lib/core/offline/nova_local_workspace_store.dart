@@ -95,7 +95,7 @@ class NovaLocalWorkspaceStore {
       final tasks = decoded.map(NovaWorkspaceTask.fromJson)
           .whereType<NovaWorkspaceTask>().toList()
         ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      return tasks.take(maxTasks).toList(growable: false);
+      return tasks.take(maxTasks).toList();
     } catch (_) {
       return <NovaWorkspaceTask>[];
     }
