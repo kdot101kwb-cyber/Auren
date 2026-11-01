@@ -14,6 +14,8 @@ class IncomePlatformAssessment {
   final PlatformStartupCost startupCost;
   final String? countryEvidenceUrl;
   final String? payoutEvidenceUrl;
+  final bool countryEvidenceIsOfficial;
+  final bool payoutEvidenceIsOfficial;
   final DateTime? lastVerifiedAt;
   final String notes;
 
@@ -26,6 +28,8 @@ class IncomePlatformAssessment {
     required this.startupCost,
     this.countryEvidenceUrl,
     this.payoutEvidenceUrl,
+    this.countryEvidenceIsOfficial = false,
+    this.payoutEvidenceIsOfficial = false,
     this.lastVerifiedAt,
     this.notes = '',
   });
@@ -38,7 +42,11 @@ class IncomePlatformAssessment {
 
   bool hasCurrentOfficialEvidence({DateTime? now, Duration maxAge = const Duration(days: 30)}) {
     final checkedAt = lastVerifiedAt;
-    if (!_isHttpsEvidence(countryEvidenceUrl) || !_isHttpsEvidence(payoutEvidenceUrl) || checkedAt == null) {
+    if (!countryEvidenceIsOfficial ||
+        !payoutEvidenceIsOfficial ||
+        !_isHttpsEvidence(countryEvidenceUrl) ||
+        !_isHttpsEvidence(payoutEvidenceUrl) ||
+        checkedAt == null) {
       return false;
     }
     final currentTime = now ?? DateTime.now().toUtc();
@@ -74,12 +82,15 @@ class IncomePlatformAssessment {
   List<String> missingChecks({DateTime? now}) {
     final missing = <String>[];
     if (countryStatus == PlatformCountryStatus.unknown ||
-        (countryStatus == PlatformCountryStatus.eligible && !_isHttpsEvidence(countryEvidenceUrl))) {
+        (countryStatus == PlatformCountryStatus.eligible &&
+            (!_isHttpsEvidence(countryEvidenceUrl) || !countryEvidenceIsOfficial))) {
       missing.add('قبول المتقدمين من السودان مع رابط رسمي');
     }
     if (payoutStatus == PlatformPayoutStatus.unknown ||
         (payoutStatus == PlatformPayoutStatus.verified &&
-            (!_isHttpsEvidence(payoutEvidenceUrl) || payoutMethod.trim().isEmpty))) {
+            (!_isHttpsEvidence(payoutEvidenceUrl) ||
+                !payoutEvidenceIsOfficial ||
+                payoutMethod.trim().isEmpty))) {
       missing.add('وسيلة السحب ورابط شروط الدفع الرسمي');
     }
     if (startupCost == PlatformStartupCost.unknown) missing.add('التأكد من عدم وجود رسوم بدء أو تقديم');
