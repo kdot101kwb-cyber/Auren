@@ -13,6 +13,7 @@ void main() {
     bool countryOfficial = false,
     bool payoutOfficial = false,
     String method = '',
+    bool payoutUsable = false,
     DateTime? checkedAt,
   }) => IncomePlatformAssessment(
     platformName: 'Example platform',
@@ -20,6 +21,7 @@ void main() {
     countryStatus: country,
     payoutStatus: payout,
     payoutMethod: method,
+    payoutRouteUsableByOwner: payoutUsable,
     startupCost: cost,
     countryEvidenceUrl: countryUrl,
     payoutEvidenceUrl: payoutUrl,
@@ -41,6 +43,7 @@ void main() {
       country: PlatformCountryStatus.eligible,
       payout: PlatformPayoutStatus.verified,
       method: 'Verified bank transfer',
+      payoutUsable: true,
       countryUrl: 'https://official.example/countries',
       payoutUrl: 'https://official.example/payouts',
       countryOfficial: true,
@@ -64,6 +67,7 @@ void main() {
       country: PlatformCountryStatus.eligible,
       payout: PlatformPayoutStatus.verified,
       method: 'Bank transfer',
+      payoutUsable: true,
       countryUrl: 'http://official.example/countries',
       payoutUrl: 'https://official.example/payouts',
       countryOfficial: true,
@@ -95,11 +99,27 @@ void main() {
         PlatformRecommendation.doNotRecommend);
   });
 
+  test('official payout support is not enough unless the owner can receive that route', () {
+    final item = assessment(
+      country: PlatformCountryStatus.eligible,
+      payout: PlatformPayoutStatus.verified,
+      method: 'PayPal',
+      countryUrl: 'https://official.example/countries',
+      payoutUrl: 'https://official.example/payouts',
+      countryOfficial: true,
+      payoutOfficial: true,
+      checkedAt: now,
+    );
+    expect(item.recommendation(now: now), PlatformRecommendation.researchOnly);
+    expect(item.missingChecks(now: now), contains('التأكد من إمكانية استلام وسيلة الدفع فعلياً'));
+  });
+
   test('future verification timestamp is rejected', () {
     final item = assessment(
       country: PlatformCountryStatus.eligible,
       payout: PlatformPayoutStatus.verified,
       method: 'Bank transfer',
+      payoutUsable: true,
       countryUrl: 'https://official.example/countries',
       payoutUrl: 'https://official.example/payouts',
       countryOfficial: true,
