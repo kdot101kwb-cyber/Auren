@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../approvals/nova_approval_center_screen.dart';
 import '../audit/nova_audit_timeline_screen.dart';
+import '../backup/nova_local_backup_screen.dart';
 import '../planning/nova_daily_planner_screen.dart';
 import '../workspace/nova_workspace_screen.dart';
 
@@ -56,6 +57,12 @@ class NovaOperationsHubScreen extends StatelessWidget {
           onTap: () => _open(context, const NovaApprovalCenterScreen()),
         ),
         _HubTile(
+          icon: Icons.backup_outlined,
+          title: 'النسخ الاحتياطي المحلي',
+          description: 'صدّر مهامك أو استعدها بنص JSON',
+          onTap: () => _open(context, const NovaLocalBackupScreen()),
+        ),
+        _HubTile(
           icon: Icons.receipt_long_outlined,
           title: 'سجل التدقيق',
           description: 'راجع القرارات والأحداث المسجلة محلياً',
@@ -63,7 +70,7 @@ class NovaOperationsHubScreen extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         const Text(
-          'كل الأدوات الحالية محلية. الموافقة لا تعني التنفيذ، ولا يوجد نشر أو إرسال أو تحويل أموال تلقائي.',
+          'كل الأدوات الحالية محلية. النسخ يشمل المهام فقط. الموافقة لا تعني التنفيذ، ولا يوجد نشر أو إرسال أو تحويل أموال تلقائي.',
           textDirection: TextDirection.rtl,
         ),
       ],
