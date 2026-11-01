@@ -14,6 +14,10 @@ void main() {
         RadarSudanEligibility.locationNotStated,
       );
       expect(
+        classifySudanEligibility('Sudan eligibility not stated'),
+        RadarSudanEligibility.locationNotStated,
+      );
+      expect(
         classifySudanEligibility('Worldwide'),
         RadarSudanEligibility.worldwideNeedsConfirmation,
       );
@@ -31,11 +35,12 @@ void main() {
         remote: true,
       );
       final results = rankGlobalLeads(
-        [lead('unknown', 'Eligibility not stated'), lead('world', 'Worldwide'), lead('sd', 'Sudan')],
+        [lead('unknown', 'Eligibility not stated'), lead('unclear', 'Sudan eligibility not stated'), lead('world', 'Worldwide'), lead('sd', 'Sudan')],
         country: 'Sudan',
       );
       expect(results.map((item) => item.id), containsAll(['world', 'sd']));
       expect(results.map((item) => item.id), isNot(contains('unknown')));
+      expect(results.map((item) => item.id), isNot(contains('unclear')));
       expect(classifySudanEligibility(results.firstWhere((item) => item.id == 'world').country),
           RadarSudanEligibility.worldwideNeedsConfirmation);
     });
