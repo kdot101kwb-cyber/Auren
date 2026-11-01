@@ -52,4 +52,11 @@ test('daily revenue prompt includes the 50-platform catalog and $0/Sudan safegua
   assert.match(prompt, /RapidAPI \/ Apify/);
   assert.match(prompt, /Do not assume any platform pays out in Sudan/);
   assert.match(prompt, /exclude any option requiring upfront spend/);
+  assert.match(prompt, /official current source explicitly supports the exact country and payout route/i);
+  assert.match(prompt, /minimum withdrawal/i);
+  assert.match(prompt, /exact token, chain, withdrawal rules, fees, and minimum/i);
+  assert.match(prompt, /READY FOR A \$0 TEST/i);
+  assert.match(prompt, /Never invent URLs, dates, fees, thresholds, or payout methods/i);
+  assert.match(prompt, /Do not equate a platform allowing remote work with accepting workers in Sudan/i);
+  assert.match(prompt, /VPNs, false addresses, borrowed identities/i);
 });

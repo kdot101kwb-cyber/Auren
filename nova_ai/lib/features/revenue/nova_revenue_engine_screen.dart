@@ -49,8 +49,25 @@ class _NovaRevenueEngineScreenState extends State<NovaRevenueEngineScreen> {
   }
 
   Future<void> _ensureSignedIn() async {
-    if (FirebaseAuth.instance.currentUser == null) {
-      await FirebaseAuth.instance.signInAnonymously();
+    final initialUser = FirebaseAuth.instance.currentUser;
+    if (initialUser == null) {
+      throw StateError('سجّل الدخول بحسابك أولاً من مركز مهام NOVA.');
+    }
+    await initialUser.reload();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.isAnonymous || !user.emailVerified) {
+      throw StateError('اربط حسابك ببريد إلكتروني موثّق من مركز مهام NOVA قبل استخدام محرك الدخل.');
+    }
+    final token = await user.getIdTokenResult(true);
+    final firebaseClaims = token.claims?['firebase'];
+    final provider = firebaseClaims is Map
+        ? firebaseClaims['sign_in_provider']?.toString()
+        : null;
+    if (token.claims?['novaOwner'] != true ||
+        provider == null ||
+        provider.isEmpty ||
+        provider == 'anonymous') {
+      throw StateError('حسابك لم يحصل بعد على صلاحية مالك NOVA الموثّق. أكمل التحقق من مركز المهام ثم أعد المحاولة.');
     }
   }
 
@@ -188,6 +205,24 @@ class _NovaRevenueEngineScreenState extends State<NovaRevenueEngineScreen> {
           SizedBox(height: 8),
           Text('ينشئ حزمة عمل يومية فيها خدمات قابلة للبيع، عينة أعمال، رسالة تواصل للمراجعة، وخطة تنفيذ. الهدف \$100 يومياً طموح وليس دخلاً مضموناً.'),
         ]),
+      ),
+      const SizedBox(height: 14),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text('بوابة التحقق من المنصات', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              SizedBox(height: 8),
+              Text('لن تصنّف NOVA أي منصة على أنها جاهزة للعمل إلا بعد وجود دليل رسمي حديث على قبول السودان، ووسيلة سحب قابلة للاستخدام، وعدم وجود رسوم إلزامية للبدء.'),
+              SizedBox(height: 6),
+              Text('إذا نقص دليل واحد فالحالة: UNVERIFIED — بحث فقط، وليس توصية بالتسجيل أو العمل.'),
+              SizedBox(height: 6),
+              Text('لا تعتبر عبارة Worldwide دليلاً على قبول السودان، ولا تعتبر USDT دليلاً على دعم Trust Wallet أو كل الشبكات.'),
+            ],
+          ),
+        ),
       ),
       const SizedBox(height: 14),
       Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
