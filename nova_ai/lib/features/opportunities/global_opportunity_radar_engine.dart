@@ -136,6 +136,8 @@ List<GlobalOpportunityLead> rankGlobalLeads(
   String region = 'Worldwide',
 }) {
   final q = normalizeRadarText(query);
+  final seenIds = <String>{};
+  final seenUrls = <String>{};
   final filtered = leads.where((lead) {
     final place = lead.country.toLowerCase();
     final eligibility = classifySudanEligibility(lead.country);
@@ -159,6 +161,12 @@ List<GlobalOpportunityLead> rankGlobalLeads(
     );
     final tokens = q.split(' ').where((token) => token.length > 2).toList();
     return tokens.isEmpty || tokens.any(haystack.contains);
+  }).where((lead) {
+    final id = lead.id.trim().toLowerCase();
+    final url = Uri.tryParse(lead.url)?.toString().trim().toLowerCase() ?? '';
+    final duplicateId = id.isNotEmpty && !seenIds.add(id);
+    final duplicateUrl = url.isNotEmpty && !seenUrls.add(url);
+    return !duplicateId && !duplicateUrl;
   }).toList();
   int score(GlobalOpportunityLead lead) {
     var value = lead.remote ? 10 : 0;
