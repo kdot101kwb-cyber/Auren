@@ -106,7 +106,7 @@ class NovaLocalWorkspaceStore {
   }
 
   Future<bool> saveTask(NovaWorkspaceTask task) async {
-    final tasks = await loadTasks();
+    final tasks = List<NovaWorkspaceTask>.of(await loadTasks());
     final index = tasks.indexWhere((item) => item.id == task.id);
     if (index >= 0) {
       tasks[index] = task;
