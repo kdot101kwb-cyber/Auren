@@ -48,8 +48,9 @@ void main() {
     expect(await store.deleteTask('one'), isTrue);
     expect(await store.loadTasks(), isEmpty);
     await store.saveTask(task('two'));
-    expect(await store.clear(), isTrue);
+    await store.clear();
     expect(await store.loadTasks(), isEmpty);
+    expect(preferences.getString('nova.workspace.tasks.v1'), '[]');
   });
 
   test('corrupt stored JSON is treated as an empty workspace', () async {
@@ -75,6 +76,8 @@ void main() {
     await bounded.saveTask(task('one'));
     await bounded.saveTask(task('two'));
     await bounded.saveTask(task('three'));
-    expect(await bounded.loadTasks(), hasLength(2));
+    final retained = await bounded.loadTasks();
+    expect(retained, hasLength(2));
+    expect(retained.map((task) => task.id).toSet(), hasLength(2));
   });
 }
