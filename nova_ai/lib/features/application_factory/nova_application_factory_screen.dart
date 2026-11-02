@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../builder/nova_app_builder_screen.dart';
 import '../integrations/github_ci_screen.dart';
+import '../integrations/devops_center_screen.dart';
 import '../integrations/integration_hub_screen.dart';
 
 const _factoryKey = 'nova.application_factory.ideas.v1';
@@ -232,6 +233,11 @@ class _NovaApplicationFactoryScreenState extends State<NovaApplicationFactoryScr
               onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const IntegrationHubScreen())),
               icon: const Icon(Icons.hub_outlined),
               label: const Text('الخدمات والربط'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const NovaDevOpsCenterScreen())),
+              icon: const Icon(Icons.monitor_heart_outlined),
+              label: const Text('مركز DevOps'),
             ),
           ],
         ),
