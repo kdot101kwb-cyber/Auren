@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nova_ai/features/integrations/devops_center_screen.dart';
 
 void main() {
-  testWidgets('DevOps center distinguishes live public GitHub from unconnected providers',
+  testWidgets('DevOps center distinguishes public GitHub from unconnected providers',
       (tester) async {
     await tester.pumpWidget(const MaterialApp(home: NovaDevOpsCenterScreen()));
     await tester.pump();
@@ -14,6 +14,13 @@ void main() {
     expect(find.text('GitLab CI/CD'), findsOneWidget);
     expect(find.text('قراءة عامة'), findsOneWidget);
     expect(find.text('غير مربوط'), findsNWidgets(2));
-    expect(find.textContaining('لا توجد هنا صلاحية'), findsOneWidget);
+
+    final githubWriteLimit = find.textContaining('لا توجد صلاحية كتابة');
+    await tester.scrollUntilVisible(
+      githubWriteLimit,
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(githubWriteLimit, findsOneWidget);
   });
 }
