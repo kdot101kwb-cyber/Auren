@@ -87,3 +87,15 @@ flutter build apk --debug
 
 AUREN repository: https://github.com/kdot101kwb-cyber/Auren
 Roadmap: https://github.com/kdot101kwb-cyber/Auren/issues/282
+
+
+## Free Rewards & Auto-Agent Radar
+
+NOVA includes a first-pass, Arabic-first catalog for reviewing no-deposit reward platforms. It separates points from withdrawable assets and records the current known limitations for Blum, Catizen, Major, CryptoTab, PlayNXC, and HaloArena.
+
+- Sudan eligibility and successful payout are **not confirmed** for these candidates unless explicitly tested; the screen does not label any of them as verified income.
+- External automation is disabled by policy unless the platform explicitly permits it through official API access or written authorization. Catizen is manual-only absent such authorization.
+- CryptoTab is not treated as a USDT source: its published payout information describes BTC, and mining requires the browser to remain open.
+- No wallet seed phrase/private key, deposits, bets, purchases, or transfers are handled by this feature.
+- A candidate becomes an income source only after current country terms, fees, minimum withdrawal, network compatibility, and a successful test payout are verified.
+- This is a local review catalog, not a live background watcher or an automatic account/withdrawal service.
