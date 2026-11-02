@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const {
   getDebateApprovalBlockReason,
   buildDebateApprovalUpdate,
+  createDebateTaskEnvelope,
 } = require('./nova_debate_policy');
 
 const validRecord = () => ({
@@ -54,4 +55,20 @@ test('plan size remains bounded', () => {
     verification: 'verified',
   }));
   assert.match(getDebateApprovalBlockReason(record), /خطة صالحة/);
+});
+
+test('debate record carries a shared task envelope gated on owner agreement', () => {
+  const task = createDebateTaskEnvelope({
+    taskId: 'debate-task-123456',
+    ownerUid: 'owner-1',
+    prompt: 'راجع خطة NOVA',
+    context: 'bounded context',
+    strategy: 'strategic',
+  });
+  assert.equal(task.schemaVersion, 1);
+  assert.equal(task.type, 'strategic_debate');
+  assert.equal(task.status, 'awaiting_approval');
+  assert.equal(task.requiresApproval, true);
+  assert.equal(task.executionMode, 'queued_backend_worker_required');
+  assert.equal(task.metadata.strategy, 'strategic');
 });
