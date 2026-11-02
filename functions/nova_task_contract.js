@@ -13,7 +13,7 @@ const TASK_STATUSES = Object.freeze([
 const TERMINAL_STATUSES = new Set(['succeeded', 'failed', 'blocked', 'cancelled']);
 const TRANSITIONS = Object.freeze({
   awaiting_approval: new Set(['queued', 'cancelled', 'blocked']),
-  queued: new Set(['running', 'cancelled', 'blocked']),
+  queued: new Set(['running', 'cancelled', 'blocked', 'failed']),
   running: new Set(['verifying', 'provider_processing', 'succeeded', 'queued', 'failed', 'blocked', 'cancelled']),
   verifying: new Set(['succeeded', 'queued', 'failed', 'blocked', 'cancelled']),
   provider_processing: new Set(['succeeded', 'failed', 'blocked', 'cancelled']),
