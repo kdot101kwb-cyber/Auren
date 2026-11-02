@@ -163,7 +163,7 @@ class _NovaMillionDollarFactoryScreenState
               Expanded(
                 child: _metric(
                   'الدخل المستلم',
-                  '\$\u0024{_receivedUsd.toStringAsFixed(2)}',
+                  '\${_receivedUsd.toStringAsFixed(2)}',
                   Icons.payments_outlined,
                 ),
               ),
