@@ -4,7 +4,8 @@ const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const {defineSecret} = require('firebase-functions/params');
 const {getFirestore, FieldValue} = require('firebase-admin/firestore');
 const {normalizeDebateInput, buildDebateMessages, parseModelJson} = require('./nova_debate_engine');
-const {buildDebateApprovalUpdate} = require('./nova_debate_policy');
+const {buildDebateApprovalUpdate, createDebateTaskEnvelope} = require('./nova_debate_policy');
+const {createNovaAuditEvent} = require('./nova_task_contract');
 
 const OPENROUTER_API_KEY = defineSecret('OPENROUTER_API_KEY');
 const db = getFirestore();
@@ -94,12 +95,22 @@ exports.novaStrategicDebate = onCall({
     throw new HttpsError('internal', 'لم ينتج مجلس النقاش تقريراً منظماً صالحاً. لم يتم تنفيذ أي خطة.');
   }
 
+  const debates = db.collection('users').doc(uid).collection('novaDebates');
+  const ref = debates.doc();
+  const taskEnvelope = createDebateTaskEnvelope({
+    taskId: ref.id,
+    ownerUid: uid,
+    prompt: input.prompt,
+    context: input.context,
+    strategy: input.strategy,
+  });
   const record = {
     prompt: input.prompt,
     context: input.context,
     strategy: input.strategy,
     reviewRoles: input.roles.map((role) => role.id),
     debate,
+    taskEnvelope,
     status: 'awaiting_user_agreement',
     executionStarted: false,
     provider: 'openrouter',
@@ -107,7 +118,7 @@ exports.novaStrategicDebate = onCall({
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   };
-  const ref = await db.collection('users').doc(uid).collection('novaDebates').add(record);
+  await ref.create(record);
   return {
     status: 'awaiting_user_agreement',
     debateId: ref.id,
@@ -142,16 +153,26 @@ exports.novaApproveDebatePlan = onCall({
     }
     tx.update(ref, {
       ...approvalUpdate,
+      'taskEnvelope.status': 'blocked',
+      'taskEnvelope.executionMode': 'blocked_adapter_not_connected',
+      'taskEnvelope.approval.required': true,
+      'taskEnvelope.approval.approvedBy': uid,
+      'taskEnvelope.approval.approvedAt': FieldValue.serverTimestamp(),
       approvedAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
     tx.create(auditRef, {
-      action: 'nova.debate.plan_approved',
-      actorUid: uid,
+      ...createNovaAuditEvent({
+        action: 'nova.debate.plan_approved',
+        actorUid: uid,
+        taskId: debateId,
+        taskType: 'strategic_debate',
+        details: {status: 'blocked', errorCode: 'blocked_adapter_not_connected'},
+      }),
       debateId,
       planStepCount: record.debate.plan.length,
       executionStarted: false,
-      note: 'Approval recorded only; no repository changes or external side effects were executed.',
+      note: 'Approval recorded only; the shared task remains blocked until a safe execution adapter is connected.',
       createdAt: FieldValue.serverTimestamp(),
     });
     return {
