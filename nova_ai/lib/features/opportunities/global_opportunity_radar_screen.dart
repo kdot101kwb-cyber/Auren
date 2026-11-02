@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'global_opportunity_radar.dart';
+import 'nova_tor_research_screen.dart';
 
 const _radarAccent = Color(0xFF9B87FF);
 const _savedKey = 'nova.global_opportunity_radar.saved.v1';
@@ -114,6 +115,13 @@ class _GlobalOpportunityRadarScreenState extends State<GlobalOpportunityRadarScr
             ),
           ),
           const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const NovaTorResearchScreen()),
+            ),
+            icon: const Icon(Icons.shield_outlined),
+            label: const Text('بحث عميق عبر Tor باستخدام Orbot'),
+          ),
           TextField(
             controller: _query,
             onChanged: (_) => setState(() {}),
