@@ -38,7 +38,7 @@ void main() {
     await tester.enterText(find.byType(TextField).at(1), '12.50');
     await tester.tap(find.text('تسجيل دفعة مستلمة'));
     await tester.pumpAndSettle();
-    expect(find.textContaining(r'$12.50'), findsOneWidget);
+    expect(find.textContaining('USD 12.50'), findsOneWidget);
     expect(find.textContaining('سُجل المبلغ'), findsOneWidget);
   });
 
