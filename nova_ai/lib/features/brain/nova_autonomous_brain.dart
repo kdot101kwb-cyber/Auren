@@ -80,6 +80,57 @@ class NovaBrainTask {
         'steps': steps.map((step) => step.toJson()).toList(),
       };
 
+  /// Local-only projection of the shared NOVA task contract. This does not
+  /// imply a server task or a connected execution worker.
+  Map<String, Object?> toTaskEnvelopeJson() {
+    final status = isComplete
+        ? 'succeeded'
+        : steps.any((step) => step.status == NovaStepStatus.failed)
+            ? 'failed'
+            : steps.any((step) => step.status == NovaStepStatus.blocked)
+                ? 'blocked'
+                : steps.any((step) => step.status == NovaStepStatus.running)
+                    ? 'running'
+                    : 'queued';
+    return {
+      'schemaVersion': 1,
+      'taskId': id,
+      'idempotencyKey': id,
+      'ownerUid': 'local_device',
+      'type': 'brain_plan',
+      'prompt': goal,
+      'status': status,
+      'executionMode': 'local_deterministic_planner',
+      'requiresApproval': false,
+      'metadata': {
+        'createdAt': createdAt,
+        'steps': steps.map((step) => step.toJson()).toList(),
+      },
+      'result': null,
+      'error': null,
+      'retryCount': 0,
+      'maxAttempts': 2,
+      'evidence': steps
+          .where((step) => step.evidence.isNotEmpty)
+          .map((step) => step.evidence)
+          .toList(),
+    };
+  }
+
+  factory NovaBrainTask.fromTaskEnvelopeJson(Map<String, dynamic> json) {
+    final metadata = json['metadata'];
+    final details = metadata is Map<String, dynamic> ? metadata : <String, dynamic>{};
+    return NovaBrainTask(
+      id: json['taskId'] as String? ?? '',
+      goal: json['prompt'] as String? ?? '',
+      createdAt: details['createdAt'] as String? ?? '',
+      steps: (details['steps'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(NovaBrainStep.fromJson)
+          .toList(),
+    );
+  }
+
   factory NovaBrainTask.fromJson(Map<String, dynamic> json) => NovaBrainTask(
         id: json['id'] as String? ?? '',
         goal: json['goal'] as String? ?? '',
@@ -211,17 +262,20 @@ class NovaAutonomousPlanner {
 }
 
 String encodeNovaBrainTasks(List<NovaBrainTask> tasks) =>
-    jsonEncode(tasks.map((task) => task.toJson()).toList());
+    jsonEncode(tasks.map((task) => task.toTaskEnvelopeJson()).toList());
 
 List<NovaBrainTask> decodeNovaBrainTasks(String? raw) {
   if (raw == null || raw.trim().isEmpty) return const [];
   try {
     final decoded = jsonDecode(raw);
     if (decoded is! List<dynamic>) return const [];
-    return decoded
-        .whereType<Map<String, dynamic>>()
-        .map(NovaBrainTask.fromJson)
-        .toList();
+    return decoded.whereType<Map<String, dynamic>>().map((json) {
+      if (json.containsKey('taskId') && json.containsKey('schemaVersion')) {
+        return NovaBrainTask.fromTaskEnvelopeJson(json);
+      }
+      // Backward compatibility for locally saved pre-contract task records.
+      return NovaBrainTask.fromJson(json);
+    }).toList();
   } on FormatException {
     return const [];
   } on TypeError {
