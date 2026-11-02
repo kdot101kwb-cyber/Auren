@@ -7,6 +7,7 @@ const db = getFirestore();
 const REGION = 'us-central1';
 const TASK_COLLECTION = 'nova_tasks';
 const {normalizeNovaTaskInput} = require('./nova_command_validation');
+const {createNovaTaskRecord, createNovaQueueRecord, createNovaAuditEvent} = require('./nova_task_contract');
 
 exports.submitNovaTask = onCall(
   {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
@@ -22,30 +23,26 @@ exports.submitNovaTask = onCall(
       const existing = await tx.get(taskRef);
       if (existing.exists) return {created:false, taskId:id, task:existing.data()};
       const task = {
-        taskId:id,
-        ownerUid:uid,
-        type:input.type,
-        prompt:input.prompt,
-        metadata:input.metadata,
-        requiresApproval:input.requiresApproval,
-        status:input.requiresApproval ? 'awaiting_approval' : 'queued',
-        executionMode:'queued_backend_worker_required',
-        result:null,
-        error:null,
-        retryCount:0,
+        ...createNovaTaskRecord({taskId:id, ownerUid:uid, input}),
         createdAt:FieldValue.serverTimestamp(),
         updatedAt:FieldValue.serverTimestamp(),
       };
       tx.create(taskRef, task);
       if (task.status === 'queued') {
-        tx.create(queueRef, {ownerUid:uid, taskId:id, status:'queued', attempts:0, createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
+        tx.create(queueRef, {
+          ...createNovaQueueRecord({ownerUid:uid, taskId:id}),
+          createdAt:FieldValue.serverTimestamp(),
+          updatedAt:FieldValue.serverTimestamp(),
+        });
       }
       tx.create(auditRef, {
-        action:'nova.task.submitted',
-        actorUid:uid,
-        taskId:id,
-        taskType:input.type,
-        status:task.status,
+        ...createNovaAuditEvent({
+          action:'nova.task.submitted',
+          actorUid:uid,
+          taskId:id,
+          taskType:input.type,
+          details:{status:task.status},
+        }),
         createdAt:FieldValue.serverTimestamp(),
       });
       return {created:true, taskId:id, task};
