@@ -28,7 +28,17 @@ void main() {
     await tester.tap(buildPlanButton);
     await tester.pumpAndSettle();
 
-    expect(find.text('ابدأ بهذه المهام'), findsOneWidget);
+    // The plan result is rendered below the action button in a lazy ListView.
+    // Scroll until its heading is built before asserting it exists.
+    final planHeading = find.text('ابدأ بهذه المهام');
+    await tester.scrollUntilVisible(
+      planHeading,
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(planHeading, findsOneWidget);
     expect(find.text('مجدول'), findsOneWidget);
     expect(find.text('الخطة اقتراح زمني محلي فقط. لا تبدأ المهام ولا تشغّل وكلاء NOVA تلقائياً.'), findsOneWidget);
   });
