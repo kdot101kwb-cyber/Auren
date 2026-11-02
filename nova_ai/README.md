@@ -17,6 +17,16 @@ The private AUREN management dashboard includes a strategic review screen backed
 - The dashboard now exposes an explicit **Approve proposed plan** control and calls `novaApproveDebatePlan`; the backend records the decision and an audit entry. **Approval is not execution**: the safe repository-editing executor, diff validation, and post-change CI verification still need to be connected. The UI states this limitation rather than pretending work ran.
 - AI-generated objections and estimates are suggestions, not verified facts. Supply concrete logs, repository evidence, and test results in the context field when available.
 
+## AI agent games
+
+NOVA includes an **AI Agent Games** onboarding screen for evaluating games where an AI agent is explicitly allowed to play through an official API. The first research target is HaloArena.
+
+- The current screen is an onboarding and safety surface; it does not run a background agent from Android.
+- HaloArena setup requires a user-created account/agent and a supported external runner such as OpenClaw or Hermes. The site-provided setup prompt and current API rules must be followed.
+- HaloArena CP/HP is an off-chain beta score, not USDT, not a withdrawable balance, and not a promise of future rewards.
+- No wallet seed phrase, private key, spending, betting, or financial transaction is handled by NOVA.
+- Live autonomous play requires a separately reviewed runner integration, official API permission, runtime lifecycle controls, and an auditable result feed. Sudan eligibility and any real payout must be verified before treating a platform as an income source.
+
 ## Creative studio
 The app now includes a UI for preparing image, video, and game-generation requests. This is a front-end flow only: it does not generate media or compile games yet. Real output requires a server-side provider adapter, secure credentials, asynchronous job tracking, file storage, and cost/abuse controls. “Unlimited” can mean no app-imposed daily cap, but provider and infrastructure limits still apply.
 
