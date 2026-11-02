@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nova_ai/features/application_factory/nova_application_factory_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   Future<void> pumpFactory(WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(body: NovaApplicationFactoryScreen()),
