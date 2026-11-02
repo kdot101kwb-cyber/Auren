@@ -171,14 +171,30 @@ The universe is not considered implemented because a screen or mockup exists. Ea
 - Flutter analysis, relevant unit/widget/integration tests, and CI evidence.
 - Documentation of limitations, costs, and manual approval points.
 
-## 11. Current audit findings (read-only)
+## 11. Current audit findings (read-only; branch-aware)
 
-- The AUREN master roadmap already includes Creator Studio / Influencer Pages in Batch 7 and media/series systems in Batch 6.
-- The repository README describes an existing production foundation for Shorts, films, and series episodes, including a Firestore queue and provider-neutral worker contract.
-- AUREN Production Studio and Series Studio screens/services exist and should be evaluated for reuse.
-- AUREN has a talent engine and a multi-provider AI catalog.
-- A NOVA debate screen exists under nova_ai/lib/features/debate/.
-- During this audit, nova_ai/lib/main.dart and conventional docs/NOVA_ROADMAP.md / docs/NOVA_MASTER_ROADMAP.md paths were not found at the inspected ref. Confirm the actual NOVA entry point and canonical roadmap before wiring navigation or modifying app code.
+### NOVA application
+- The standalone NOVA Flutter application exists on the development branch `feat/nova-ai-android-app`, with `nova_ai/pubspec.yaml`, `nova_ai/lib/main.dart`, and `nova_ai/lib/firebase_runtime.dart`.
+- The NOVA entry point is `nova_ai/lib/main.dart`; it initializes the NOVA Firebase runtime and composes the dashboard, agent, creative, opportunity, integration, task, app-builder, revenue, AUREN workspace, DevOps, autonomous-brain, and global-radar screens.
+- The app package is named `nova_ai`. Its Firebase dependencies are on the 3.x/5.x generation, while the AUREN root package uses newer Firebase 4.x/6.x packages. Keep the two Flutter package boundaries explicit; do not casually merge dependency versions.
+- `nova_ai/README.md` explicitly labels the app a UI prototype. It states that remote GitHub edits, builds, email/social account management, and task synchronization are not yet implemented. The creative studio currently prepares requests but does not render media or compile games.
+- Firebase runtime uses compile-time `--dart-define` configuration and App Check. Cloud features remain unavailable if the build lacks Firebase configuration.
+
+### Reusable AUREN foundations
+- AUREN has a Production Studio screen and Firestore-backed `users/{uid}/production_jobs` service with queued/planning/generating/assembling/review/completed/failed/cancelled states, retry/cancel operations, and output URL fields.
+- AUREN has a Series Studio and series project service with series bible, character lists, season arcs, episode records, stages, and rights-review status.
+- AUREN has a Talent Engine and creator-related services that may support casting and creator workflows, but these are not yet a NOVA character identity system.
+- The provider catalog lists image/video/audio capabilities. The provider contract and UI must be checked separately from actual rendering: a provider being listed or a job being accepted is not proof that media was generated.
+- Firestore and Storage rules exist. The current Storage rule inspected covers owner-scoped user media paths; dedicated character/universe ownership and lifecycle rules have not been demonstrated by this audit.
+
+### Confirmed gaps for Digital Human Universe
+- No implemented NOVA Character Lab, canonical identity pack, character versioning, character memory, relationship/universe graph, or visual-continuity service was found in the inspected NOVA app documentation and entry point.
+- No verified end-to-end digital-human workflow was found that takes a character from identity pack through actual image/video/voice generation, quality review, and stored output.
+- No verified NOVA publishing integration or real revenue attribution flow was found for these three creative tracks.
+- The approved roadmap file is currently on the documentation branch `nova-digital-human-universe-roadmap`; it is not yet merged into `main` or the NOVA app branch.
+
+### Audit decision
+Reuse the existing series and production foundations through documented interfaces. Build NOVA-specific character identity, memory, continuity, universe, rights, and portfolio orchestration in the NOVA area. Do not create a second production queue or claim provider execution until a real worker and output verification are demonstrated. No application code, Firebase rules, provider configuration, or production jobs were changed during this audit.
 
 ## 12. Immediate next steps
 
