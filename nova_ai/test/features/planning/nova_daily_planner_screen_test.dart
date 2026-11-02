@@ -23,7 +23,9 @@ void main() {
 
     await tester.pumpWidget(MaterialApp(home: NovaDailyPlannerScreen(store: store)));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('أنشئ خطة اليوم'));
+    final buildPlanButton = find.text('أنشئ خطة اليوم');
+    await tester.ensureVisible(buildPlanButton);
+    await tester.tap(buildPlanButton);
     await tester.pumpAndSettle();
 
     expect(find.text('ابدأ بهذه المهام'), findsOneWidget);
