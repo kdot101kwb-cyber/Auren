@@ -106,17 +106,27 @@ exports.approveNovaTask = onCall(
         status:'queued',
         approvedBy:uid,
         approvedAt:FieldValue.serverTimestamp(),
+        approval:{
+          required:true,
+          approvedBy:uid,
+          approvedAt:FieldValue.serverTimestamp(),
+          scopeHash:null,
+        },
         updatedAt:FieldValue.serverTimestamp(),
       });
       tx.create(db.collection('nova_task_queue').doc(uid + '_' + taskId), {
-        ownerUid:uid, taskId, status:'queued', attempts:0,
-        createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
+        ...createNovaQueueRecord({ownerUid:uid, taskId}),
+        createdAt:FieldValue.serverTimestamp(),
+        updatedAt:FieldValue.serverTimestamp(),
       });
       tx.create(auditRef, {
-        action:'nova.task.approved',
-        actorUid:uid,
-        taskId,
-        taskType:String(task.type || ''),
+        ...createNovaAuditEvent({
+          action:'nova.task.approved',
+          actorUid:uid,
+          taskId,
+          taskType:String(task.type || ''),
+          details:{status:'queued'},
+        }),
         createdAt:FieldValue.serverTimestamp(),
       });
       return {ok:true, taskId, status:'queued', executionMode:task.executionMode || 'queued_backend_worker_required'};
