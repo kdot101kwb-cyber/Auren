@@ -107,6 +107,7 @@ function parseModelJson(value) {
   let text = String(value || '').trim();
   const fenced = text.match(/^\`\`\`(?:json)?\s*([\s\S]*?)\s*\`\`\`$/i);
   if (fenced) text = fenced[1];
+  if (!text.startsWith('{')) throw new Error('لم يُرجع النموذج JSON صالحاً.');
   const parsed = JSON.parse(text);
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new Error('لم يُرجع النموذج JSON صالحاً.');
