@@ -65,7 +65,7 @@ function normalizeDebateResult(raw = {}) {
     ? raw.recommendation : 'revise';
   const confidenceRaw = Number(raw.confidence);
   const confidence = Number.isFinite(confidenceRaw)
-    ? Math.max(0, Math.min(1, confidenceRaw > 1 ? confidenceRaw / 10 : confidenceRaw)) : 0.5;
+    ? Math.max(0, Math.min(1, confidenceRaw)) : 0.5;
   const objections = normalizeList(raw.objections, 5, (item) => ({
     title:cleanText(item?.title, 240),
     severity:['low','medium','high'].includes(item?.severity) ? item.severity : 'medium',
