@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/approval/nova_owner_action_queue.dart';
+import '../../core/operations/nova_approval_audit_coordinator.dart';
 
 /// Owner review UI for proposed actions. Approval records permission only;
 /// this queue has no executor and does not perform external side effects.
@@ -15,6 +16,8 @@ class NovaApprovalCenterScreen extends StatefulWidget {
 
 class _NovaApprovalCenterScreenState extends State<NovaApprovalCenterScreen> {
   late final NovaOwnerActionQueue _queue = widget.queue ?? NovaOwnerActionQueue();
+  late final NovaApprovalAuditCoordinator _coordinator =
+      NovaApprovalAuditCoordinator(queue: _queue);
   List<NovaActionRequest> _records = const [];
   bool _loading = true;
   String? _error;
@@ -91,7 +94,7 @@ class _NovaApprovalCenterScreenState extends State<NovaApprovalCenterScreen> {
       ),
     );
     if (confirmed == true) {
-      await _queue.approve(request.id, ownerConfirmed: true);
+      await _coordinator.approve(request.id, ownerConfirmed: true);
       await _reload();
     }
   }
@@ -119,7 +122,7 @@ class _NovaApprovalCenterScreenState extends State<NovaApprovalCenterScreen> {
     final value = reason.text.trim();
     reason.dispose();
     if (submitted == true && value.isNotEmpty) {
-      await _queue.reject(request.id, reason: value);
+      await _coordinator.reject(request.id, reason: value);
       await _reload();
     }
   }
