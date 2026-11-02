@@ -19,7 +19,6 @@ class _NovaMillionDollarFactoryScreenState
       'Sudanese Arabic AI localization and quality review';
   final _leadController = TextEditingController();
   final _amountController = TextEditingController();
-  final _noteController = TextEditingController();
   final List<String> _leads = [];
   final List<String> _workItems = [
     'Prepare a 10-line Sudanese Arabic sample with English meaning.',
@@ -42,7 +41,6 @@ class _NovaMillionDollarFactoryScreenState
   void dispose() {
     _leadController.dispose();
     _amountController.dispose();
-    _noteController.dispose();
     super.dispose();
   }
 
