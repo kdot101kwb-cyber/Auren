@@ -8,6 +8,7 @@ const db = getFirestore();
 const REGION = 'us-central1';
 const TASKS = 'nova_build_jobs';
 const {validateBuildRequest} = require('./nova_app_builder_validation');
+const {createNovaTaskRecord, createNovaQueueRecord, createNovaAuditEvent} = require('./nova_task_contract');
 
 exports.submitNovaBuildJob = onCall(
   {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
@@ -18,24 +19,43 @@ exports.submitNovaBuildJob = onCall(
     const id = randomUUID().replace(/-/g, '');
     const ref = db.collection('users').doc(uid).collection(TASKS).doc(id);
     const audit = db.collection('users').doc(uid).collection('nova_audit').doc();
+    const acceptanceCriteria = Array.isArray(request.data?.acceptanceCriteria)
+      ? request.data.acceptanceCriteria.filter(x => typeof x === 'string').slice(0,20).map(x => x.slice(0,300))
+      : [];
+    const taskEnvelope = createNovaTaskRecord({
+      taskId:id,
+      ownerUid:uid,
+      input:{
+        type:input.type,
+        prompt:input.prompt,
+        metadata:{stack:input.stack, acceptanceCriteria},
+        requiresApproval:false,
+      },
+    });
     const job = {
+      ...taskEnvelope,
       jobId:id, ownerUid:uid, ...input, status:'queued',
       stage:'waiting_for_runner', attempts:0, maxAttempts:3,
-      acceptanceCriteria: Array.isArray(request.data?.acceptanceCriteria)
-        ? request.data.acceptanceCriteria.filter(x => typeof x === 'string').slice(0,20).map(x => x.slice(0,300))
-        : [],
+      acceptanceCriteria,
       approvalRequiredFor:['deploy','publish','merge','production_secret_change'],
       createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
     };
     await db.runTransaction(async tx => {
       tx.create(ref, job);
       tx.create(db.collection('nova_build_queue').doc(id), {
-        jobId:id, ownerUid:uid, status:'queued', attempts:0,
+        ...createNovaQueueRecord({taskId:id, ownerUid:uid}),
+        jobId:id,
         createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
       });
       tx.create(audit, {
-        action:'nova.build_job.submitted', actorUid:uid, jobId:id, taskType:input.type,
-        stack:input.stack, createdAt:FieldValue.serverTimestamp(),
+        ...createNovaAuditEvent({
+          action:'nova.build_job.submitted',
+          actorUid:uid,
+          taskId:id,
+          taskType:input.type,
+          details:{status:'queued'},
+        }),
+        jobId:id, stack:input.stack, createdAt:FieldValue.serverTimestamp(),
       });
     });
     return {
