@@ -10,16 +10,31 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Godot');
     await tester.pumpAndSettle();
 
-    // The query remains visible in the TextField as well as the matching tool card.
-    expect(find.text('Godot'), findsNWidgets(2));
+    final godotTool = find.text('Godot');
+    await tester.scrollUntilVisible(
+      godotTool,
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(godotTool, findsOneWidget);
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, 'Godot');
     expect(find.text('Flutter'), findsNothing);
     expect(find.textContaining('أداة ظاهرة'), findsOneWidget);
 
+    await tester.ensureVisible(find.byTooltip('مسح البحث'));
     await tester.tap(find.byTooltip('مسح البحث'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Flutter'), 250, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.text('Flutter'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Flutter'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('التصميم وتجربة المستخدم'), 250, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.text('التصميم وتجربة المستخدم'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('التصميم وتجربة المستخدم'), findsOneWidget);
   });
 
@@ -28,12 +43,24 @@ void main() {
 
     await tester.enterText(find.byType(TextField), 'tool-that-does-not-exist-xyz');
     await tester.pumpAndSettle();
-    expect(find.textContaining('ما لقيت أداة مطابقة'), findsOneWidget);
 
+    final emptyState = find.textContaining('ما لقيت أداة مطابقة');
+    await tester.scrollUntilVisible(
+      emptyState,
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(emptyState, findsOneWidget);
+
+    await tester.ensureVisible(find.byTooltip('مسح البحث'));
     await tester.tap(find.byTooltip('مسح البحث'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Flutter'), 250, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.text('Flutter'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Flutter'), findsOneWidget);
-    expect(find.textContaining('ما لقيت أداة مطابقة'), findsNothing);
+    expect(emptyState, findsNothing);
   });
 }
