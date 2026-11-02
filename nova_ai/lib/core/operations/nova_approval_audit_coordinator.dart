@@ -15,9 +15,14 @@ class NovaApprovalAuditCoordinator {
 
   Future<bool> approve(String id, {required bool ownerConfirmed}) async {
     if (!ownerConfirmed) return false;
-    final request = (await _queue.list())
-        .where((item) => item.id == id)
-        .firstOrNull;
+    final records = await _queue.list();
+    NovaActionRequest? request;
+    for (final item in records) {
+      if (item.id == id) {
+        request = item;
+        break;
+      }
+    }
     if (request == null) return false;
 
     final changed = await _queue.approve(id, ownerConfirmed: true);
