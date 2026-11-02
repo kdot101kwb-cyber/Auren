@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nova_ai/features/brain/nova_autonomous_brain.dart';
 
@@ -48,7 +50,14 @@ void main() {
         steps: [firstStep, ...original.steps.skip(1)],
       );
 
-      final decoded = decodeNovaBrainTasks(encodeNovaBrainTasks([saved]));
+      final encoded = encodeNovaBrainTasks([saved]);
+      final envelope = (jsonDecode(encoded) as List<dynamic>).single as Map<String, dynamic>;
+      expect(envelope['schemaVersion'], 1);
+      expect(envelope['taskId'], saved.id);
+      expect(envelope['type'], 'brain_plan');
+      expect(envelope['ownerUid'], 'local_device');
+      expect(envelope['status'], 'queued');
+      final decoded = decodeNovaBrainTasks(encoded);
 
       expect(decoded, hasLength(1));
       expect(decoded.single.id, saved.id);
@@ -58,6 +67,30 @@ void main() {
         'https://github.com/example/actions/runs/1',
       );
       expect(decoded.single.isComplete, isFalse);
+    });
+
+
+    test('reads legacy local task records created before the shared envelope', () {
+      final legacy = jsonEncode([
+        {
+          'id': 'legacy-task',
+          'goal': 'خطة قديمة',
+          'createdAt': '2026-10-26T00:00:00.000Z',
+          'steps': [
+            {
+              'id': 'legacy-step',
+              'title': 'خطوة',
+              'description': 'وصف',
+              'status': 'pending',
+              'evidence': '',
+            },
+          ],
+        },
+      ]);
+      final decoded = decodeNovaBrainTasks(legacy);
+      expect(decoded, hasLength(1));
+      expect(decoded.single.id, 'legacy-task');
+      expect(decoded.single.goal, 'خطة قديمة');
     });
 
     test('returns an empty list for missing or malformed data', () {
