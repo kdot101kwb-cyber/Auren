@@ -77,3 +77,12 @@ flutter build apk --debug
 
 AUREN repository: https://github.com/kdot101kwb-cyber/Auren
 Roadmap: https://github.com/kdot101kwb-cyber/Auren/issues/282
+
+
+## Application Factory and App Market Scout
+
+The Arabic-first Application Factory entry point is available from NOVA navigation. It accepts a new app idea or an existing project and prepares a structured request for the existing App Builder. Idea notes are stored on the device only.
+
+The product specification is in docs/NOVA_APPLICATION_FACTORY_MARKET_SCOUT.md. It defines the App Market Scout that should compare new-product opportunities with update needs across existing apps, with evidence provenance/freshness, competitor and store research, user feedback, security/dependency/platform changes, and a complete ten-part app delivery checklist.
+
+**Current limits:** the screen is an intake and planning foundation, not a live market crawler. The existing submitNovaBuildJob callable only queues a request; its own response says an isolated build runner must be connected before code generation starts. Market-source adapters, scheduled app-market ingestion, autonomous repository repair, and full DevOps provider connections remain future phases. Never report a market scan or build as completed without live source/worker evidence.
