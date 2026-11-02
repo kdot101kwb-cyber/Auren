@@ -1,11 +1,26 @@
 'use strict';
 
 const MAX_PLAN_STEPS = 12;
+const {createNovaTaskRecord} = require('./nova_task_contract');
 
 /**
  * Enforces the human agreement gate independently of model-generated content.
  * This module is deliberately pure so policy checks can be tested without Firebase.
  */
+
+function createDebateTaskEnvelope({taskId, ownerUid, prompt, context, strategy}) {
+  return createNovaTaskRecord({
+    taskId,
+    ownerUid,
+    input: {
+      type: 'strategic_debate',
+      prompt,
+      metadata: {context: String(context || '').slice(0, 12000), strategy: String(strategy || 'strategic')},
+      requiresApproval: true,
+    },
+  });
+}
+
 function getDebateApprovalBlockReason(record) {
   if (!record || record.status !== 'awaiting_user_agreement') {
     return 'هذا النقاش ليس بانتظار موافقة جديدة.';
@@ -47,4 +62,4 @@ function buildDebateApprovalUpdate(record, uid) {
   };
 }
 
-module.exports = {getDebateApprovalBlockReason, buildDebateApprovalUpdate};
+module.exports = {getDebateApprovalBlockReason, buildDebateApprovalUpdate, createDebateTaskEnvelope};
