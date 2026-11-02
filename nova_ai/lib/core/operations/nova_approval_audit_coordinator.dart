@@ -43,9 +43,14 @@ class NovaApprovalAuditCoordinator {
 
   Future<bool> reject(String id, {required String reason}) async {
     if (reason.trim().isEmpty) return false;
-    final request = (await _queue.list())
-        .where((item) => item.id == id)
-        .firstOrNull;
+    final records = await _queue.list();
+    NovaActionRequest? request;
+    for (final item in records) {
+      if (item.id == id) {
+        request = item;
+        break;
+      }
+    }
     if (request == null) return false;
 
     final changed = await _queue.reject(id, reason: reason);
