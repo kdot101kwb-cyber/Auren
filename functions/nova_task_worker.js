@@ -10,6 +10,7 @@ const HIGGSFIELD_API_KEY_ID = defineSecret('HIGGSFIELD_API_KEY_ID');
 const HIGGSFIELD_API_KEY_SECRET = defineSecret('HIGGSFIELD_API_KEY_SECRET');
 const {submitVideoGeneration, getVideoGenerationStatus} = require('./nova_higgsfield_adapter');
 const {isTaskExecutable} = require('./nova_task_worker_policy');
+const {canTransitionTask} = require('./nova_task_contract');
 const REGION = 'us-central1';
 
 async function runTextTask(prompt, type, apiKey) {
@@ -68,7 +69,7 @@ exports.processNovaTaskQueue = onSchedule(
       await db.runTransaction(async (tx) => {
         const qs = await tx.get(queueRef);
         const ts = await tx.get(taskRef);
-        if (!qs.exists || !ts.exists || qs.data()?.status !== 'queued' || ts.data()?.status !== 'queued') return;
+        if (!qs.exists || !ts.exists || !canTransitionTask(qs.data()?.status, 'running') || !canTransitionTask(ts.data()?.status, 'running')) return;
         task = ts.data();
         if (!isTaskExecutable(task, uid)) {
           const reason = 'No execution adapter is configured or approval is missing for task type: ' + String(task.type || 'unknown');
