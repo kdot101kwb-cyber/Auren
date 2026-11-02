@@ -5,14 +5,16 @@ import 'package:flutter/material.dart';
 import '../../firebase_runtime.dart';
 
 class NovaAppBuilderScreen extends StatefulWidget {
-  const NovaAppBuilderScreen({super.key});
+  const NovaAppBuilderScreen({super.key, this.initialPrompt = ''});
+
+  final String initialPrompt;
 
   @override
   State<NovaAppBuilderScreen> createState() => _NovaAppBuilderScreenState();
 }
 
 class _NovaAppBuilderScreenState extends State<NovaAppBuilderScreen> {
-  final _brief = TextEditingController();
+  late final TextEditingController _brief;
   final _criteria = TextEditingController();
   String _type = 'flutter_app';
   String _stack = 'flutter';
@@ -20,6 +22,12 @@ class _NovaAppBuilderScreenState extends State<NovaAppBuilderScreen> {
   String? _message;
   String? _jobId;
   Map<String, dynamic>? _job;
+
+  @override
+  void initState() {
+    super.initState();
+    _brief = TextEditingController(text: widget.initialPrompt);
+  }
 
   @override
   void dispose() {
