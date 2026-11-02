@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'devops_center_screen.dart';
 
 const _violet = Color(0xFF9B87FF);
 const _surface = Color(0xFF191925);
@@ -140,6 +141,36 @@ class _IntegrationHubScreenState extends State<IntegrationHubScreen> {
               SizedBox(height: 8),
               Text('كتالوج قابل للبحث لأدوات التخطيط والبرمجة والتصميم والخلفية والاختبارات والبناء والوسائط والنشر. الهدف أن تبدأ وتتابع عملك من NOVA قدر الإمكان، مع توضيح ما هو رابط خارجي وما هو متصل فعلاً.'),
             ]),
+          ),
+          const SizedBox(height: 14),
+          Card(
+            color: _surface,
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(children: [
+                    Icon(Icons.monitor_heart_outlined, color: _violet),
+                    SizedBox(width: 8),
+                    Expanded(child: Text('NOVA DevOps Center', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+                  ]),
+                  const SizedBox(height: 6),
+                  const Text('متابعة GitHub Actions مع توضيح الخدمات غير المربوطة. القراءة الحالية عامة فقط ولا تمنح NOVA صلاحية تعديل المستودع أو تشغيل أو دمج المهام.'),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(builder: (_) => const NovaDevOpsCenterScreen()),
+                      ),
+                      icon: const Icon(Icons.dashboard_customize_outlined),
+                      label: const Text('فتح مركز DevOps'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 14),
           TextField(
