@@ -1,9 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:android_intent_plus/android_intent.dart';
-import 'package:flutter/foundation.dart';
-
 /// Orbot's local HTTP CONNECT proxy. Orbot documents HTTPS proxy on 8118.
 class NovaTorResearch {
   NovaTorResearch._();
