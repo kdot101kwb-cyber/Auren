@@ -46,7 +46,7 @@ function buildDebateMessages(input) {
     'Review roles:',
     normalized.roles.map((role) => role.name + ': ' + role.focus).join('\n'),
     '',
-    'Return concise, evidence-led JSON. The plan must wait for explicit owner approval.',
+    'Return concise, evidence-led JSON. mustWaitForAgreement: true. executionPolicy: approved. The plan must wait for explicit owner approval.',
   ].join('\n');
   return [{role:'system', content:system}, {role:'user', content:user}];
 }
