@@ -205,6 +205,7 @@ class _NovaDevOpsCenterScreenState extends State<NovaDevOpsCenterScreen> {
           ),
         ],
       ),
+      ),
     ),
   );
 
