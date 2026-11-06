@@ -29,3 +29,28 @@ test('limits prompt size and normalizes metadata', () => {
   const task = normalizeNovaTaskInput({type:'chat',prompt:'hello',idempotencyKey:'nova_task_123456',metadata:{source:'a'.repeat(100),locale:'ar-SA'}});
   assert.equal(task.metadata.source.length,80);
 });
+
+
+const {
+  buildNovaMilestoneNotification,
+  shouldNotifyNovaTransition,
+} = require('./nova_notification_policy');
+
+test('push policy notifies only on a new milestone status', () => {
+  assert.equal(shouldNotifyNovaTransition('running', 'succeeded'), true);
+  assert.equal(shouldNotifyNovaTransition('succeeded', 'succeeded'), false);
+  assert.equal(shouldNotifyNovaTransition('running', 'running'), false);
+  assert.equal(shouldNotifyNovaTransition('running', 'provider_processing'), false);
+});
+
+test('milestone push copy is localized and identifies success clearly', () => {
+  const notification = buildNovaMilestoneNotification('succeeded', 'research');
+  assert.equal(notification.title, '🟢 اكتملت مهمة NOVA');
+  assert.match(notification.body, /بنجاح/);
+});
+
+test('approval and failure milestones have distinct messages', () => {
+  assert.match(buildNovaMilestoneNotification('awaiting_approval', 'publish').title, /موافقتك/);
+  assert.match(buildNovaMilestoneNotification('failed', 'research').body, /مراجعة السبب/);
+  assert.equal(buildNovaMilestoneNotification('queued', 'research'), null);
+});
