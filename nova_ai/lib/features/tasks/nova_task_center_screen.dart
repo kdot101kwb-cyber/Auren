@@ -25,6 +25,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
   };
 
   final _prompt = TextEditingController();
+  final _dependencies = TextEditingController();
   String _type = 'research';
   bool _busy = false;
   bool _loadingTasks = false;
@@ -53,6 +54,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
     _refreshTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _prompt.dispose();
+    _dependencies.dispose();
     super.dispose();
   }
 
@@ -197,15 +199,22 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
     try {
       await _ensureSignedIn();
       final idempotencyKey = 'nova_${DateTime.now().microsecondsSinceEpoch}';
+      final dependsOnTaskIds = _dependencies.text
+          .split(RegExp(r'[\s,;]+'))
+          .map((value) => value.trim())
+          .where((value) => value.isNotEmpty)
+          .toList();
       final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
           .httpsCallable('submitNovaTask').call(<String, dynamic>{
         'type': _type,
         'prompt': prompt,
         'idempotencyKey': idempotencyKey,
+        'dependsOnTaskIds': dependsOnTaskIds,
         'metadata': <String, dynamic>{'source': 'nova_android', 'locale': 'ar'},
       });
       final data = Map<String, dynamic>.from(response.data as Map);
       _prompt.clear();
+      _dependencies.clear();
       if (mounted) {
         setState(() => _message =
             'سُجلت المهمة في قائمة الخلفية: ${data['taskId']} — الحالة: ${data['status']}. '
@@ -280,6 +289,17 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
       ),
       const SizedBox(height: 10),
       TextField(
+        controller: _dependencies,
+        minLines: 1,
+        maxLines: 2,
+        decoration: const InputDecoration(
+          labelText: 'معرّفات المهام السابقة (اختياري)',
+          hintText: 'ضع معرّف كل مهمة تعتمد عليها، وافصل بينها بفاصلة',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      const SizedBox(height: 10),
+      TextField(
         controller: _prompt,
         minLines: 3,
         maxLines: 6,
@@ -332,7 +352,9 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
               if (task['status'] == 'awaiting_approval')
                 TextButton(onPressed: _busy ? null : () => _taskAction('approveNovaTask', '${task['taskId']}'),
                     child: const Text('موافقة')),
-              if (task['status'] == 'queued' || task['status'] == 'awaiting_approval')
+              if (task['status'] == 'waiting_for_dependencies')
+                const Text('بانتظار اكتمال المهام السابقة', style: TextStyle(color: Colors.amberAccent)),
+              if (task['status'] == 'queued' || task['status'] == 'awaiting_approval' || task['status'] == 'waiting_for_dependencies')
                 TextButton(onPressed: _busy ? null : () => _taskAction('cancelNovaTask', '${task['taskId']}'),
                     child: const Text('إلغاء')),
             ]),
