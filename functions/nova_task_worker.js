@@ -40,7 +40,7 @@ async function runTextTask(prompt, type, apiKey) {
     if (!response.ok) throw new Error(String(payload?.error?.message || 'OpenRouter HTTP ' + response.status).slice(0,400));
     const text = payload?.choices?.[0]?.message?.content;
     if (typeof text !== 'string' || !text.trim()) throw new Error('AI provider returned an empty result.');
-    return {text:text.trim(), model:payload?.model || 'openrouter/free'};
+    return {text:text.trim().slice(0,12000), model:payload?.model || 'openrouter/free'};
   } finally {
     clearTimeout(timeout);
   }
