@@ -24,6 +24,18 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 3
 
+  - package-ecosystem: "pub"
+    directory: "/nova_ai"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "npm"
+    directory: "/nova_ai/video_factory/remotion_worker"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
