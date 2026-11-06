@@ -21,6 +21,17 @@ For owner-approved video-generation tasks:
 
 This is not a general authorization system for every NOVA capability. It currently protects the existing video-generation execution path; other external side effects remain blocked unless a dedicated adapter and exact-action approval are implemented.
 
+## Central action-risk registry (implemented in this branch)
+The backend now has a single explicit policy inventory in `functions/nova_action_policy.js`:
+- Low-risk text tasks (`chat`, `plan`, `research`, `content_draft`, `social_content_draft`) are the only autonomous worker allowlist.
+- Provider-backed generation (`image_generation`, `video_generation`) requires owner approval; only video generation currently has a configured execution adapter.
+- Public publishing, external messages, purchases, paid API calls, production deployments, data deletion, permission changes, data migrations, and secret rotation are classified as approval-required and non-executable until a dedicated safe adapter exists.
+- Unregistered/unknown task types default to unknown risk, require approval, and are never executable.
+- Explicit owner approval can also gate a normally safe task; the worker validates the exact hash and expiry when approval is requested.
+- Cancelling a queued task that had an owner approval clears its active approver, expiry, and scope hash and writes an approval-revoked audit event.
+
+The registry is a policy boundary, not an adapter. An approval does not make an unsupported action executable. The worker must still have an explicit adapter allowlist entry.
+
 ## Security architecture
 
 ### 1. Identity and access
