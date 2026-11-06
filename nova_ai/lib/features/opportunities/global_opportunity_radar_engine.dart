@@ -112,27 +112,73 @@ List<GlobalOpportunityLead> rankGlobalLeads(
   String region = 'Worldwide',
 }) {
   final q = normalizeRadarText(query);
-  final filtered = leads.where((lead) {
-    final place = lead.country.toLowerCase();
-    final worldwide = RegExp(r'worldwide|anywhere|global|all countries|worldwide eligibility not stated').hasMatch(place);
-    final countryMatch = country == 'All countries' || place.contains(country.toLowerCase()) || (country == 'Sudan' && worldwide);
+
+  // Search providers may return the same listing for multiple expanded queries.
+  // Deduplicate by canonical URL while preserving the first provider result.
+  final uniqueByUrl = <String, GlobalOpportunityLead>{};
+  for (final lead in leads) {
+    final rawUrl = lead.url.trim();
+    final parsedUrl = Uri.tryParse(rawUrl);
+    final canonicalUrl = parsedUrl != null &&
+            parsedUrl.hasScheme &&
+            parsedUrl.host.isNotEmpty
+        ? parsedUrl
+            .replace(
+              scheme: parsedUrl.scheme.toLowerCase(),
+              host: parsedUrl.host.toLowerCase(),
+              path: parsedUrl.path.replaceFirst(RegExp(r'/+$'), ''),
+            )
+            .toString()
+        : rawUrl.replaceFirst(RegExp(r'/+$'), '');
+    final key = canonicalUrl.isEmpty ? lead.id : canonicalUrl;
+    uniqueByUrl.putIfAbsent(key, () => lead);
+  }
+
+  final filtered = uniqueByUrl.values.where((lead) {
+    final place = normalizeRadarText(lead.country);
+    // Eligibility is worldwide only when the source states it explicitly.
+    // Phrases such as "Worldwide eligibility not stated" must not qualify.
+    final worldwide = const {
+      'worldwide',
+      'anywhere',
+      'global',
+      'all countries',
+    }.contains(place);
+    final countryMatch = country == 'All countries' ||
+        place.contains(normalizeRadarText(country)) ||
+        (country == 'Sudan' && worldwide);
     if (!countryMatch) return false;
+
     final regionMatch = switch (region) {
       'Worldwide' => true,
-      'Africa' => worldwide || RegExp(r'africa|kenya|nigeria|south africa|egypt|sudan|ghana|morocco|uganda|tanzania').hasMatch(place),
-      'Europe' => worldwide || RegExp(r'europe|germany|france|spain|uk|united kingdom|ireland|poland|netherlands|portugal|italy').hasMatch(place),
-      'Asia' => worldwide || RegExp(r'asia|india|pakistan|japan|china|singapore|philippines|indonesia|uae|emirates').hasMatch(place),
-      'Americas' => worldwide || RegExp(r'america|united states|usa|canada|brazil|mexico|argentina|colombia').hasMatch(place),
+      'Africa' => worldwide ||
+          RegExp(
+            r'africa|kenya|nigeria|south africa|egypt|sudan|ghana|morocco|uganda|tanzania',
+          ).hasMatch(place),
+      'Europe' => worldwide ||
+          RegExp(
+            r'europe|germany|france|spain|uk|united kingdom|ireland|poland|netherlands|portugal|italy',
+          ).hasMatch(place),
+      'Asia' => worldwide ||
+          RegExp(
+            r'asia|india|pakistan|japan|china|singapore|philippines|indonesia|uae|emirates',
+          ).hasMatch(place),
+      'Americas' => worldwide ||
+          RegExp(
+            r'america|united states|usa|canada|brazil|mexico|argentina|colombia',
+          ).hasMatch(place),
       _ => true,
     };
     if (!regionMatch) return false;
     if (q.isEmpty) return true;
+
     final haystack = normalizeRadarText(
       '${lead.title} ${lead.description} ${lead.company} ${lead.category} ${lead.country} ${lead.language}',
     );
     final tokens = q.split(' ').where((token) => token.length > 2).toList();
     return tokens.isEmpty || tokens.any(haystack.contains);
   }).toList();
+
   int score(GlobalOpportunityLead lead) {
     var value = lead.remote ? 10 : 0;
     if (lead.url.startsWith('https://')) value += 5;
@@ -142,11 +188,30 @@ List<GlobalOpportunityLead> rankGlobalLeads(
       if (age >= 0 && age <= 14) value += 4;
       if (age < 0) value -= 3;
     }
-    if (region == 'Africa' && RegExp(r'africa|kenya|nigeria|south africa|egypt|sudan|remote', caseSensitive: false).hasMatch(lead.country)) value += 3;
-    if (region == 'Europe' && RegExp(r'europe|germany|france|spain|uk|united kingdom|remote', caseSensitive: false).hasMatch(lead.country)) value += 3;
-    if (region == 'Asia' && RegExp(r'asia|india|pakistan|japan|china|remote', caseSensitive: false).hasMatch(lead.country)) value += 3;
+    if (region == 'Africa' &&
+        RegExp(
+          r'africa|kenya|nigeria|south africa|egypt|sudan|remote',
+          caseSensitive: false,
+        ).hasMatch(lead.country)) {
+      value += 3;
+    }
+    if (region == 'Europe' &&
+        RegExp(
+          r'europe|germany|france|spain|uk|united kingdom|remote',
+          caseSensitive: false,
+        ).hasMatch(lead.country)) {
+      value += 3;
+    }
+    if (region == 'Asia' &&
+        RegExp(
+          r'asia|india|pakistan|japan|china|remote',
+          caseSensitive: false,
+        ).hasMatch(lead.country)) {
+      value += 3;
+    }
     return value;
   }
+
   filtered.sort((a, b) {
     final byScore = score(b).compareTo(score(a));
     if (byScore != 0) return byScore;
