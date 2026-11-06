@@ -1,5 +1,7 @@
 name: NOVA Android Build
 
+# Keep Android validation on the same branch head as NOVA security and Functions checks.
+
 on:
   workflow_dispatch:
   push:
