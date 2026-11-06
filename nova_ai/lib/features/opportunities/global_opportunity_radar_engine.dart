@@ -112,7 +112,121 @@ List<GlobalOpportunityLead> rankGlobalLeads(
   String region = 'Worldwide',
 }) {
   final q = normalizeRadarText(query);
-  final filtered = leads.where((lead) {
+  // Search providers may return the same listing for multiple expanded queries.
+  // Deduplicate by canonicalized URL before filtering and ranking.
+  final uniqueByUrl = <String, GlobalOpportunityLead>{};
+  for (final lead in leads) {
+    final normalizedUrl = lead.url.trim().replaceFirst(RegExp(r'/+
+    final place = lead.country.toLowerCase();
+    final worldwide = RegExp(r'\b(worldwide|anywhere|global|all countries)\b').hasMatch(place);
+    final countryMatch = country == 'All countries' || place.contains(country.toLowerCase()) || (country == 'Sudan' && worldwide);
+    if (!countryMatch) return false;
+    final regionMatch = switch (region) {
+      'Worldwide' => true,
+      'Africa' => worldwide || RegExp(r'africa|kenya|nigeria|south africa|egypt|sudan|ghana|morocco|uganda|tanzania').hasMatch(place),
+      'Europe' => worldwide || RegExp(r'europe|germany|france|spain|uk|united kingdom|ireland|poland|netherlands|portugal|italy').hasMatch(place),
+      'Asia' => worldwide || RegExp(r'asia|india|pakistan|japan|china|singapore|philippines|indonesia|uae|emirates').hasMatch(place),
+      'Americas' => worldwide || RegExp(r'america|united states|usa|canada|brazil|mexico|argentina|colombia').hasMatch(place),
+      _ => true,
+    };
+    if (!regionMatch) return false;
+    if (q.isEmpty) return true;
+    final haystack = normalizeRadarText(
+      '${lead.title} ${lead.description} ${lead.company} ${lead.category} ${lead.country} ${lead.language}',
+    );
+    final tokens = q.split(' ').where((token) => token.length > 2).toList();
+    return tokens.isEmpty || tokens.any(haystack.contains);
+  }).toList();
+  int score(GlobalOpportunityLead lead) {
+    var value = lead.remote ? 10 : 0;
+    if (lead.url.startsWith('https://')) value += 5;
+    if (lead.salary.trim().isNotEmpty) value += 2;
+    if (lead.publishedAt != null) {
+      final age = DateTime.now().difference(lead.publishedAt!).inDays;
+      if (age >= 0 && age <= 14) value += 4;
+      if (age < 0) value -= 3;
+    }
+    if (region == 'Africa' && RegExp(r'africa|kenya|nigeria|south africa|egypt|sudan|remote', caseSensitive: false).hasMatch(lead.country)) value += 3;
+    if (region == 'Europe' && RegExp(r'europe|germany|france|spain|uk|united kingdom|remote', caseSensitive: false).hasMatch(lead.country)) value += 3;
+    if (region == 'Asia' && RegExp(r'asia|india|pakistan|japan|china|remote', caseSensitive: false).hasMatch(lead.country)) value += 3;
+    return value;
+  }
+  filtered.sort((a, b) {
+    final byScore = score(b).compareTo(score(a));
+    if (byScore != 0) return byScore;
+    return (b.publishedAt?.millisecondsSinceEpoch ?? 0)
+        .compareTo(a.publishedAt?.millisecondsSinceEpoch ?? 0);
+  });
+  return List.unmodifiable(filtered);
+}
+
+GlobalOpportunityLead? parseRemotiveLead(Map<String, dynamic> json) {
+  final title = (json['title'] ?? '').toString().trim();
+  final url = (json['url'] ?? '').toString().trim();
+  if (title.isEmpty || !url.startsWith('https://')) return null;
+  return GlobalOpportunityLead(
+    id: 'remotive:${json['id'] ?? url}',
+    title: title,
+    description: _stripHtml((json['description'] ?? '').toString()),
+    company: (json['company_name'] ?? '').toString(),
+    country: (json['candidate_required_location'] ?? 'Worldwide eligibility not stated').toString(),
+    category: (json['category'] ?? '').toString(),
+    source: 'Remotive',
+    url: url,
+    language: (json['job_type'] ?? 'Not stated').toString(),
+    salary: (json['salary'] ?? '').toString(),
+    remote: true,
+    publishedAt: DateTime.tryParse((json['publication_date'] ?? '').toString()),
+  );
+}
+
+GlobalOpportunityLead? parseArbeitnowLead(Map<String, dynamic> json) {
+  final title = (json['title'] ?? '').toString().trim();
+  final url = (json['url'] ?? '').toString().trim();
+  if (title.isEmpty || !url.startsWith('https://')) return null;
+  final tags = (json['tags'] is List ? json['tags'] as List : const [])
+      .map((e) => e.toString()).join(', ');
+  return GlobalOpportunityLead(
+    id: 'arbeitnow:${json['slug'] ?? url}',
+    title: title,
+    description: _stripHtml((json['description'] ?? '').toString()),
+    company: (json['company_name'] ?? '').toString(),
+    country: (json['location'] ?? 'Country not stated').toString(),
+    category: tags,
+    source: 'Arbeitnow',
+    url: url,
+    language: 'Not stated by source',
+    salary: '',
+    remote: json['remote'] == true,
+    publishedAt: DateTime.tryParse((json['created_at'] ?? '').toString()),
+  );
+}
+
+String _stripHtml(String value) => value
+    .replaceAll(RegExp(r'<[^>]*>'), ' ')
+    .replaceAll(RegExp(r'&nbsp;|&#160;'), ' ')
+    .replaceAll(RegExp(r'&amp;'), '&')
+    .replaceAll(RegExp(r'&quot;'), '"')
+    .replaceAll(RegExp(r'&#39;|&apos;'), "'")
+    .replaceAll(RegExp(r'\s+'), ' ')
+    .trim();
+
+List<GlobalOpportunityLead> decodeSavedRadarLeads(String? raw) {
+  if (raw == null || raw.trim().isEmpty) return const [];
+  try {
+    final data = jsonDecode(raw);
+    if (data is! List) return const [];
+    return data.whereType<Map>().map((row) =>
+      GlobalOpportunityLead.fromJson(Map<String, dynamic>.from(row))).toList();
+  } catch (_) {
+    return const [];
+  }
+}
+), '').toLowerCase();
+    final key = normalizedUrl.isEmpty ? lead.id : normalizedUrl;
+    uniqueByUrl.putIfAbsent(key, () => lead);
+  }
+  final filtered = uniqueByUrl.values.where((lead) {
     final place = lead.country.toLowerCase();
     final worldwide = RegExp(r'\b(worldwide|anywhere|global|all countries)\b').hasMatch(place);
     final countryMatch = country == 'All countries' || place.contains(country.toLowerCase()) || (country == 'Sudan' && worldwide);
