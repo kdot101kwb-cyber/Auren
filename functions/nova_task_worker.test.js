@@ -7,7 +7,7 @@ const {createTaskApprovalScopeHash} = require('./nova_task_contract');
 test('safe research and content-drafting tasks can run autonomously', () => {
   for (const type of ['chat', 'plan', 'research', 'content_draft', 'social_content_draft']) {
     assert.equal(SAFE_TEXT_TYPES.has(type), true, type + ' should be an allowed text task');
-    assert.equal(isTaskExecutable({type}, 'owner-1'), true);
+    assert.equal(isTaskExecutable({type, ownerUid:'owner-1'}, 'owner-1'), true);
   }
   assert.equal(SAFE_TEXT_TYPES.has('social_publish'), false);
   assert.equal(SAFE_TEXT_TYPES.has('image_generation'), false);
