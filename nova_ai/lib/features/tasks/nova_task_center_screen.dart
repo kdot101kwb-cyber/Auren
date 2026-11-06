@@ -200,7 +200,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
       await _ensureSignedIn();
       final idempotencyKey = 'nova_${DateTime.now().microsecondsSinceEpoch}';
       final dependsOnTaskIds = _dependencies.text
-          .split(RegExp(r'[\\s,;]+'))
+          .split(RegExp(r'[\s,;]+'))
           .map((value) => value.trim())
           .where((value) => value.isNotEmpty)
           .toList();
