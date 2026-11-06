@@ -14,7 +14,7 @@ const ACTION_POLICIES = Object.freeze({
   integration_health: Object.freeze({risk:'medium', approvalRequired:false, workerExecutable:false}),
   finance_report: Object.freeze({risk:'medium', approvalRequired:false, workerExecutable:false}),
   image_generation: Object.freeze({risk:'external_cost_or_provider', approvalRequired:true, workerExecutable:false}),
-  video_generation: Object.freeze({risk:'external_cost_or_provider', approvalRequired:true, workerExecutable:true}),
+  video_generation: Object.freeze({risk:'external_cost_or_provider', approvalRequired:true, workerExecutable:false}),
   social_publish: Object.freeze({risk:'external_publication', approvalRequired:true, workerExecutable:false}),
   send_message: Object.freeze({risk:'external_communication', approvalRequired:true, workerExecutable:false}),
   purchase: Object.freeze({risk:'financial', approvalRequired:true, workerExecutable:false}),
