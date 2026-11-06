@@ -2,10 +2,11 @@ name: AUREN Dependency Review
 
 on:
   pull_request:
-    branches: [main]
     paths:
       - 'pubspec.yaml'
       - 'pubspec.lock'
+      - 'nova_ai/**/pubspec.yaml'
+      - 'nova_ai/**/pubspec.lock'
       - '**/package.json'
       - '**/package-lock.json'
       - '.github/workflows/**'
