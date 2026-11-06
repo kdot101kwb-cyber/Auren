@@ -196,6 +196,7 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
 
   Widget _leadCard(GlobalOpportunityLead lead) {
     final saved = _saved.any((item) => item.id == lead.id);
+    final safety = assessOpportunitySafety(lead);
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -212,7 +213,6 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
           if (lead.remote) const Chip(label: Text('Remote')),
           if (lead.salary.isNotEmpty) Chip(label: Text(lead.salary, overflow: TextOverflow.ellipsis)),
         ]),
-        final safety = assessOpportunitySafety(lead);
         Container(
           width: double.infinity,
           margin: const EdgeInsets.only(top: 8),
