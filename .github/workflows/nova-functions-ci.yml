@@ -1,5 +1,7 @@
 name: NOVA Functions CI
 
+# Keep task approval contract and command-center syntax checks on the exact PR head.
+
 on:
   push:
     branches:
