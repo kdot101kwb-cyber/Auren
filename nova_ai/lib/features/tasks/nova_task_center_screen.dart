@@ -115,6 +115,9 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
     final messenger = ScaffoldMessenger.maybeOf(context);
     if (messenger == null) return;
     final completed = hasCompletion;
+    final notificationMessage = completed
+        ? messages.firstWhere((message) => message.startsWith('اكتملت'), orElse: () => messages.first)
+        : messages.first;
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -131,7 +134,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  messages.first,
+                  notificationMessage,
                   textDirection: TextDirection.rtl,
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                 ),
