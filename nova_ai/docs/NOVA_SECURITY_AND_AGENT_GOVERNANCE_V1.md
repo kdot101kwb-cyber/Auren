@@ -7,24 +7,24 @@ This document defines the security baseline and operating model for NOVA's speci
 - NOVA callable task endpoints inspected in this branch require Firebase Authentication and Firebase App Check.
 - Task records are stored under the authenticated user's namespace; the worker uses an explicit task-type allowlist.
 - Debate requests have a per-user rate limit.
-- Provider credentials are declared as Firebase Secret Manager parameters in the worker; secrets must never be shipped in the Android client.
+- Provider credentials are declared server-side only; the external video provider adapter and its polling path are hard-disabled under the zero-budget policy until a verified zero-cost provider is explicitly approved. Secrets must never be shipped in the Android client.
 - Repository workflows include CodeQL, dependency review, and SPDX SBOM generation. Their trigger scopes differ, so a passing NOVA Android build is not a security scan.
 - The current shared task contract records audit events with a strict detail allowlist.
 
 ## Newly added exact-action approval control
-For owner-approved video-generation tasks:
+For approval-required tasks:
 1. The server calculates a SHA-256 approval scope over schema version, task ID, owner UID, task type, prompt, metadata, and approval requirement.
 2. The approval record stores the scope hash, approver UID, and a 30-minute expiry.
-3. The worker verifies the owner, required approval, scope hash, and unexpired timestamp before claiming execution.
+3. The worker validates owner, required approval, scope hash, and expiry before any permitted execution.
 4. Any change to the prompt, metadata, owner, task identity, or task type invalidates the approval.
-5. Legacy approvals without a scope hash and expiry fail closed and must be approved again.
+5. Legacy approvals without a scope hash and expiry fail closed.
 
-This is not a general authorization system for every NOVA capability. It currently protects the existing video-generation execution path; other external side effects remain blocked unless a dedicated adapter and exact-action approval are implemented.
+A valid approval is not permission to spend money. Video generation remains disabled in both submission and polling paths until a provider is independently verified as zero-cost and explicitly approved. Other external side effects remain blocked unless a dedicated safe adapter and exact-action approval are implemented.
 
 ## Central action-risk registry (implemented in this branch)
 The backend now has a single explicit policy inventory in `functions/nova_action_policy.js`:
 - Low-risk text tasks (`chat`, `plan`, `research`, `content_draft`, `social_content_draft`) are the only autonomous worker allowlist.
-- Provider-backed generation (`image_generation`, `video_generation`) requires owner approval; only video generation currently has a configured execution adapter.
+- Provider-backed generation (`image_generation`, `video_generation`) requires owner approval and remains non-executable under the zero-budget policy; the existing video provider adapter and poller are hard-disabled pending verified zero-cost terms.
 - Public publishing, external messages, purchases, paid API calls, production deployments, data deletion, permission changes, data migrations, and secret rotation are classified as approval-required and non-executable until a dedicated safe adapter exists.
 - Unregistered/unknown task types default to unknown risk, require approval, and are never executable.
 - Explicit owner approval can also gate a normally safe task; the worker validates the exact hash and expiry when approval is requested.
@@ -101,7 +101,7 @@ The following are planned departments. A role card or prompt is not proof of an 
 - Agents may not grant themselves permissions, create hidden credentials, or approve their own high-risk actions.
 
 ## Implementation sequence
-- P0: exact-action approval scope and expiry for the existing approved video task path — implemented in this branch; tests added.
+- P0: exact-action approval scope and expiry validation — implemented and tested; external video execution remains disabled pending verified zero-cost provider terms.
 - P1: shared action-risk registry and approval/revocation service for all side-effect adapters.
 - P2: security dashboard with scan status, open findings, access inventory, audit history, and emergency stop.
 - P3: isolated App Builder runner with path/network/resource restrictions and artifact provenance.
