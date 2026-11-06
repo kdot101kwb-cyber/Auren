@@ -188,6 +188,8 @@ exports.listNovaTasks = onCall(
         result:task.result || null,
         error:task.error || null,
         retryCount:Number(task.retryCount) || 0,
+        workflowProgress:Number(task.workflowProgress) || 0,
+        workflowTotal:1 + (Array.isArray(task.workflowSteps) ? task.workflowSteps.length : 0),
         createdAt:task.createdAt?.toDate?.().toISOString() || null,
       };
     })};
