@@ -33,6 +33,7 @@ test('limits prompt size and normalizes metadata', () => {
 
 const {
   buildNovaMilestoneNotification,
+  buildNovaPushData,
   shouldNotifyNovaCreation,
   shouldNotifyNovaTransition,
 } = require('./nova_notification_policy');
@@ -60,4 +61,13 @@ test('approval-required tasks notify on creation, not only on later updates', ()
   assert.equal(shouldNotifyNovaCreation('awaiting_approval'), true);
   assert.equal(shouldNotifyNovaCreation('queued'), false);
   assert.equal(shouldNotifyNovaTransition('queued', 'awaiting_approval'), true);
+});
+
+
+test('push payload uses a strict allowlist and excludes private task content', () => {
+  const payload = buildNovaPushData('task_123', 'succeeded', 'research');
+  assert.deepEqual(payload, {taskId:'task_123', status:'succeeded', type:'research'});
+  assert.equal(Object.hasOwn(payload, 'prompt'), false);
+  assert.equal(Object.hasOwn(payload, 'result'), false);
+  assert.equal(Object.hasOwn(payload, 'metadata'), false);
 });
