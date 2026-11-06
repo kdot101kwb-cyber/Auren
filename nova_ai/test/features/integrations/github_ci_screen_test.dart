@@ -61,20 +61,16 @@ void main() {
     expect(find.text('Android build passed'), findsOneWidget);
     expect(find.text('Functions tests failed'), findsOneWidget);
 
-    // The third run can be below the initial viewport in the scrollable list.
-    await tester.scrollUntilVisible(
-      find.text('Security scan running'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('Security scan running'), findsOneWidget);
-
-    // Return to the filter controls before changing the selected filter.
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, 1000));
+    // Use the running filter to bring the third run into the rendered list.
+    // This avoids relying on viewport dimensions or scroll physics in CI.
+    await tester.tap(find.widgetWithText(ChoiceChip, 'قيد التنفيذ'));
     await tester.pumpAndSettle();
+    expect(find.text('Security scan running'), findsOneWidget);
+    expect(find.text('Android build passed'), findsNothing);
+    expect(find.text('Functions tests failed'), findsNothing);
+
     await tester.tap(find.widgetWithText(ChoiceChip, 'الفاشلة'));
     await tester.pumpAndSettle();
-
     expect(find.text('Functions tests failed'), findsOneWidget);
     expect(find.text('Android build passed'), findsNothing);
     expect(find.text('Security scan running'), findsNothing);
