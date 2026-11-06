@@ -142,7 +142,7 @@ test('client cannot delete an action', async () => {
 
 test('another user cannot read or update the action', async () => {
   await seedAction('rules-owner', 'cross-user');
-  const ref = testEnv.authenticatedContext('rules-other').app).doc('users/rules-owner/actions/cross-user');
+  const ref = getFirestore(testEnv.authenticatedContext('rules-other').app).doc('users/rules-owner/actions/cross-user');
   await assertFails(ref.get());
   await assertFails(ref.update({
     payload: { text: 'cross-user tamper' },
