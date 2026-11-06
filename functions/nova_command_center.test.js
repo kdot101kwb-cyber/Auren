@@ -2,6 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {normalizeNovaTaskInput} = require('./nova_command_validation');
+const {shouldNotifyNovaCreation, shouldNotifyNovaTransition} = require('./nova_notification_policy');
 
 test('accepts a bounded task with stable idempotency key', () => {
   const task = normalizeNovaTaskInput({type:'research',prompt:'ابحث عن فرصة',idempotencyKey:'nova_task_123456'});
@@ -53,4 +54,10 @@ test('approval and failure milestones have distinct messages', () => {
   assert.match(buildNovaMilestoneNotification('awaiting_approval', 'publish').title, /موافقتك/);
   assert.match(buildNovaMilestoneNotification('failed', 'research').body, /مراجعة السبب/);
   assert.equal(buildNovaMilestoneNotification('queued', 'research'), null);
+});
+
+test('approval-required tasks notify on creation, not only on later updates', () => {
+  assert.equal(shouldNotifyNovaCreation('awaiting_approval'), true);
+  assert.equal(shouldNotifyNovaCreation('queued'), false);
+  assert.equal(shouldNotifyNovaTransition('queued', 'awaiting_approval'), true);
 });
