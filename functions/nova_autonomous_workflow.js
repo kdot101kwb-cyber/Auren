@@ -1,6 +1,6 @@
 'use strict';
 
-const SAFE_WORKFLOW_TYPES = new Set(['chat', 'plan', 'research', 'content_draft', 'social_content_draft']);
+const SAFE_WORKFLOW_TYPES = new Set(['chat', 'plan', 'research', 'opportunity_scan', 'content_draft', 'social_content_draft']);
 
 function normalizeWorkflowSteps(value, ErrorType = Error) {
   const fail = (message) => { throw ErrorType === Error ? new Error(message) : new ErrorType('invalid-argument', message); };
