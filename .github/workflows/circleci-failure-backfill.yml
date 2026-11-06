@@ -46,10 +46,10 @@ jobs:
           };
           const mask = value => String(value ?? '')
             .replace(/(gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})/g, '[REDACTED_TOKEN]')
-            .replace(/(Bearer|Circle-Token)\\s+\\S+/gi, '$1 [REDACTED]')
-            .replace(/((?:TOKEN|SECRET|PASSWORD|API[_-]?KEY)\\s*[=:]\\s*)\\S+/gi, '$1[REDACTED]')
+            .replace(/(Bearer|Circle-Token)\s+\S+/gi, '$1 [REDACTED]')
+            .replace(/((?:TOKEN|SECRET|PASSWORD|API[_-]?KEY)\s*[=:]\s*)\S+/gi, '$1[REDACTED]')
             .replace(/sk-[A-Za-z0-9_-]{16,}/g, '[REDACTED_KEY]')
-            .replace(/((?:https?:\\/\\/)[^\\s:@/]+):([^\\s@/]+)@/gi, '$1:[REDACTED]@');
+            .replace(/((?:https?:\/\/)[^\s:@/]+):([^\s@/]+)@/gi, '$1:[REDACTED]@');
 
           async function json(url, requestHeaders) {
             const response = await fetch(url, { headers: requestHeaders });
@@ -74,13 +74,13 @@ jobs:
             allIssueComments()
           ]);
           const existing = new Set(comments.map(c => {
-            const match = (c.body || '').match(/<!-- circleci-report:(\\d+) -->/);
+            const match = (c.body || '').match(/<!-- circleci-report:(\d+) -->/);
             return match && match[1];
           }).filter(Boolean));
 
           const requested = [...new Set((process.env.REQUESTED_BUILDS || '')
-            .split(/[\\s,;]+/).filter(Boolean))];
-          if (requested.some(number => !/^\\d+$/.test(number))) {
+            .split(/[\s,;]+/).filter(Boolean))];
+          if (requested.some(number => !/^\d+$/.test(number))) {
             throw new Error('build_numbers must contain only comma-separated numeric CircleCI build IDs');
           }
 
@@ -119,7 +119,7 @@ jobs:
                   } else if (typeof value === 'string') out.push(value);
                   return out;
                 };
-                for (const line of collect(payload).join('\\n').split(/\\r?\\n/)) {
+                for (const line of collect(payload).join('\n').split(/\r?\n/)) {
                   if (/error|exception|failed|failure|testfailure|expected:|actual:|stack trace|exit code|could not|not found|assertion/i.test(line)) {
                     const safe = mask(line).trim();
                     if (safe) excerpts.push(safe.slice(0, 500));
@@ -140,13 +140,13 @@ jobs:
               `- CircleCI: https://circleci.com/gh/kdot101kwb-cyber/Auren/${number}`,
               '',
               '### Failed steps',
-              failedSteps.length ? [...new Set(failedSteps)].map(x => '- ' + x).join('\\n') : '- No failed step was identified in the API response.',
+              failedSteps.length ? [...new Set(failedSteps)].map(x => '- ' + x).join('\n') : '- No failed step was identified in the API response.',
               '',
               '### Filtered failure excerpts (sanitized)',
-              excerpts.length ? '\`\`\`text\\n' + [...new Set(excerpts)].slice(-60).join('\\n').slice(-12000) + '\\n\`\`\`' : 'No matching error lines were returned. Open the CircleCI job page for full output.',
+              excerpts.length ? '\`\`\`text\n' + [...new Set(excerpts)].slice(-60).join('\n').slice(-12000) + '\n\`\`\`' : 'No matching error lines were returned. Open the CircleCI job page for full output.',
               '',
               '> Automatically recovered from CircleCI build history. Excerpts are filtered and secret masking is best-effort.'
-            ].join('\\n');
+            ].join('\n');
 
             const response = await fetch(`https://api.github.com/repos/${repository}/issues/${issue}/comments`, {
               method: 'POST',
