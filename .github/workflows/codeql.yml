@@ -2,13 +2,15 @@ name: AUREN CodeQL
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'feat/nova-*'
+      - 'fix/nova-*'
     paths:
       - 'functions/**'
       - 'backend/**'
       - '.github/workflows/**'
   pull_request:
-    branches: [main]
     paths:
       - 'functions/**'
       - 'backend/**'
