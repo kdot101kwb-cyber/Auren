@@ -74,8 +74,8 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
     final messages = <String>[];
 
     for (final task in tasks) {
-      final id = '\${task['taskId'] ?? ''}';
-      final status = '\${task['status'] ?? 'unknown'}';
+      final id = '${task['taskId'] ?? ''}';
+      final status = '${task['status'] ?? 'unknown'}';
       if (id.isEmpty) continue;
       nextStatuses[id] = status;
 
@@ -85,7 +85,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
       }
       if (!_milestoneStatuses.contains(status)) continue;
 
-      final title = '\${task['type'] ?? 'المهمة'}';
+      final title = '${task['type'] ?? 'المهمة'}';
       switch (status) {
         case 'succeeded':
         case 'completed':
@@ -172,7 +172,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
     setState(() { _busy = true; _message = null; });
     try {
       await _ensureSignedIn();
-      final idempotencyKey = 'nova_\${DateTime.now().microsecondsSinceEpoch}';
+      final idempotencyKey = 'nova_${DateTime.now().microsecondsSinceEpoch}';
       final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
           .httpsCallable('submitNovaTask').call(<String, dynamic>{
         'type': _type,
@@ -184,7 +184,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
       _prompt.clear();
       if (mounted) {
         setState(() => _message =
-            'سُجلت المهمة في قائمة الخلفية: \${data['taskId']} — الحالة: \${data['status']}. '
+            'سُجلت المهمة في قائمة الخلفية: ${data['taskId']} — الحالة: ${data['status']}. '
             'التسجيل وحده لا يثبت بدء التنفيذ.');
       }
       _busy = false;
@@ -203,7 +203,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
       final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
           .httpsCallable(name).call(<String, dynamic>{'taskId': taskId});
       final data = Map<String, dynamic>.from(response.data as Map);
-      if (mounted) setState(() => _message = 'تم تحديث الحالة إلى: \${data['status']}.');
+      if (mounted) setState(() => _message = 'تم تحديث الحالة إلى: ${data['status']}.');
       _busy = false;
       await _loadTasks();
     } catch (error) {
@@ -286,30 +286,30 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
         Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('\${task['type'] ?? 'task'} — \${task['status'] ?? 'unknown'}',
+            Text('${task['type'] ?? 'task'} — ${task['status'] ?? 'unknown'}',
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 5),
-            Text('\${task['prompt'] ?? task['taskId'] ?? ''}', maxLines: 3, overflow: TextOverflow.ellipsis),
+            Text('${task['prompt'] ?? task['taskId'] ?? ''}', maxLines: 3, overflow: TextOverflow.ellipsis),
             if (task['result'] is Map && (task['result'] as Map)['text'] is String) ...[
               const SizedBox(height: 8),
-              Text('النتيجة: \${(task['result'] as Map)['text']}', textDirection: TextDirection.rtl),
+              Text('النتيجة: ${(task['result'] as Map)['text']}', textDirection: TextDirection.rtl),
             ],
             if (task['result'] is Map && (task['result'] as Map)['videoUrl'] is String) ...[
               const SizedBox(height: 8),
-              SelectableText('رابط الفيديو: \${(task['result'] as Map)['videoUrl']}', textDirection: TextDirection.ltr),
+              SelectableText('رابط الفيديو: ${(task['result'] as Map)['videoUrl']}', textDirection: TextDirection.ltr),
             ],
             if (task['error'] is String && (task['error'] as String).isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text('الخطأ: \${task['error']}', style: const TextStyle(color: Colors.orangeAccent), textDirection: TextDirection.rtl),
+              Text('الخطأ: ${task['error']}', style: const TextStyle(color: Colors.orangeAccent), textDirection: TextDirection.rtl),
             ],
             const SizedBox(height: 6),
-            Text('المعرف: \${task['taskId'] ?? ''}', style: const TextStyle(fontSize: 11)),
+            Text('المعرف: ${task['taskId'] ?? ''}', style: const TextStyle(fontSize: 11)),
             Wrap(spacing: 8, children: [
               if (task['status'] == 'awaiting_approval')
-                TextButton(onPressed: _busy ? null : () => _taskAction('approveNovaTask', '\${task['taskId']}'),
+                TextButton(onPressed: _busy ? null : () => _taskAction('approveNovaTask', '${task['taskId']}'),
                     child: const Text('موافقة')),
               if (task['status'] == 'queued' || task['status'] == 'awaiting_approval')
-                TextButton(onPressed: _busy ? null : () => _taskAction('cancelNovaTask', '\${task['taskId']}'),
+                TextButton(onPressed: _busy ? null : () => _taskAction('cancelNovaTask', '${task['taskId']}'),
                     child: const Text('إلغاء')),
             ]),
           ],
