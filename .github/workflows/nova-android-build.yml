@@ -15,6 +15,7 @@ on:
     paths:
       - 'nova_ai/**'
       - '.github/workflows/nova-android-build.yml'
+      - '.github/workflows/nova-functions-ci.yml'
 
 # Avoid spending CI time building stale commits when several small commits land
 # in quick succession. The latest commit in this branch is the one we need.
