@@ -8,6 +8,7 @@ on:
       - feat/nova-ai-android-app
       - feat/nova-application-factory-market-scout
       - feat/nova-shared-task-contract-v1
+      - fix/nova-functions-ci-sdk-compat
     paths:
       - 'nova_ai/**'
       - '.github/workflows/nova-android-build.yml'
@@ -29,7 +30,7 @@ jobs:
         working-directory: nova_ai
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -104,7 +105,7 @@ jobs:
           EOF
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nova-ai-debug-apk
           path: nova_ai/build/app/outputs/flutter-apk/app-debug.apk
@@ -113,7 +114,7 @@ jobs:
 
       - name: Upload build configuration report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nova-ai-build-status
           path: nova_ai/build/nova-build-status.txt
