@@ -1,0 +1,131 @@
+name: CircleCI failure backfill
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: circleci-failure-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Find recent failed functions_tests builds and publish missing reports
+        env:
+          CIRCLECI_API_TOKEN: ${{ secrets.CIRCLECI_API_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: "420"
+        run: |
+          node <<'NODE'
+          const base = 'https://circleci.com/api/v1.1/project/gh/kdot101kwb-cyber/Auren';
+          const token = process.env.CIRCLECI_API_TOKEN;
+          const repository = process.env.REPOSITORY;
+          const issue = process.env.ISSUE_NUMBER;
+          if (!token) throw new Error('Missing repository secret CIRCLECI_API_TOKEN');
+
+          const headers = { 'Circle-Token': token };
+          const ghHeaders = {
+            'Authorization': `Bearer ${process.env.GH_TOKEN}`,
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28'
+          };
+          const mask = value => String(value ?? '')
+            .replace(/(gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})/g, '[REDACTED_TOKEN]')
+            .replace(/(Bearer|Circle-Token)\s+\S+/gi, '$1 [REDACTED]')
+            .replace(/((?:TOKEN|SECRET|PASSWORD|API[_-]?KEY)\s*[=:]\s*)\S+/gi, '$1[REDACTED]')
+            .replace(/sk-[A-Za-z0-9_-]{16,}/g, '[REDACTED_KEY]')
+            .replace(/((?:https?:\/\/)[^\s:@/]+):([^\s@/]+)@/gi, '$1:[REDACTED]@');
+
+          async function json(url, requestHeaders) {
+            const response = await fetch(url, { headers: requestHeaders });
+            if (!response.ok) throw new Error(`Request failed: HTTP ${response.status}`);
+            return response.json();
+          }
+
+          const [builds, comments] = await Promise.all([
+            json(base + '?limit=50', headers),
+            json(`https://api.github.com/repos/${repository}/issues/${issue}/comments?per_page=100`, ghHeaders)
+          ]);
+          const existing = new Set(comments.map(c => {
+            const match = (c.body || '').match(/<!-- circleci-report:(\d+) -->/);
+            return match && match[1];
+          }).filter(Boolean));
+
+          const candidates = (Array.isArray(builds) ? builds : [])
+            .filter(b => b && String(b.job_name || '').toLowerCase() === 'functions_tests'
+              && b.status === 'failed' && Number.isInteger(Number(b.build_num)))
+            .slice(0, 50);
+          let published = 0;
+          let skipped = 0;
+
+          for (const buildSummary of candidates) {
+            const number = String(buildSummary.build_num);
+            if (existing.has(number)) { skipped++; continue; }
+            const job = await json(base + '/' + encodeURIComponent(number), headers);
+            const failedSteps = [];
+            const excerpts = [];
+            for (const step of (job.steps || [])) {
+              for (const action of (step.actions || [])) {
+                if (action.status === 'failed') failedSteps.push(mask(step.name || action.name || 'Unnamed step'));
+                if (!action.output_url) continue;
+                const outputResponse = await fetch(action.output_url);
+                if (!outputResponse.ok) continue;
+                let payload;
+                try { payload = await outputResponse.json(); } catch { continue; }
+                const collect = (value, out = []) => {
+                  if (Array.isArray(value)) value.forEach(v => collect(v, out));
+                  else if (value && typeof value === 'object') {
+                    if (typeof value.message === 'string') out.push(value.message);
+                    for (const [key, child] of Object.entries(value)) if (key !== 'message') collect(child, out);
+                  } else if (typeof value === 'string') out.push(value);
+                  return out;
+                };
+                for (const line of collect(payload).join('\n').split(/\r?\n/)) {
+                  if (/error|exception|failed|failure|testfailure|expected:|actual:|stack trace|exit code|could not|not found|assertion/i.test(line)) {
+                    const safe = mask(line).trim();
+                    if (safe) excerpts.push(safe.slice(0, 500));
+                  }
+                }
+              }
+            }
+            const marker = `<!-- circleci-report:${number} -->`;
+            const body = [
+              marker,
+              '## CircleCI read-only backfill report',
+              '',
+              `- Build/job: **#${number}**`,
+              `- Job: **${mask(job.job_name || 'functions_tests')}**`,
+              `- Status: **${mask(job.status || 'failed')}**`,
+              `- Branch: ${mask(job.branch || 'not provided')}`,
+              `- Commit: ${mask(job.vcs_revision || 'not provided')}`,
+              `- CircleCI: https://circleci.com/gh/kdot101kwb-cyber/Auren/${number}`,
+              '',
+              '### Failed steps',
+              failedSteps.length ? [...new Set(failedSteps)].map(x => '- ' + x).join('\n') : '- No failed step was identified in the API response.',
+              '',
+              '### Filtered failure excerpts (sanitized)',
+              excerpts.length ? '```text\n' + [...new Set(excerpts)].slice(-60).join('\n').slice(-12000) + '\n```' : 'No matching error lines were returned. Open the CircleCI job page for full output.',
+              '',
+              '> Automatically recovered from recent CircleCI build history. Excerpts are filtered and secret masking is best-effort.'
+            ].join('\n');
+
+            const response = await fetch(`https://api.github.com/repos/${repository}/issues/${issue}/comments`, {
+              method: 'POST',
+              headers: { ...ghHeaders, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ body })
+            });
+            if (!response.ok) throw new Error(`GitHub report publish failed for build #${number}: HTTP ${response.status}`);
+            existing.add(number);
+            published++;
+          }
+          console.log(`Backfill complete: ${published} report(s) published, ${skipped} duplicate(s) skipped, ${candidates.length} failed build(s) checked.`);
+          NODE
