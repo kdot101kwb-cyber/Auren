@@ -12,6 +12,7 @@ on:
       - feat/nova-shared-task-contract-v1
       - feat/nova-exact-action-approval-security
       - feat/nova-action-risk-registry
+      - fix/nova-video-provider-zero-cost-gate
     paths:
       - 'nova_ai/**'
       - '.github/workflows/nova-android-build.yml'

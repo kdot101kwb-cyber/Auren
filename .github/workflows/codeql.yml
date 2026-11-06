@@ -2,13 +2,13 @@ name: AUREN CodeQL
 
 on:
   push:
-    branches: [main, feat/nova-exact-action-approval-security, feat/nova-action-risk-registry]
+    branches: [main, feat/nova-exact-action-approval-security, feat/nova-action-risk-registry, fix/nova-video-provider-zero-cost-gate]
     paths:
       - 'functions/**'
       - 'backend/**'
       - '.github/workflows/**'
   pull_request:
-    branches: [main, feat/nova-shared-task-contract-v1]
+    branches: [main, feat/nova-shared-task-contract-v1, feat/nova-action-risk-registry]
     paths:
       - 'functions/**'
       - 'backend/**'
