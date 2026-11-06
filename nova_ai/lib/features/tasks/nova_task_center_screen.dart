@@ -112,12 +112,37 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
 
     final messenger = ScaffoldMessenger.maybeOf(context);
     if (messenger == null) return;
+    final firstTask = tasks.firstWhere(
+      (task) => _knownStatuses['${task['taskId'] ?? ''}'] ==
+          '${task['status'] ?? 'unknown'}',
+      orElse: () => const <String, dynamic>{},
+    );
+    final firstStatus = '${firstTask['status'] ?? ''}';
+    final completed = firstStatus == 'succeeded' || firstStatus == 'completed';
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text(messages.first, textDirection: TextDirection.rtl),
-          duration: const Duration(seconds: 6),
+          backgroundColor: completed ? Colors.green.shade700 : Colors.deepOrange.shade800,
+          behavior: SnackBarBehavior.floating,
+          content: Row(
+            textDirection: TextDirection.rtl,
+            children: [
+              Icon(
+                completed ? Icons.check_circle : Icons.info,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  messages.first,
+                  textDirection: TextDirection.rtl,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 7),
         ),
       );
   }
