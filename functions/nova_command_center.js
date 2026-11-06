@@ -187,6 +187,7 @@ exports.listNovaTasks = onCall(
         prompt:task.prompt,
         status:task.status,
         requiresApproval:task.requiresApproval === true,
+        dependsOnTaskIds:Array.isArray(task.dependsOnTaskIds) ? task.dependsOnTaskIds : [],
         executionMode:task.executionMode || 'unknown',
         result:task.result || null,
         error:task.error || null,
@@ -214,8 +215,7 @@ exports.advanceNovaTaskDependents = onDocumentUpdated(
     const userTasks = db.collection('users').doc(uid).collection(TASK_COLLECTION);
     let cursor = null;
     while (true) {
-      let query = userTasks.where('dependsOnTaskIds', 'array-contains', completedTaskId)
-        .orderBy('__name__').limit(50);
+      let query = userTasks.where('dependsOnTaskIds', 'array-contains', completedTaskId).limit(50);
       if (cursor) query = query.startAfter(cursor);
       const snapshot = await query.get();
       if (snapshot.empty) break;
