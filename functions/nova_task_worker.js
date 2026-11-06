@@ -128,7 +128,11 @@ exports.processNovaTaskQueue = onSchedule(
           let result = workflowResults.length ? workflowResults[workflowResults.length - 1] : null;
           for (let stepIndex = startIndex; stepIndex < sequence.length; stepIndex++) {
             const step = sequence[stepIndex];
-            result = await runTextTask(step.prompt, step.type, OPENROUTER_API_KEY.value().trim());
+            const previousOutput = workflowResults.length ? workflowResults[workflowResults.length - 1].text : '';
+            const stepPrompt = previousOutput
+              ? 'Previous workflow step output:\\n' + previousOutput + '\\n\\nNext step instruction:\\n' + step.prompt
+              : step.prompt;
+            result = await runTextTask(stepPrompt, step.type, OPENROUTER_API_KEY.value().trim());
             workflowResults.push({step:stepIndex + 1, type:step.type, text:result.text, model:result.model});
             await db.runTransaction(async (tx) => {
               const current = await tx.get(taskRef);
