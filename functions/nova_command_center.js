@@ -5,7 +5,7 @@ const {getFirestore, FieldValue} = require('firebase-admin/firestore');
 const {getMessaging} = require('firebase-admin/messaging');
 const {onDocumentCreated, onDocumentUpdated} = require('firebase-functions/v2/firestore');
 const {createHash} = require('node:crypto');
-const {buildNovaMilestoneNotification, shouldNotifyNovaCreation, shouldNotifyNovaTransition} = require('./nova_notification_policy');
+const {buildNovaMilestoneNotification, buildNovaPushData, shouldNotifyNovaCreation, shouldNotifyNovaTransition} = require('./nova_notification_policy');
 
 const db = getFirestore();
 const REGION = 'us-central1';
@@ -262,11 +262,7 @@ exports.notifyNovaTaskMilestone = onDocumentUpdated(
     const response = await getMessaging().sendEachForMulticast({
       tokens:tokens.map((item) => item.token),
       notification,
-      data:{
-        taskId:String(event.params.taskId),
-        status,
-        type:String(after.type || 'task'),
-      },
+      data:buildNovaPushData(event.params.taskId, status, after.type),
       android:{
         priority:'high',
         notification:{sound:'default'},
@@ -308,7 +304,7 @@ exports.notifyNovaApprovalRequired = onDocumentCreated(
     const response = await getMessaging().sendEachForMulticast({
       tokens:tokens.map((item) => item.token),
       notification,
-      data:{taskId:String(event.params.taskId), status:'awaiting_approval', type:String(task.type || 'task')},
+      data:buildNovaPushData(event.params.taskId, 'awaiting_approval', task.type),
       android:{priority:'high', notification:{sound:'default'}},
     });
     const staleRefs = [];
