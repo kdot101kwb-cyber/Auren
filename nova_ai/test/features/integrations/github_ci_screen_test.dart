@@ -52,7 +52,7 @@ void main() {
     });
     addTearDown(client.close);
 
-    await tester.pumpWidget(MaterialApp(home: GitHubCiScreen(httpClient: client)));
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: GitHubCiScreen(httpClient: client))));
     await tester.pumpAndSettle();
 
     expect(find.text('النجاح'), findsOneWidget);
@@ -91,7 +91,7 @@ void main() {
         ));
     addTearDown(client.close);
 
-    await tester.pumpWidget(MaterialApp(home: GitHubCiScreen(httpClient: client)));
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: GitHubCiScreen(httpClient: client))));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ChoiceChip, 'الفاشلة'));
     await tester.pumpAndSettle();
@@ -103,7 +103,7 @@ void main() {
     final client = MockClient((request) async => http.Response('{}', 403));
     addTearDown(client.close);
 
-    await tester.pumpWidget(MaterialApp(home: GitHubCiScreen(httpClient: client)));
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: GitHubCiScreen(httpClient: client))));
     await tester.pumpAndSettle();
 
     expect(find.text('لم يكتمل الاتصال'), findsOneWidget);
