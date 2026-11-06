@@ -269,7 +269,7 @@ exports.notifyNovaTaskMilestone = onDocumentUpdated(
       },
       android:{
         priority:'high',
-        notification:{channelId:'nova_task_updates', sound:'default'},
+        notification:{sound:'default'},
       },
     });
 
