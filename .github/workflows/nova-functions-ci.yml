@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - feat/nova-ai-android-app
-      - feat/nova-shared-task-contract-v1
+      - feat/nova-application-factory-market-scout
       - feat/nova-shared-task-contract-v1
       - feat/nova-exact-action-approval-security
       - feat/nova-action-risk-registry
+      - chunk/fix-action-rules-emulator-gate
+      - chunk/fix-firestore-modular-api-30989
     paths:
       - "functions/**"
       - ".github/workflows/nova-functions-ci.yml"
@@ -16,6 +18,11 @@ on:
     branches:
       - main
       - feat/nova-ai-android-app
+      - feat/nova-application-factory-market-scout
+      - feat/nova-shared-task-contract-v1
+      - feat/nova-exact-action-approval-security
+      - feat/nova-action-risk-registry
+      - chunk/fix-action-rules-emulator-gate
     paths:
       - "functions/**"
       - ".github/workflows/nova-functions-ci.yml"
