@@ -32,7 +32,7 @@ function resolveDependencyState(statuses, requiresApproval = false) {
       error: 'A prerequisite task failed, was cancelled, or was blocked. Review the dependency before continuing.',
     };
   }
-  if (normalized.length > 0 && normalized.every((status) => SUCCESS_STATUSES.has(status))) {
+  if (normalized.length === 0 || normalized.every((status) => SUCCESS_STATUSES.has(status))) {
     return {status: requiresApproval ? 'awaiting_approval' : 'queued', error: null};
   }
   return {status: 'waiting_for_dependencies', error: null};
