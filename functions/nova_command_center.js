@@ -231,12 +231,16 @@ exports.advanceNovaTaskDependents = onDocumentUpdated(
     if (!uid || !completedTaskId) return;
 
     const userTasks = db.collection('users').doc(uid).collection(TASK_COLLECTION);
-    const dependents = await userTasks
-      .where('dependsOnTaskIds', 'array-contains', completedTaskId)
-      .limit(50)
-      .get();
+    let cursor = null;
+    while (true) {
+      let dependentQuery = userTasks
+        .where('dependsOnTaskIds', 'array-contains', completedTaskId)
+        .limit(50);
+      if (cursor) dependentQuery = dependentQuery.startAfter(cursor);
+      const dependents = await dependentQuery.get();
+      if (dependents.empty) break;
 
-    for (const dependentDoc of dependents.docs) {
+      for (const dependentDoc of dependents.docs) {
       const dependentRef = dependentDoc.ref;
       const dependentId = dependentDoc.id;
       const dependencyIds = Array.isArray(dependentDoc.data()?.dependsOnTaskIds)
@@ -291,6 +295,9 @@ exports.advanceNovaTaskDependents = onDocumentUpdated(
           createdAt:FieldValue.serverTimestamp(),
         });
       });
+      }
+      cursor = dependents.docs[dependents.docs.length - 1];
+      if (dependents.size < 50) break;
     }
   }
 );
