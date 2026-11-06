@@ -16,7 +16,7 @@ jobs:
           - backend/action-executor
           - backend/plugin-worker
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -38,7 +38,7 @@ jobs:
 
       - name: Upload Node test diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: node-test-diagnostics-${{ matrix.service == 'backend/action-executor' && 'action-executor' || 'plugin-worker' }}
           path: ${{ matrix.service }}/ci-test.log
@@ -47,7 +47,7 @@ jobs:
   functions-tests:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -65,7 +65,7 @@ jobs:
 
       - name: Upload Functions test diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: functions-test-diagnostics
           path: functions/ci-test.log
@@ -74,6 +74,6 @@ jobs:
   plugin-worker-image:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build plugin worker image
         run: docker build -t auren-plugin-worker:ci backend/plugin-worker

@@ -1,96 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../services/social/community_service.dart';
-
+import 'community_detail_screen.dart';
+import 'community_memory_screen.dart';
 class AurenCommunitiesScreen extends StatefulWidget{const AurenCommunitiesScreen({super.key});@override State<AurenCommunitiesScreen> createState()=>_AurenCommunitiesScreenState();}
 class _AurenCommunitiesScreenState extends State<AurenCommunitiesScreen>{
- final _service=AurenCommunityService();final _search=TextEditingController();String _query='';bool _creating=false;
- @override void dispose(){_search.dispose();super.dispose();}
- Future<void> _create() async{final name=TextEditingController(),desc=TextEditingController(),topic=TextEditingController();final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('إنشاء مجتمع'),content:SingleChildScrollView(child:Column(children:[TextField(controller:name,decoration:const InputDecoration(labelText:'اسم المجتمع')),TextField(controller:topic,decoration:const InputDecoration(labelText:'الموضوع')),TextField(controller:desc,maxLines:3,decoration:const InputDecoration(labelText:'الوصف'))])),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('إنشاء'))]));if(ok!=true){name.dispose();desc.dispose();topic.dispose();return;}setState(()=>_creating=true);try{await _service.create(name:name.text,description:desc.text,topic:topic.text);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString())));}finally{if(mounted)setState(()=>_creating=false);}name.dispose();desc.dispose();topic.dispose();}
- Future<void> _toggle(AurenCommunity c) async{try{final joined=c.memberIds.contains(_service.uid);if(joined)await _service.leave(c.id);else await _service.join(c.id);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString())));}}
- @override
- Widget build(BuildContext context) {
-   return Scaffold(
-     appBar: AppBar(
-       title: const Text('Communities'),
-       actions: [
-         IconButton(onPressed: _creating ? null : _create, icon: const Icon(Icons.add_circle_outline)),
-       ],
-     ),
-     body: Column(
-       children: [
-         Padding(
-           padding: const EdgeInsets.all(16),
-           child: TextField(
-             controller: _search,
-             onChanged: (v) => setState(() => _query = v),
-             decoration: const InputDecoration(
-               prefixIcon: Icon(Icons.search),
-               hintText: 'ابحث عن مجتمع',
-               border: OutlineInputBorder(),
-             ),
-           ),
-         ),
-         Expanded(
-           child: StreamBuilder<List<AurenCommunity>>(
-             stream: _service.watchPublic(query: _query),
-             builder: (context, snapshot) {
-               if (snapshot.hasError) return Center(child: Text('تعذر تحميل المجتمعات: ' + snapshot.error.toString()));
-               if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-               final items = snapshot.data!;
-               if (items.isEmpty) return const Center(child: Text('ما في مجتمعات مطابقة حالياً.'));
-               return ListView.separated(
-                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                 itemCount: items.length,
-                 separatorBuilder: (_, __) => const SizedBox(height: 10),
-                 itemBuilder: (context, i) {
-                   final community = items[i];
-                   final joined = community.memberIds.contains(_service.uid);
-                   final topic = community.topic.isEmpty ? 'Community' : community.topic;
-                   return Card(
-                     child: ListTile(
-                       leading: CircleAvatar(child: Icon(community.topic.isEmpty ? Icons.groups : Icons.tag)),
-                       title: Text(community.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                       subtitle: Text(
-                         topic + ' • ' + community.memberCount.toString() + ' عضو\n' + community.description,
-                         maxLines: 3,
-                         overflow: TextOverflow.ellipsis,
-                       ),
-                       isThreeLine: true,
-                       trailing: Row(
-                         mainAxisSize: MainAxisSize.min,
-                         children: [
-                           if (community.ownerId == _service.uid)
-                             IconButton(
-                               onPressed: () => _members(community),
-                               icon: const Icon(Icons.manage_accounts_outlined),
-                             ),
-                           FilledButton.tonal(
-                             onPressed: () => _toggle(community),
-                             child: Text(joined ? 'مغادرة' : 'انضمام'),
-                           ),
-                         ],
-                       ),
-                     ),
-                   );
-                 },
-               );
-             },
-           ),
-         ),
-       ],
-     ),
-   );
- }
-
-  Future<void> _members(AurenCommunity community) async {
-    if (!mounted) return;
-    showDialog<void>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('أعضاء ' + community.name),
-        content: Text('عدد الأعضاء: ' + community.memberCount.toString()),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('إغلاق'))],
-      ),
-    );
-  }
+ final s=AurenCommunityService();final search=TextEditingController();String query='';
+ @override void dispose(){search.dispose();super.dispose();}
+ Future<void> create()async{final n=TextEditingController(),d=TextEditingController(),t=TextEditingController();final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('إنشاء مجتمع'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:n,decoration:const InputDecoration(labelText:'الاسم')),TextField(controller:t,decoration:const InputDecoration(labelText:'الموضوع')),TextField(controller:d,decoration:const InputDecoration(labelText:'الوصف'))]),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('إنشاء'))]));if(ok==true){try{await s.create(name:n.text,description:d.text,topic:t.text);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('$e')));}}n.dispose();d.dispose();t.dispose();}
+ Future<void> toggle(AurenCommunity c)async{try{if(c.memberIds.contains(FirebaseAuth.instance.currentUser?.uid))await s.leave(c.id);else await s.join(c.id);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('$e')));}}
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Communities'),actions:[IconButton(onPressed:create,icon:const Icon(Icons.add_circle_outline))]),body:Column(children:[Padding(padding:const EdgeInsets.all(16),child:TextField(controller:search,onChanged:(v)=>setState(()=>query=v),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'ابحث عن مجتمع',border:OutlineInputBorder()))),Expanded(child:StreamBuilder<List<AurenCommunity>>(stream:s.watchPublic(query:query),builder:(c,snap){if(snap.hasError)return Center(child:Text('تعذر التحميل: ${snap.error}'));if(!snap.hasData)return const Center(child:CircularProgressIndicator());final items=snap.data!;if(items.isEmpty)return const Center(child:Text('لا توجد مجتمعات مطابقة.'));return ListView.builder(itemCount:items.length,itemBuilder:(c,i){final x=items[i],uid=FirebaseAuth.instance.currentUser?.uid,joined=uid!=null&&x.memberIds.contains(uid);return Card(child:ListTile(onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenCommunityDetailScreen(communityId:x.id))),leading:joined?IconButton(tooltip:'Community Memory',icon:const Icon(Icons.history_edu_outlined),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenCommunityMemoryScreen(communityId:x.id)))):const Icon(Icons.groups_outlined),title:Text(x.name),subtitle:Text('${x.topic} • ${x.memberCount} عضو\n${x.description}',maxLines:3,overflow:TextOverflow.ellipsis),isThreeLine:true,trailing:FilledButton.tonal(onPressed:()=>toggle(x),child:Text(joined?'مغادرة':'انضمام'))));});}))]));
 }

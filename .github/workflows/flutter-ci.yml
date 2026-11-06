@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -48,7 +48,7 @@ jobs:
           exit ${status}
       - name: Upload Analyze diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: flutter-analyze-diagnostics
           path: flutter-analyze.log
@@ -62,7 +62,7 @@ jobs:
           exit ${status}
       - name: Upload Test diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: flutter-test-diagnostics
           path: flutter-test.log
@@ -73,10 +73,38 @@ jobs:
             flutter create . --platforms=android --org com.auren
           fi
           test -f android/app/src/main/AndroidManifest.xml
+      - name: Install Android NDK with retry
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          sdkmanager="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+          ndk_version="28.2.13676358"
+          ndk_dir="$sdk_root/ndk/$ndk_version"
+          test -x "$sdkmanager"
+          for attempt in 1 2 3; do
+            echo "Installing Android NDK $ndk_version (attempt $attempt/3)"
+            rm -rf "$ndk_dir"
+            # sdkmanager closes stdin after accepting the license; with pipefail,
+            # the expected SIGPIPE from yes can incorrectly mark a successful install as failed.
+            set +o pipefail
+            if yes | "$sdkmanager" --install "ndk;$ndk_version"; then
+              install_status=0
+            else
+              install_status=$?
+            fi
+            set -o pipefail
+            if [ "$install_status" -eq 0 ] && test -f "$ndk_dir/source.properties"; then
+              exit 0
+            fi
+            sleep "$((attempt * 5))"
+          done
+          echo "Android NDK installation failed after 3 attempts." >&2
+          exit 1
       - name: Build Android debug APK
         run: flutter build apk --debug
       - name: Upload Android debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: auren-android-debug
           path: build/app/outputs/flutter-apk/app-debug.apk

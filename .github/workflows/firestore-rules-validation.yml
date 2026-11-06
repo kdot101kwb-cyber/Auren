@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -33,8 +33,8 @@ jobs:
         run: npm install --global firebase-tools
       - name: Install rules test dependencies
         working-directory: functions
-        run: npm install --no-audit --no-fund
+        run: npm install --no-audit --no-fund --legacy-peer-deps
       - name: Compile rules and run authorization integration tests in isolated emulator
         run: >-
           firebase emulators:exec --only firestore --project demo-auren-rules
-          "node --test functions/action_rules.integration.test.js functions/supplier_rules.integration.test.js functions/education_rules.integration.test.js"
+          "node --test functions/action_rules.integration.test.js functions/supplier_rules.integration.test.js functions/education_rules.integration.test.js functions/community_collaboration_rules.integration.test.js functions/community_memory_rules.integration.test.js"
