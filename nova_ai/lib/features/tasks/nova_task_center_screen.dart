@@ -314,6 +314,14 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 5),
             Text('${task['prompt'] ?? task['taskId'] ?? ''}', maxLines: 3, overflow: TextOverflow.ellipsis),
+            if ((task['workflowTotal'] as num? ?? 1) > 1) ...[
+              const SizedBox(height: 8),
+              Text('تقدم التنفيذ: ${task['workflowProgress'] ?? 0} / ${task['workflowTotal']} خطوات'),
+              LinearProgressIndicator(
+                value: ((task['workflowProgress'] as num? ?? 0).toDouble() /
+                    (task['workflowTotal'] as num? ?? 1).toDouble()).clamp(0.0, 1.0),
+              ),
+            ],
             if (task['result'] is Map && (task['result'] as Map)['text'] is String) ...[
               const SizedBox(height: 8),
               Text('النتيجة: ${(task['result'] as Map)['text']}', textDirection: TextDirection.rtl),
