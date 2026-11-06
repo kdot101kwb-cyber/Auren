@@ -105,6 +105,7 @@ exports.getNovaTask = onCall(
       type:task.type,
       status:task.status,
       requiresApproval:task.requiresApproval === true,
+      dependsOnTaskIds:Array.isArray(task.dependsOnTaskIds) ? task.dependsOnTaskIds : [],
       executionMode:task.executionMode || 'unknown',
       result:task.result || null,
       error:task.error || null,
