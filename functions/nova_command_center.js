@@ -55,7 +55,7 @@ exports.submitNovaTask = onCall(
         createdAt:FieldValue.serverTimestamp(),
       });
       return {created:true, taskId:id, task};
-    });;
+    });
     return {
       ok:true,
       created:result.created,
