@@ -155,15 +155,34 @@ exports.cancelNovaTask = onCall(
       if (!['queued','awaiting_approval'].includes(task.status)) {
         throw new HttpsError('failed-precondition', 'Only queued or approval-pending tasks can be cancelled.');
       }
-      tx.update(taskRef, {status:'cancelled', cancelledAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
+      const hadOwnerApproval = task.approval?.required === true &&
+        task.approval?.approvedBy === uid && Boolean(task.approval?.scopeHash);
+      const revokedApproval = hadOwnerApproval ? {
+        ...task.approval,
+        approvedBy:null,
+        approvedAt:null,
+        expiresAt:null,
+        scopeHash:null,
+        revokedBy:uid,
+        revokedAt:FieldValue.serverTimestamp(),
+      } : task.approval;
+      tx.update(taskRef, {
+        status:'cancelled',
+        ...(revokedApproval ? {approval:revokedApproval} : {}),
+        cancelledAt:FieldValue.serverTimestamp(),
+        updatedAt:FieldValue.serverTimestamp(),
+      });
       if (queueSnap.exists && queueSnap.data()?.status === 'queued') {
         tx.update(queueRef, {status:'cancelled', updatedAt:FieldValue.serverTimestamp()});
       }
       tx.create(auditRef, {
-        action:'nova.task.cancelled',
-        actorUid:uid,
-        taskId,
-        taskType:String(task.type || ''),
+        ...createNovaAuditEvent({
+          action:hadOwnerApproval ? 'nova.task.approval_revoked' : 'nova.task.cancelled',
+          actorUid:uid,
+          taskId,
+          taskType:String(task.type || ''),
+          details:{status:'cancelled'},
+        }),
         createdAt:FieldValue.serverTimestamp(),
       });
       return {ok:true, taskId, status:'cancelled'};
