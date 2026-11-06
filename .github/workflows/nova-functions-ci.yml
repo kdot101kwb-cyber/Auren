@@ -1,10 +1,13 @@
 name: NOVA Functions CI
 
+# Keep task approval contract and command-center syntax checks on the exact PR head.
+
 on:
   push:
     branches:
       - feat/nova-ai-android-app
       - feat/nova-shared-task-contract-v1
+      - feat/nova-exact-action-approval-v1
     paths:
       - "functions/**"
       - ".github/workflows/nova-functions-ci.yml"
@@ -12,6 +15,7 @@ on:
     branches:
       - main
       - feat/nova-ai-android-app
+      - feat/nova-shared-task-contract-v1
     paths:
       - "functions/**"
       - ".github/workflows/nova-functions-ci.yml"

@@ -7,7 +7,7 @@ const db = getFirestore();
 const REGION = 'us-central1';
 const TASK_COLLECTION = 'nova_tasks';
 const {normalizeNovaTaskInput} = require('./nova_command_validation');
-const {createNovaTaskRecord, createNovaQueueRecord, createNovaAuditEvent} = require('./nova_task_contract');
+const {createNovaTaskRecord, createNovaQueueRecord, createNovaAuditEvent, createTaskApprovalScopeHash, matchesTaskApprovalScope} = require('./nova_task_contract');
 
 exports.submitNovaTask = onCall(
   {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
@@ -80,6 +80,7 @@ exports.getNovaTask = onCall(
       result:task.result || null,
       error:task.error || null,
       retryCount:Number(task.retryCount) || 0,
+      approvalScopeHash:task.requiresApproval === true ? createTaskApprovalScopeHash(task) : null,
       createdAt:task.createdAt?.toDate?.().toISOString() || null,
       updatedAt:task.updatedAt?.toDate?.().toISOString() || null,
     };
@@ -93,6 +94,8 @@ exports.approveNovaTask = onCall(
     if (!uid) throw new HttpsError('unauthenticated', 'Sign in to approve NOVA tasks.');
     const taskId = String(request.data?.taskId || '').trim();
     if (!/^[A-Za-z0-9_-]{12,128}$/.test(taskId)) throw new HttpsError('invalid-argument', 'Invalid task ID.');
+    const scopeHash = String(request.data?.scopeHash || '').trim().toLowerCase();
+    if (!/^[a-f0-9]{64}$/.test(scopeHash)) throw new HttpsError('invalid-argument', 'A valid approval scope hash is required. Refresh the task before approving.');
     const taskRef = db.collection('users').doc(uid).collection(TASK_COLLECTION).doc(taskId);
     const auditRef = db.collection('users').doc(uid).collection('nova_audit').doc();
     return db.runTransaction(async (tx) => {
@@ -102,6 +105,9 @@ exports.approveNovaTask = onCall(
       if (task.status !== 'awaiting_approval' || task.requiresApproval !== true) {
         throw new HttpsError('failed-precondition', 'Task is not awaiting approval.');
       }
+      if (!matchesTaskApprovalScope(task, scopeHash)) {
+        throw new HttpsError('failed-precondition', 'Task details changed after review. Refresh and review the exact task again.');
+      }
       tx.update(taskRef, {
         status:'queued',
         approvedBy:uid,
@@ -110,7 +116,7 @@ exports.approveNovaTask = onCall(
           required:true,
           approvedBy:uid,
           approvedAt:FieldValue.serverTimestamp(),
-          scopeHash:null,
+          scopeHash,
         },
         updatedAt:FieldValue.serverTimestamp(),
       });
@@ -125,11 +131,11 @@ exports.approveNovaTask = onCall(
           actorUid:uid,
           taskId,
           taskType:String(task.type || ''),
-          details:{status:'queued'},
+          details:{status:'queued', scopeHash},
         }),
         createdAt:FieldValue.serverTimestamp(),
       });
-      return {ok:true, taskId, status:'queued', executionMode:task.executionMode || 'queued_backend_worker_required'};
+      return {ok:true, taskId, status:'queued', approvalScopeHash:scopeHash, executionMode:task.executionMode || 'queued_backend_worker_required'};
     });
   }
 );
@@ -188,6 +194,7 @@ exports.listNovaTasks = onCall(
         result:task.result || null,
         error:task.error || null,
         retryCount:Number(task.retryCount) || 0,
+        approvalScopeHash:task.requiresApproval === true ? createTaskApprovalScopeHash(task) : null,
         createdAt:task.createdAt?.toDate?.().toISOString() || null,
       };
     })};

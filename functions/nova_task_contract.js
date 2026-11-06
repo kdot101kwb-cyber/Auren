@@ -1,5 +1,7 @@
 'use strict';
 
+const {payloadHash, constantTimeEqual} = require('./action_security');
+
 /**
  * Canonical, versioned contract shared by NOVA task submitters and workers.
  * This module is intentionally dependency-free so it can be tested with Node.
@@ -64,6 +66,44 @@ function createNovaTaskRecord({taskId, ownerUid, input}) {
   };
 }
 
+
+/**
+ * Hash only immutable, execution-relevant fields. Mutable lifecycle/result fields
+ * are deliberately excluded so the worker can re-check the exact approved action.
+ */
+function taskApprovalScope(task) {
+  if (!task || typeof task !== 'object') {
+    throw new TypeError('A NOVA task is required to calculate its approval scope.');
+  }
+  return {
+    schemaVersion: task.schemaVersion || TASK_SCHEMA_VERSION,
+    taskId: String(task.taskId || ''),
+    ownerUid: String(task.ownerUid || ''),
+    type: String(task.type || ''),
+    prompt: String(task.prompt || ''),
+    metadata: task.metadata && typeof task.metadata === 'object' ? task.metadata : {},
+    executionMode: String(task.executionMode || ''),
+    requiresApproval: task.requiresApproval === true,
+    estimatedCostUsd: Number(task.estimatedCostUsd || 0),
+    maxAttempts: Number(task.maxAttempts || DEFAULT_MAX_ATTEMPTS),
+  };
+}
+
+function createTaskApprovalScopeHash(task) {
+  return payloadHash(taskApprovalScope(task));
+}
+
+function matchesTaskApprovalScope(task, candidateHash) {
+  if (typeof candidateHash !== 'string' || !/^[a-f0-9]{64}$/i.test(candidateHash)) {
+    return false;
+  }
+  try {
+    return constantTimeEqual(createTaskApprovalScopeHash(task), candidateHash.toLowerCase());
+  } catch (_) {
+    return false;
+  }
+}
+
 function createNovaQueueRecord({taskId, ownerUid, status = 'queued'}) {
   if (!taskId || !ownerUid || !TASK_STATUSES.includes(status)) {
     throw new TypeError('taskId, ownerUid, and a valid task status are required.');
@@ -124,6 +164,9 @@ module.exports = {
   DEFAULT_MAX_ATTEMPTS,
   canTransitionTask,
   createNovaTaskRecord,
+  taskApprovalScope,
+  createTaskApprovalScopeHash,
+  matchesTaskApprovalScope,
   createNovaQueueRecord,
   createNovaAuditEvent,
   normalizeTaskEvidence,

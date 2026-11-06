@@ -8,6 +8,8 @@ const {
   TERMINAL_STATUSES,
   canTransitionTask,
   createNovaTaskRecord,
+  createTaskApprovalScopeHash,
+  matchesTaskApprovalScope,
   createNovaQueueRecord,
   createNovaAuditEvent,
   normalizeTaskEvidence,
@@ -97,4 +99,18 @@ test('invalid task envelopes fail closed', () => {
   assert.throws(() => createNovaTaskRecord({taskId: '', ownerUid: 'owner-1', input}), /required/);
   assert.throws(() => createNovaQueueRecord({taskId: 'task-1', ownerUid: 'owner-1', status: 'magic'}), /valid task status/);
   assert.throws(() => createNovaAuditEvent({action: 'x', actorUid: '', taskId: 'task-1'}), /required/);
+});
+
+test('approval scope hash is stable and changes when execution-relevant task data changes', () => {
+  const task = createNovaTaskRecord({
+    taskId: 'nova_task_123456',
+    ownerUid: 'owner-1',
+    input: {...input, requiresApproval: true},
+  });
+  const hash = createTaskApprovalScopeHash(task);
+  assert.match(hash, /^[a-f0-9]{64}$/);
+  assert.equal(matchesTaskApprovalScope(task, hash), true);
+  assert.equal(matchesTaskApprovalScope({...task, prompt: 'different action'}, hash), false);
+  assert.equal(matchesTaskApprovalScope({...task, metadata: {source: 'changed'}}, hash), false);
+  assert.equal(matchesTaskApprovalScope(task, 'not-a-hash'), false);
 });

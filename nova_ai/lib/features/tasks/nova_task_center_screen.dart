@@ -89,12 +89,19 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
     }
   }
 
-  Future<void> _taskAction(String name, String taskId) async {
+  Future<void> _taskAction(String name, String taskId, {String? scopeHash}) async {
+    if (name == 'approveNovaTask' &&
+        (scopeHash == null || !RegExp(r'^[a-f0-9]{64}$').hasMatch(scopeHash))) {
+      setState(() => _message = 'حدّث قائمة المهام أولاً حتى تراجع النسخة الدقيقة قبل الموافقة.');
+      return;
+    }
     setState(() { _busy = true; _message = null; });
     try {
       await _ensureSignedIn();
+      final payload = <String, dynamic>{'taskId': taskId};
+      if (name == 'approveNovaTask') payload['scopeHash'] = scopeHash;
       final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
-          .httpsCallable(name).call(<String, dynamic>{'taskId': taskId});
+          .httpsCallable(name).call(payload);
       final data = Map<String, dynamic>.from(response.data as Map);
       setState(() => _message = 'تم تحديث الحالة إلى: ${data['status']}.');
       await _loadTasks();
@@ -198,7 +205,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
             Text('المعرف: ${task['taskId'] ?? ''}', style: const TextStyle(fontSize: 11)),
             Wrap(spacing: 8, children: [
               if (task['status'] == 'awaiting_approval')
-                TextButton(onPressed: _busy ? null : () => _taskAction('approveNovaTask', '${task['taskId']}'),
+                TextButton(onPressed: _busy ? null : () => _taskAction('approveNovaTask', '${task['taskId']}', scopeHash: task['approvalScopeHash'] as String?),
                     child: const Text('موافقة')),
               if (task['status'] == 'queued' || task['status'] == 'awaiting_approval')
                 TextButton(onPressed: _busy ? null : () => _taskAction('cancelNovaTask', '${task['taskId']}'),
