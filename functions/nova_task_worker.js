@@ -130,7 +130,7 @@ exports.processNovaTaskQueue = onSchedule(
             const step = sequence[stepIndex];
             const previousOutput = workflowResults.length ? workflowResults[workflowResults.length - 1].text : '';
             const stepPrompt = previousOutput
-              ? 'Previous workflow step output:\\n' + previousOutput + '\\n\\nNext step instruction:\\n' + step.prompt
+              ? 'Previous workflow step output:\n' + previousOutput + '\n\nNext step instruction:\n' + step.prompt
               : step.prompt;
             result = await runTextTask(stepPrompt, step.type, OPENROUTER_API_KEY.value().trim());
             workflowResults.push({step:stepIndex + 1, type:step.type, text:result.text, model:result.model});
@@ -146,7 +146,7 @@ exports.processNovaTaskQueue = onSchedule(
           }
           if (!result) throw new Error('Workflow has no completed step result.');
           const combinedResult = {
-            text:workflowResults.map((item) => 'Step ' + item.step + ' (' + item.type + '):\\n' + item.text).join('\\n\\n'),
+            text:workflowResults.map((item) => 'Step ' + item.step + ' (' + item.type + '):\n' + item.text).join('\n\n'),
             provider:'openrouter',
             model:result.model,
             completedSteps:workflowResults.length,
