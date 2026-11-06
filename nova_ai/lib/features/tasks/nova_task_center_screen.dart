@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../firebase_runtime.dart';
+import 'nova_task_milestone_tracker.dart';
 
 class NovaTaskCenterScreen extends StatefulWidget {
   const NovaTaskCenterScreen({super.key});
@@ -16,22 +17,13 @@ class NovaTaskCenterScreen extends StatefulWidget {
 class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
     with WidgetsBindingObserver {
   static const _pollInterval = Duration(seconds: 20);
-  static const _milestoneStatuses = {
-    'succeeded',
-    'completed',
-    'failed',
-    'blocked',
-    'awaiting_approval',
-  };
-
   final _prompt = TextEditingController();
   String _type = 'research';
   bool _busy = false;
   bool _loadingTasks = false;
-  bool _hasInitialSnapshot = false;
   String? _message;
   List<Map<String, dynamic>> _tasks = const [];
-  Map<String, String> _knownStatuses = {};
+  final NovaTaskMilestoneTracker _milestoneTracker = NovaTaskMilestoneTracker();
   Timer? _refreshTimer;
 
   @override
@@ -70,73 +62,39 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
   }
 
   void _reportMilestones(List<Map<String, dynamic>> tasks) {
-    final nextStatuses = <String, String>{};
-    final messages = <String>[];
-    var hasCompletion = false;
-
-    for (final task in tasks) {
-      final id = '${task['taskId'] ?? ''}';
-      final status = '${task['status'] ?? 'unknown'}';
-      if (id.isEmpty) continue;
-      nextStatuses[id] = status;
-
-      final previous = _knownStatuses[id];
-      if (!_hasInitialSnapshot || previous == null || previous == status) {
-        continue;
-      }
-      if (!_milestoneStatuses.contains(status)) continue;
-
-      final title = '${task['type'] ?? 'المهمة'}';
-      switch (status) {
-        case 'succeeded':
-        case 'completed':
-          hasCompletion = true;
-          messages.add('اكتملت $title بنجاح. NOVA تتابع بقية قائمة المهام.');
-          break;
-        case 'failed':
-          messages.add('تعطلت $title. راجع تفاصيل الخطأ؛ لا تعتبر المهمة مكتملة.');
-          break;
-        case 'blocked':
-          messages.add('توقفت $title بسبب عائق يحتاج معالجة.');
-          break;
-        case 'awaiting_approval':
-          messages.add('تحتاج $title إلى موافقتك قبل أي إجراء حساس.');
-          break;
-      }
-    }
-
-    _knownStatuses = nextStatuses;
-    _hasInitialSnapshot = true;
-    if (!mounted || messages.isEmpty ||
+    final milestones = _milestoneTracker.update(tasks);
+    if (!mounted || milestones.isEmpty ||
         WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
       return;
     }
 
     final messenger = ScaffoldMessenger.maybeOf(context);
     if (messenger == null) return;
-    final completed = hasCompletion;
-    final notificationMessage = completed
-        ? messages.firstWhere((message) => message.startsWith('اكتملت'), orElse: () => messages.first)
-        : messages.first;
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
+
+    // Queue every transition so simultaneous updates are not hidden.
+    for (final milestone in milestones) {
+      messenger.showSnackBar(
         SnackBar(
-          backgroundColor: completed ? Colors.green.shade700 : Colors.deepOrange.shade800,
+          backgroundColor: milestone.isSuccess
+              ? Colors.green.shade700
+              : Colors.deepOrange.shade800,
           behavior: SnackBarBehavior.floating,
           content: Row(
             textDirection: TextDirection.rtl,
             children: [
               Icon(
-                completed ? Icons.check_circle : Icons.info,
+                milestone.isSuccess ? Icons.check_circle : Icons.info,
                 color: Colors.white,
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  notificationMessage,
+                  milestone.message,
                   textDirection: TextDirection.rtl,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -144,6 +102,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
           duration: const Duration(seconds: 7),
         ),
       );
+    }
   }
 
   Future<void> _loadTasks({bool silent = false}) async {
