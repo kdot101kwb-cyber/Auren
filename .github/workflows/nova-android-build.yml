@@ -8,6 +8,7 @@ on:
       - feat/nova-ai-android-app
       - feat/nova-application-factory-market-scout
       - feat/nova-shared-task-contract-v1
+      - feat/nova-exact-action-approval-security
     paths:
       - 'nova_ai/**'
       - '.github/workflows/nova-android-build.yml'
