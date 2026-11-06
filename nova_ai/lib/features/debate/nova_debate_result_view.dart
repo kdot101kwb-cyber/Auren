@@ -3,9 +3,15 @@ import 'package:flutter/material.dart';
 /// Renders the bounded, server-normalized strategic review without presenting
 /// model JSON as if it were a verified execution report.
 class NovaDebateResultView extends StatelessWidget {
-  const NovaDebateResultView({super.key, required this.result});
+  const NovaDebateResultView({
+    super.key,
+    required this.result,
+    this.shrinkWrap = false,
+  });
 
   final Map<String, dynamic> result;
+  /// Set true when this view is embedded in another vertical scrollable.
+  final bool shrinkWrap;
 
   String _text(Object? value, [String fallback = 'غير مذكور']) {
     final text = value?.toString().trim() ?? '';
@@ -33,6 +39,8 @@ class NovaDebateResultView extends StatelessWidget {
         : <String>[];
 
     return ListView(
+      shrinkWrap: shrinkWrap,
+      physics: shrinkWrap ? const NeverScrollableScrollPhysics() : null,
       padding: EdgeInsets.zero,
       children: [
         Card(

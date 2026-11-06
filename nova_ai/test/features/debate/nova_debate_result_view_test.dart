@@ -53,4 +53,18 @@ void main() {
     expect(find.textContaining('غير مذكور'), findsWidgets);
     expect(find.textContaining('لم يُنفّذ أي تغيير'), findsOneWidget);
   });
+  testWidgets('supports embedding in a parent vertical scroll view', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: ListView(
+          children: const [
+            NovaDebateResultView(result: {}, shrinkWrap: true),
+          ],
+        ),
+      ),
+    ));
+
+    expect(find.textContaining('لم يُنفّذ أي تغيير'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
