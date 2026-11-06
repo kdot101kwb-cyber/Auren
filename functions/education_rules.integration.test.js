@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { Timestamp, doc, getDoc, setDoc, updateDoc } = require('firebase/firestore');
+const { Timestamp, doc, getDoc, setDoc, updateDoc, getFirestore } = require('firebase/firestore');
 const {
   initializeTestEnvironment,
   assertSucceeds,
@@ -25,7 +25,7 @@ test.before(async () => {
   });
 
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    const db = context.firestore();
+    const db = getFirestore(context.app());
     await setDoc(doc(db, 'courses/course-3'), {
       title: 'Test Course',
       description: 'Education rules integration fixture',
@@ -44,7 +44,7 @@ test.after(async () => {
 });
 
 test('canonical enrollment accepts rounded 1/3 progress', async () => {
-  const db = testEnv.authenticatedContext('education-user').firestore();
+  const db = getFirestore(testEnv.authenticatedContext('education-user').app());
   const enrollment = doc(db, 'users/education-user/enrollments/course-3');
   const now = Timestamp.now();
 
@@ -66,7 +66,7 @@ test('canonical enrollment accepts rounded 1/3 progress', async () => {
 });
 
 test('canonical enrollment rejects false completion and false 100%', async () => {
-  const db = testEnv.authenticatedContext('education-user-2').firestore();
+  const db = getFirestore(testEnv.authenticatedContext('education-user-2').app());
   const enrollment = doc(db, 'users/education-user-2/enrollments/course-3');
   const now = Timestamp.now();
 

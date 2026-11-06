@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { Timestamp, doc, getDoc, setDoc, updateDoc, deleteDoc } = require('firebase/firestore');
+const { Timestamp, doc, getDoc, setDoc, updateDoc, deleteDoc, getFirestore } = require('firebase/firestore');
 
 const {
   initializeTestEnvironment,
@@ -73,12 +73,12 @@ function rfqDraft(ownerId) {
 }
 
 function userDb(uid) {
-  return testEnv.authenticatedContext(uid).firestore();
+  return getFirestore(testEnv.authenticatedContext(uid).app());
 }
 
 async function seed(pathname, data) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    await setDoc(doc(context.firestore(), pathname), data);
+    await setDoc(doc(getFirestore(context.app()), pathname), data);
   });
 }
 
