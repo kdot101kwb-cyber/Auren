@@ -33,7 +33,7 @@ test('only explicitly registered safe text actions are autonomously executable',
   for (const type of ['chat', 'plan', 'research', 'content_draft', 'social_content_draft']) {
     assert.equal(canNovaWorkerExecute({type, requiresApproval: false}, 'owner-1'), true);
   }
-  for (const type of ['social_publish', 'image_generation', 'purchase', 'production_deploy']) {
+  for (const type of ['social_publish', 'image_generation', 'video_generation', 'purchase', 'production_deploy']) {
     assert.equal(canNovaWorkerExecute({type, requiresApproval: true}, 'owner-1'), false);
   }
 });
@@ -74,6 +74,9 @@ test('approved but unconnected side-effect adapters remain non-executable', () =
   const image = taskWithApproval({type: 'image_generation'});
   assert.equal(isNovaActionApprovalValid(image, 'owner-1', 1000), true);
   assert.equal(canNovaWorkerExecute(image, 'owner-1', 1000), false);
+  const video = taskWithApproval({type: 'video_generation'});
+  assert.equal(isNovaActionApprovalValid(video, 'owner-1', 1000), true);
+  assert.equal(canNovaWorkerExecute(video, 'owner-1', 1000), false);
 });
 
 
