@@ -101,7 +101,7 @@ class _NovaDebateScreenState extends State<NovaDebateScreen> {
         const SizedBox(height: 16),
         const Text('نتيجة المراجعة', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        NovaDebateResultView(result: _visibleResult),
+        NovaDebateResultView(result: _visibleResult, shrinkWrap: true),
         Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('بوابة التنفيذ', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
