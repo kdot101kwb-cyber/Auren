@@ -12,6 +12,7 @@ on:
     paths:
       - 'nova_ai/**'
       - '.github/workflows/nova-android-build.yml'
+      - '.github/workflows/nova-functions-ci.yml'
 
 # NOVA task-center approval-scope changes require an exact-head Android analyze/test/APK check.
 # Avoid spending CI time building stale commits when several small commits land
