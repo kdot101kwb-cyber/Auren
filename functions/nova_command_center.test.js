@@ -29,3 +29,45 @@ test('limits prompt size and normalizes metadata', () => {
   const task = normalizeNovaTaskInput({type:'chat',prompt:'hello',idempotencyKey:'nova_task_123456',metadata:{source:'a'.repeat(100),locale:'ar-SA'}});
   assert.equal(task.metadata.source.length,80);
 });
+
+
+const {
+  buildNovaMilestoneNotification,
+  buildNovaPushData,
+  shouldNotifyNovaCreation,
+  shouldNotifyNovaTransition,
+} = require('./nova_notification_policy');
+
+test('push policy notifies only on a new milestone status', () => {
+  assert.equal(shouldNotifyNovaTransition('running', 'succeeded'), true);
+  assert.equal(shouldNotifyNovaTransition('succeeded', 'succeeded'), false);
+  assert.equal(shouldNotifyNovaTransition('running', 'running'), false);
+  assert.equal(shouldNotifyNovaTransition('running', 'provider_processing'), false);
+});
+
+test('milestone push copy is localized and identifies success clearly', () => {
+  const notification = buildNovaMilestoneNotification('succeeded', 'research');
+  assert.equal(notification.title, '🟢 اكتملت مهمة NOVA');
+  assert.match(notification.body, /بنجاح/);
+});
+
+test('approval and failure milestones have distinct messages', () => {
+  assert.match(buildNovaMilestoneNotification('awaiting_approval', 'publish').title, /موافقتك/);
+  assert.match(buildNovaMilestoneNotification('failed', 'research').body, /مراجعة السبب/);
+  assert.equal(buildNovaMilestoneNotification('queued', 'research'), null);
+});
+
+test('approval-required tasks notify on creation, not only on later updates', () => {
+  assert.equal(shouldNotifyNovaCreation('awaiting_approval'), true);
+  assert.equal(shouldNotifyNovaCreation('queued'), false);
+  assert.equal(shouldNotifyNovaTransition('queued', 'awaiting_approval'), true);
+});
+
+
+test('push payload uses a strict allowlist and excludes private task content', () => {
+  const payload = buildNovaPushData('task_123', 'succeeded', 'research');
+  assert.deepEqual(payload, {taskId:'task_123', status:'succeeded', type:'research'});
+  assert.equal(Object.hasOwn(payload, 'prompt'), false);
+  assert.equal(Object.hasOwn(payload, 'result'), false);
+  assert.equal(Object.hasOwn(payload, 'metadata'), false);
+});

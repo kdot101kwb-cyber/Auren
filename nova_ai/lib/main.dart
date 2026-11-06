@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_runtime.dart';
+import 'notifications/nova_push_notifications.dart';
 import 'features/tasks/nova_task_center_screen.dart';
 import 'features/builder/nova_app_builder_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -15,10 +18,16 @@ import 'features/creative/creative_tool_library_screen.dart';
 import 'features/brain/nova_autonomous_brain_screen.dart';
 import 'features/opportunities/global_opportunity_radar_screen.dart';
 
+final GlobalKey<ScaffoldMessengerState> novaScaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NovaFirebaseRuntime.initialize();
   runApp(const NovaApp());
+  unawaited(NovaPushNotifications.initialize(
+    messengerKey: novaScaffoldMessengerKey,
+  ));
 }
 
 const violet = Color(0xFF9B87FF);
@@ -31,6 +40,7 @@ class NovaApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
         title: 'NOVA AI',
         debugShowCheckedModeBanner: false,
+        scaffoldMessengerKey: novaScaffoldMessengerKey,
         theme: ThemeData(
           useMaterial3: true,
           brightness: Brightness.dark,

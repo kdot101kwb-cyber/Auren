@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -11,17 +13,54 @@ class NovaTaskCenterScreen extends StatefulWidget {
   State<NovaTaskCenterScreen> createState() => _NovaTaskCenterScreenState();
 }
 
-class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
+class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
+    with WidgetsBindingObserver {
+  static const _pollInterval = Duration(seconds: 20);
+  static const _milestoneStatuses = {
+    'succeeded',
+    'completed',
+    'failed',
+    'blocked',
+    'awaiting_approval',
+  };
+
   final _prompt = TextEditingController();
   String _type = 'research';
   bool _busy = false;
+  bool _loadingTasks = false;
+  bool _hasInitialSnapshot = false;
   String? _message;
   List<Map<String, dynamic>> _tasks = const [];
+  Map<String, String> _knownStatuses = {};
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshTimer = Timer.periodic(_pollInterval, (_) {
+      if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+        _loadTasks(silent: true);
+      }
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadTasks(silent: true);
+    });
+  }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _prompt.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadTasks(silent: true);
+    }
   }
 
   Future<void> _ensureSignedIn() async {
@@ -30,27 +69,116 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
     }
   }
 
-  Future<void> _loadTasks() async {
-    if (!NovaFirebaseRuntime.initialized || !NovaFirebaseRuntime.appCheckActivated) {
-      setState(() => _message = NovaFirebaseRuntime.initializationError ??
-          'يلزم إعداد Firebase وتفعيل App Check قبل الاتصال بالخادم.');
+  void _reportMilestones(List<Map<String, dynamic>> tasks) {
+    final nextStatuses = <String, String>{};
+    final messages = <String>[];
+    var hasCompletion = false;
+
+    for (final task in tasks) {
+      final id = '${task['taskId'] ?? ''}';
+      final status = '${task['status'] ?? 'unknown'}';
+      if (id.isEmpty) continue;
+      nextStatuses[id] = status;
+
+      final previous = _knownStatuses[id];
+      if (!_hasInitialSnapshot || previous == null || previous == status) {
+        continue;
+      }
+      if (!_milestoneStatuses.contains(status)) continue;
+
+      final title = '${task['type'] ?? 'المهمة'}';
+      switch (status) {
+        case 'succeeded':
+        case 'completed':
+          hasCompletion = true;
+          messages.add('اكتملت $title بنجاح. NOVA تتابع بقية قائمة المهام.');
+          break;
+        case 'failed':
+          messages.add('تعطلت $title. راجع تفاصيل الخطأ؛ لا تعتبر المهمة مكتملة.');
+          break;
+        case 'blocked':
+          messages.add('توقفت $title بسبب عائق يحتاج معالجة.');
+          break;
+        case 'awaiting_approval':
+          messages.add('تحتاج $title إلى موافقتك قبل أي إجراء حساس.');
+          break;
+      }
+    }
+
+    _knownStatuses = nextStatuses;
+    _hasInitialSnapshot = true;
+    if (!mounted || messages.isEmpty ||
+        WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
       return;
     }
-    setState(() { _busy = true; _message = null; });
+
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    final completed = hasCompletion;
+    final notificationMessage = completed
+        ? messages.firstWhere((message) => message.startsWith('اكتملت'), orElse: () => messages.first)
+        : messages.first;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          backgroundColor: completed ? Colors.green.shade700 : Colors.deepOrange.shade800,
+          behavior: SnackBarBehavior.floating,
+          content: Row(
+            textDirection: TextDirection.rtl,
+            children: [
+              Icon(
+                completed ? Icons.check_circle : Icons.info,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  notificationMessage,
+                  textDirection: TextDirection.rtl,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 7),
+        ),
+      );
+  }
+
+  Future<void> _loadTasks({bool silent = false}) async {
+    if (_loadingTasks || _busy) return;
+    if (!NovaFirebaseRuntime.initialized || !NovaFirebaseRuntime.appCheckActivated) {
+      if (!silent && mounted) {
+        setState(() => _message = NovaFirebaseRuntime.initializationError ??
+            'يلزم إعداد Firebase وتفعيل App Check قبل الاتصال بالخادم.');
+      }
+      return;
+    }
+
+    _loadingTasks = true;
+    if (!silent && mounted) setState(() => _message = null);
     try {
       await _ensureSignedIn();
       final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
           .httpsCallable('listNovaTasks').call(<String, dynamic>{'limit': 30});
       final data = Map<String, dynamic>.from(response.data as Map);
       final raw = (data['tasks'] as List? ?? const []);
+      final tasks = raw
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList();
+      if (!mounted) return;
+      _reportMilestones(tasks);
       setState(() {
-        _tasks = raw.map((item) => Map<String, dynamic>.from(item as Map)).toList();
-        _message = 'تم تحديث المهام من الخادم.';
+        _tasks = tasks;
+        if (!silent) _message = 'تم تحديث المهام من الخادم.';
       });
     } catch (error) {
-      setState(() => _message = 'تعذر تحميل المهام: $error');
+      if (!silent && mounted) {
+        setState(() => _message = 'تعذر تحميل المهام: $error');
+      }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      _loadingTasks = false;
     }
   }
 
@@ -78,12 +206,15 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
       });
       final data = Map<String, dynamic>.from(response.data as Map);
       _prompt.clear();
-      setState(() => _message =
-          'سُجلت المهمة في قائمة الخلفية: ${data['taskId']} — الحالة: ${data['status']}. '
-          'ستتم معالجتها عند توفر العامل وإعداداته؛ التسجيل وحده لا يثبت بدء التنفيذ.');
+      if (mounted) {
+        setState(() => _message =
+            'سُجلت المهمة في قائمة الخلفية: ${data['taskId']} — الحالة: ${data['status']}. '
+            'التسجيل وحده لا يثبت بدء التنفيذ.');
+      }
+      _busy = false;
       await _loadTasks();
     } catch (error) {
-      setState(() => _message = 'فشل إرسال المهمة: $error');
+      if (mounted) setState(() => _message = 'فشل إرسال المهمة: $error');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -96,10 +227,11 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
       final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
           .httpsCallable(name).call(<String, dynamic>{'taskId': taskId});
       final data = Map<String, dynamic>.from(response.data as Map);
-      setState(() => _message = 'تم تحديث الحالة إلى: ${data['status']}.');
+      if (mounted) setState(() => _message = 'تم تحديث الحالة إلى: ${data['status']}.');
+      _busy = false;
       await _loadTasks();
     } catch (error) {
-      setState(() => _message = 'تعذر تنفيذ الإجراء: $error');
+      if (mounted) setState(() => _message = 'تعذر تنفيذ الإجراء: $error');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -111,7 +243,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
     children: [
       const Text('مركز تنفيذ NOVA', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
       const SizedBox(height: 8),
-      const Text('المهام تُحفظ في الخادم وتُعالج بالخلفية حتى لو أغلقت التطبيق، بعد نشر وظائف Firebase وضبط مفتاح مزود الذكاء الاصطناعي. العامل المجدول يفحص قائمة الانتظار كل دقيقة؛ مهام الفيديو المدفوعة تتطلب موافقة صريحة وإعداد أسرار Higgsfield ونشر وظائف Firebase.'),
+      const Text('تُحدّث NOVA قائمة المهام تلقائياً كل 20 ثانية أثناء فتح التطبيق، وتعيد الفحص عند الرجوع إليه. هذا تحديث أمامي؛ إشعارات الدفع أثناء إغلاق التطبيق تحتاج إعداد Firebase Cloud Messaging على الخادم والجهاز. العامل الخلفي يحتاج نشر وظائف Firebase وضبط مزود الذكاء الاصطناعي.'),
       const SizedBox(height: 12),
       Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

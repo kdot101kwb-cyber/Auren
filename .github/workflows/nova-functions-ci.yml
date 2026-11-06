@@ -3,13 +3,16 @@ name: NOVA Functions CI
 on:
   push:
     branches:
-      - feat/nova-ai-android-app
+      - 'feat/nova-*'
+      - 'fix/nova-*'
     paths:
       - "functions/**"
       - ".github/workflows/nova-functions-ci.yml"
   pull_request:
     branches:
       - main
+      - 'feat/nova-*'
+      - 'fix/nova-*'
     paths:
       - "functions/**"
       - ".github/workflows/nova-functions-ci.yml"

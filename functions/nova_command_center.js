@@ -2,6 +2,10 @@
 
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const {getFirestore, FieldValue} = require('firebase-admin/firestore');
+const {getMessaging} = require('firebase-admin/messaging');
+const {onDocumentCreated, onDocumentUpdated} = require('firebase-functions/v2/firestore');
+const {createHash} = require('node:crypto');
+const {buildNovaMilestoneNotification, buildNovaPushData, shouldNotifyNovaCreation, shouldNotifyNovaTransition} = require('./nova_notification_policy');
 
 const db = getFirestore();
 const REGION = 'us-central1';
@@ -184,5 +188,135 @@ exports.listNovaTasks = onCall(
         createdAt:task.createdAt?.toDate?.().toISOString() || null,
       };
     })};
+  }
+);
+
+
+// Device tokens are private server-owned records; clients can only register or
+// remove their own current FCM token through these App Check protected callables.
+function novaDeviceTokenId(token) {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+exports.registerNovaDeviceToken = onCall(
+  {region:REGION, timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to register NOVA notifications.');
+    const token = String(request.data?.token || '').trim();
+    const platform = String(request.data?.platform || '').trim().toLowerCase();
+    if (token.length < 20 || token.length > 4096) {
+      throw new HttpsError('invalid-argument', 'Invalid FCM registration token.');
+    }
+    if (!['android', 'ios'].includes(platform)) {
+      throw new HttpsError('invalid-argument', 'Unsupported notification platform.');
+    }
+    const ref = db.collection('users').doc(uid).collection('nova_devices').doc(novaDeviceTokenId(token));
+    await ref.set({
+      token,
+      platform,
+      enabled: true,
+      updatedAt: FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+    }, {merge:true});
+    return {ok:true, registered:true};
+  }
+);
+
+exports.unregisterNovaDeviceToken = onCall(
+  {region:REGION, timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to unregister NOVA notifications.');
+    const token = String(request.data?.token || '').trim();
+    if (token.length < 20 || token.length > 4096) {
+      throw new HttpsError('invalid-argument', 'Invalid FCM registration token.');
+    }
+    await db.collection('users').doc(uid).collection('nova_devices')
+      .doc(novaDeviceTokenId(token)).delete();
+    return {ok:true, registered:false};
+  }
+);
+
+// Send a push notification only when a task enters a meaningful milestone.
+// No task prompt or private result is included in the push payload.
+exports.notifyNovaTaskMilestone = onDocumentUpdated(
+  {document:'users/{uid}/nova_tasks/{taskId}', region:REGION, timeoutSeconds:30, memory:'256MiB'},
+  async (event) => {
+    const before = event.data?.before?.data() || {};
+    const after = event.data?.after?.data() || {};
+    const previousStatus = String(before.status || '');
+    const status = String(after.status || '');
+    if (!shouldNotifyNovaTransition(previousStatus, status)) return;
+
+    const notification = buildNovaMilestoneNotification(status, after.type);
+    if (!notification) return;
+
+    const devices = await db.collection('users').doc(String(event.params.uid))
+      .collection('nova_devices').where('enabled', '==', true).limit(100).get();
+    const tokens = devices.docs
+      .map((doc) => ({doc, token:String(doc.data()?.token || '').trim()}))
+      .filter((item) => item.token.length >= 20);
+    if (tokens.length === 0) return;
+
+    const response = await getMessaging().sendEachForMulticast({
+      tokens:tokens.map((item) => item.token),
+      notification,
+      data:buildNovaPushData(event.params.taskId, status, after.type),
+      android:{
+        priority:'high',
+        notification:{sound:'default'},
+      },
+    });
+
+    const staleRefs = [];
+    response.responses.forEach((result, index) => {
+      const code = result.error?.code || '';
+      if (code === 'messaging/registration-token-not-registered' ||
+          code === 'messaging/invalid-registration-token') {
+        staleRefs.push(tokens[index].doc.ref);
+      }
+    });
+    for (let index = 0; index < staleRefs.length; index += 450) {
+      const batch = db.batch();
+      staleRefs.slice(index, index + 450).forEach((ref) => batch.delete(ref));
+      await batch.commit();
+    }
+  }
+);
+
+
+// A task created in the approval queue has no update event yet. Notify the
+// owner on creation so a sensitive action never waits silently for approval.
+exports.notifyNovaApprovalRequired = onDocumentCreated(
+  {document:'users/{uid}/nova_tasks/{taskId}', region:REGION, timeoutSeconds:30, memory:'256MiB'},
+  async (event) => {
+    const task = event.data?.data() || {};
+    if (!shouldNotifyNovaCreation(String(task.status || ''))) return;
+    const notification = buildNovaMilestoneNotification('awaiting_approval', task.type);
+    if (!notification) return;
+    const devices = await db.collection('users').doc(String(event.params.uid))
+      .collection('nova_devices').where('enabled', '==', true).limit(100).get();
+    const tokens = devices.docs
+      .map((doc) => ({doc, token:String(doc.data()?.token || '').trim()}))
+      .filter((item) => item.token.length >= 20);
+    if (tokens.length === 0) return;
+    const response = await getMessaging().sendEachForMulticast({
+      tokens:tokens.map((item) => item.token),
+      notification,
+      data:buildNovaPushData(event.params.taskId, 'awaiting_approval', task.type),
+      android:{priority:'high', notification:{sound:'default'}},
+    });
+    const staleRefs = [];
+    response.responses.forEach((result, index) => {
+      const code = result.error?.code || '';
+      if (code === 'messaging/registration-token-not-registered' ||
+          code === 'messaging/invalid-registration-token') staleRefs.push(tokens[index].doc.ref);
+    });
+    for (let index = 0; index < staleRefs.length; index += 450) {
+      const batch = db.batch();
+      staleRefs.slice(index, index + 450).forEach((ref) => batch.delete(ref));
+      await batch.commit();
+    }
   }
 );
