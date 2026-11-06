@@ -1,5 +1,7 @@
 'use strict';
 
+const crypto = require('node:crypto');
+
 /**
  * Canonical, versioned contract shared by NOVA task submitters and workers.
  * This module is intentionally dependency-free so it can be tested with Node.
@@ -25,6 +27,39 @@ const TRANSITIONS = Object.freeze({
 
 const DEFAULT_MAX_ATTEMPTS = 3;
 const MAX_EVIDENCE_ITEMS = 20;
+
+
+function stableApprovalValue(value) {
+  if (Array.isArray(value)) return value.map(stableApprovalValue);
+  if (value && typeof value === 'object') {
+    return Object.keys(value).sort().reduce((result, key) => {
+      result[key] = stableApprovalValue(value[key]);
+      return result;
+    }, {});
+  }
+  return value;
+}
+
+/**
+ * Bind an owner approval to the exact immutable task intent. Any change to
+ * identity, owner, type, prompt, metadata, or approval requirement invalidates it.
+ */
+function createNovaApprovalScopeHash(task) {
+  if (!task || typeof task !== 'object' || !task.taskId || !task.ownerUid ||
+      !task.type || typeof task.prompt !== 'string') {
+    throw new TypeError('A complete task is required to calculate its approval scope.');
+  }
+  const scope = stableApprovalValue({
+    schemaVersion: task.schemaVersion || TASK_SCHEMA_VERSION,
+    taskId: task.taskId,
+    ownerUid: task.ownerUid,
+    type: task.type,
+    prompt: task.prompt,
+    metadata: task.metadata || {},
+    requiresApproval: task.requiresApproval === true,
+  });
+  return crypto.createHash('sha256').update(JSON.stringify(scope)).digest('hex');
+}
 
 function canTransitionTask(from, to) {
   return TASK_STATUSES.includes(from) && TRANSITIONS[from].has(to);
@@ -123,6 +158,7 @@ module.exports = {
   TERMINAL_STATUSES,
   DEFAULT_MAX_ATTEMPTS,
   canTransitionTask,
+  createNovaApprovalScopeHash,
   createNovaTaskRecord,
   createNovaQueueRecord,
   createNovaAuditEvent,
