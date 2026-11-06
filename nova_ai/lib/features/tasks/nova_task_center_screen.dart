@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../firebase_runtime.dart';
+import '../../services/offline/nova_offline_store.dart';
 
 class NovaTaskCenterScreen extends StatefulWidget {
   const NovaTaskCenterScreen({super.key});
@@ -17,6 +18,60 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
   bool _busy = false;
   String? _message;
   List<Map<String, dynamic>> _tasks = const [];
+  final _offlineStore = NovaOfflineStore();
+  List<NovaOfflineTask> _offlineTasks = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOfflineTasks();
+  }
+
+  Future<void> _loadOfflineTasks() async {
+    try {
+      final tasks = await _offlineStore.getTasks();
+      if (mounted) setState(() => _offlineTasks = tasks);
+    } catch (_) {
+      if (mounted) setState(() => _message = 'تعذر تحميل المهام المحلية.');
+    }
+  }
+
+  Future<void> _saveOfflineTask() async {
+    final title = _prompt.text.trim();
+    if (title.isEmpty) {
+      setState(() => _message = 'اكتب وصف المهمة أولاً لحفظها محلياً.');
+      return;
+    }
+    try {
+      await _offlineStore.saveTask(NovaOfflineTask(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        title: title,
+        notes: 'النوع: $_type',
+        updatedAtMillis: DateTime.now().millisecondsSinceEpoch,
+      ));
+      _prompt.clear();
+      await _loadOfflineTasks();
+      if (mounted) setState(() => _message = 'تم حفظ المهمة على الهاتف؛ ستظل متاحة بدون إنترنت.');
+    } catch (_) {
+      if (mounted) setState(() => _message = 'تعذر حفظ المهمة على الهاتف.');
+    }
+  }
+
+  Future<void> _toggleOfflineTask(NovaOfflineTask task, bool complete) async {
+    await _offlineStore.saveTask(NovaOfflineTask(
+      id: task.id,
+      title: task.title,
+      notes: task.notes,
+      isComplete: complete,
+      updatedAtMillis: DateTime.now().millisecondsSinceEpoch,
+    ));
+    await _loadOfflineTasks();
+  }
+
+  Future<void> _deleteOfflineTask(String id) async {
+    await _offlineStore.deleteTask(id);
+    await _loadOfflineTasks();
+  }
 
   @override
   void dispose() {
@@ -160,6 +215,11 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
         label: Text(_busy ? 'جاري التنفيذ…' : 'إرسال المهمة للخادم'),
       ),
       OutlinedButton.icon(
+        onPressed: _saveOfflineTask,
+        icon: const Icon(Icons.save_outlined),
+        label: const Text('احفظ المهمة على الهاتف دون إنترنت'),
+      ),
+      OutlinedButton.icon(
         onPressed: _busy ? null : _loadTasks,
         icon: const Icon(Icons.refresh),
         label: const Text('تحديث قائمة المهام'),
@@ -168,6 +228,30 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Text(_message!, textDirection: TextDirection.rtl),
       ),
+      const SizedBox(height: 12),
+      const SizedBox(height: 16),
+      const Text('المهام المحفوظة على الهاتف — بدون إنترنت', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      if (_offlineTasks.isEmpty)
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 10),
+          child: Text('لا توجد مهام محلية محفوظة. يمكنك حفظ مهمة حتى عند انقطاع الاتصال.'),
+        ),
+      for (final task in _offlineTasks)
+        Card(child: ListTile(
+          leading: Checkbox(
+            value: task.isComplete,
+            onChanged: (value) => _toggleOfflineTask(task, value ?? false),
+          ),
+          title: Text(task.title, style: TextStyle(
+            decoration: task.isComplete ? TextDecoration.lineThrough : TextDecoration.none,
+          )),
+          subtitle: Text(task.notes),
+          trailing: IconButton(
+            tooltip: 'حذف المهمة المحلية',
+            onPressed: () => _deleteOfflineTask(task.id),
+            icon: const Icon(Icons.delete_outline),
+          ),
+        )),
       const SizedBox(height: 12),
       const Text('المهام المسجلة في الخادم', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       if (_tasks.isEmpty) const Padding(

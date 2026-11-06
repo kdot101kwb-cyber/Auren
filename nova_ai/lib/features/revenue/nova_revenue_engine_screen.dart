@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../firebase_runtime.dart';
+import '../../services/offline/nova_offline_store.dart';
 
 class NovaRevenueEngineScreen extends StatefulWidget {
   const NovaRevenueEngineScreen({super.key});
@@ -25,6 +26,62 @@ class _NovaRevenueEngineScreenState extends State<NovaRevenueEngineScreen> {
   bool _signalBusy = false;
   String? _signalMessage;
   List<Map<String, dynamic>> _signals = [];
+  final _planName = TextEditingController(text: 'خدمة كتابة محتوى');
+  final _planRevenue = TextEditingController(text: '100');
+  final _planCosts = TextEditingController(text: '0');
+  final _planInvestment = TextEditingController(text: '0');
+  final _offlineStore = NovaOfflineStore();
+  List<NovaIncomePlan> _offlinePlans = [];
+  String? _offlineMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOfflinePlans();
+  }
+
+  Future<void> _loadOfflinePlans() async {
+    try {
+      final plans = await _offlineStore.getIncomePlans();
+      if (mounted) setState(() => _offlinePlans = plans);
+    } catch (_) {
+      if (mounted) setState(() => _offlineMessage = 'تعذر قراءة الخطط المحفوظة محلياً.');
+    }
+  }
+
+  Future<void> _saveOfflinePlan() async {
+    final name = _planName.text.trim();
+    final revenue = double.tryParse(_planRevenue.text.trim());
+    final costs = double.tryParse(_planCosts.text.trim());
+    final investment = double.tryParse(_planInvestment.text.trim());
+    if (name.isEmpty || revenue == null || costs == null || investment == null ||
+        revenue < 0 || costs < 0 || investment < 0) {
+      setState(() => _offlineMessage = 'أدخل اسماً وأرقاماً صحيحة غير سالبة.');
+      return;
+    }
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final plan = NovaIncomePlan(
+      id: id,
+      name: name,
+      monthlyRevenue: revenue,
+      monthlyCosts: costs,
+      initialInvestment: investment,
+      updatedAtMillis: DateTime.now().millisecondsSinceEpoch,
+    );
+    try {
+      await _offlineStore.saveIncomePlan(plan);
+      await _loadOfflinePlans();
+      if (mounted) setState(() => _offlineMessage = 'تم حفظ خطة الدخل على الجهاز؛ لا تحتاج اتصالاً بالإنترنت.');
+    } catch (_) {
+      if (mounted) setState(() => _offlineMessage = 'تعذر الحفظ المحلي. تحقق من مساحة الجهاز.');
+    }
+  }
+
+  Future<void> _deleteOfflinePlan(String id) async {
+    await _offlineStore.deleteIncomePlan(id);
+    await _loadOfflinePlans();
+    if (mounted) setState(() => _offlineMessage = 'تم حذف الخطة من الجهاز.');
+  }
 
   static const _tracks = <({String title, String detail, String price, IconData icon})>[
     (title: 'خدمات الكتابة بالذكاء الاصطناعي', detail: 'وصف منتجات، كتابة إعلانية، تحرير وتدقيق', price: 'مثال \$20–50', icon: Icons.edit_note),
@@ -45,6 +102,10 @@ class _NovaRevenueEngineScreenState extends State<NovaRevenueEngineScreen> {
     _languages.dispose();
     _hours.dispose();
     _budget.dispose();
+    _planName.dispose();
+    _planRevenue.dispose();
+    _planCosts.dispose();
+    _planInvestment.dispose();
     super.dispose();
   }
 
@@ -230,6 +291,41 @@ class _NovaRevenueEngineScreenState extends State<NovaRevenueEngineScreen> {
         const Text('حزمة العمل اليومية من NOVA', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
         Card(child: Padding(padding: const EdgeInsets.all(14), child: SelectableText(_report!, textDirection: TextDirection.rtl))),
       ],
+      const SizedBox(height: 20),
+      const Text('مخطط الدخل المحلي — يعمل دون إنترنت', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 6),
+      const Text('أدخل تقديرك الشهري واحفظ الخطط على الجهاز. الأرقام تقديراتك أنت وليست أرباحاً مضمونة.'),
+      Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _field('اسم المشروع أو الخدمة', _planName),
+        _field('الإيراد الشهري المتوقع (USD)', _planRevenue),
+        _field('التكاليف الشهرية (USD)', _planCosts),
+        _field('رأس المال الأولي (USD)', _planInvestment),
+        Align(alignment: Alignment.centerLeft, child: FilledButton.icon(
+          onPressed: _saveOfflinePlan,
+          icon: const Icon(Icons.save_outlined),
+          label: const Text('احفظ الخطة محلياً'),
+        )),
+        if (_offlineMessage != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_offlineMessage!, textDirection: TextDirection.rtl)),
+      ]))),
+      if (_offlinePlans.isEmpty)
+        const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('لا توجد خطط محفوظة بعد.'))
+      else
+        for (final plan in _offlinePlans)
+          Card(child: ListTile(
+            title: Text(plan.name),
+            subtitle: Text(
+              'الإيراد: ${plan.currency} ${plan.monthlyRevenue.toStringAsFixed(2)} | التكاليف: ${plan.currency} ${plan.monthlyCosts.toStringAsFixed(2)}\n'
+              'الربح الشهري التقديري: ${plan.currency} ${plan.estimatedMonthlyProfit.toStringAsFixed(2)}\n'
+              '${plan.estimatedBreakEvenMonths == null ? 'لا توجد نقطة تعادل محسوبة مع ربح غير موجب.' : 'استرداد رأس المال تقديرياً: ${plan.estimatedBreakEvenMonths!.toStringAsFixed(1)} شهر'}',
+              textDirection: TextDirection.rtl,
+            ),
+            trailing: IconButton(
+              tooltip: 'حذف الخطة',
+              onPressed: () => _deleteOfflinePlan(plan.id),
+              icon: const Icon(Icons.delete_outline),
+            ),
+            isThreeLine: true,
+          )),
       const SizedBox(height: 20),
       const SizedBox(height: 18),
       const Text('رصد الاتجاهات والدومينات — مجاني', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
