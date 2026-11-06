@@ -3,6 +3,7 @@ import '../../../core/models/post.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/community_service.dart';
 import '../../../services/social/post_repository.dart';
+import 'community_member_tools_screen.dart';
 
 class AurenCommunityDetailScreen extends StatefulWidget {
   final String communityId;
@@ -51,7 +52,7 @@ class _AurenCommunityDetailScreenState extends State<AurenCommunityDetailScreen>
 
   @override Widget build(BuildContext context)=>StreamBuilder<AurenCommunity?>(
     stream:service.watch(widget.communityId),builder:(context,s){final c=s.data;if(!s.hasData)return const Scaffold(body:Center(child:CircularProgressIndicator()));if(c==null)return const Scaffold(body:Center(child:Text('المجتمع غير موجود.')));final uid=auth.currentUserId;final joined=uid!=null&&c.memberIds.contains(uid);
-      return Scaffold(appBar:AppBar(title:Text(c.name)),floatingActionButton:joined?Column(mainAxisSize:MainAxisSize.min,children:[FloatingActionButton(onPressed:()=>_createPoll(c),heroTag:'poll',child:const Icon(Icons.poll_outlined)),const SizedBox(height:8),FloatingActionButton.extended(onPressed:()=>_compose(c),heroTag:'post',icon:const Icon(Icons.edit),label:const Text('نشر'))]):null,
+      return Scaffold(appBar:AppBar(title:Text(c.name),actions:[if(joined) IconButton(tooltip:'أدوات عضو المجتمع',icon:const Icon(Icons.tune),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenCommunityMemberToolsScreen(communityId:c.id))))]),floatingActionButton:joined?Column(mainAxisSize:MainAxisSize.min,children:[FloatingActionButton(onPressed:()=>_createPoll(c),heroTag:'poll',child:const Icon(Icons.poll_outlined)),const SizedBox(height:8),FloatingActionButton.extended(onPressed:()=>_compose(c),heroTag:'post',icon:const Icon(Icons.edit),label:const Text('نشر'))]):null,
         body:ListView(padding:const EdgeInsets.all(16),children:[
           Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(c.topic.isEmpty?'Community':c.topic,style:Theme.of(context).textTheme.labelLarge),const SizedBox(height:6),Text(c.description.isEmpty?'لا يوجد وصف.':c.description),const SizedBox(height:10),Text('${c.memberCount} عضو'),if(!joined)const Padding(padding:EdgeInsets.only(top:8),child:Text('انضم للمجتمع حتى تقدر تنشر.'))]))),
           const SizedBox(height:12),
