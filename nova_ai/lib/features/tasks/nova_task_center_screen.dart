@@ -72,6 +72,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
   void _reportMilestones(List<Map<String, dynamic>> tasks) {
     final nextStatuses = <String, String>{};
     final messages = <String>[];
+    var hasCompletion = false;
 
     for (final task in tasks) {
       final id = '${task['taskId'] ?? ''}';
@@ -89,6 +90,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
       switch (status) {
         case 'succeeded':
         case 'completed':
+          hasCompletion = true;
           messages.add('اكتملت $title بنجاح. NOVA تتابع بقية قائمة المهام.');
           break;
         case 'failed':
@@ -112,13 +114,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
 
     final messenger = ScaffoldMessenger.maybeOf(context);
     if (messenger == null) return;
-    final firstTask = tasks.firstWhere(
-      (task) => _knownStatuses['${task['taskId'] ?? ''}'] ==
-          '${task['status'] ?? 'unknown'}',
-      orElse: () => const <String, dynamic>{},
-    );
-    final firstStatus = '${firstTask['status'] ?? ''}';
-    final completed = firstStatus == 'succeeded' || firstStatus == 'completed';
+    final completed = hasCompletion;
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
