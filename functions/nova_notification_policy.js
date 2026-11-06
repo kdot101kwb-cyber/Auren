@@ -29,8 +29,17 @@ function shouldNotifyNovaCreation(status) {
   return status === 'awaiting_approval';
 }
 
+function buildNovaPushData(taskId, status, taskType) {
+  // Explicit allowlist: never pass task prompts, results, or arbitrary metadata to FCM.
+  return {
+    taskId: String(taskId || '').slice(0, 128),
+    status: String(status || '').slice(0, 40),
+    type: String(taskType || 'task').slice(0, 80),
+  };
+}
+
 function shouldNotifyNovaTransition(beforeStatus, afterStatus) {
   return beforeStatus !== afterStatus && MILESTONE_STATUSES.has(afterStatus);
 }
 
-module.exports = {buildNovaMilestoneNotification, shouldNotifyNovaCreation, shouldNotifyNovaTransition};
+module.exports = {buildNovaMilestoneNotification, buildNovaPushData, shouldNotifyNovaCreation, shouldNotifyNovaTransition};
