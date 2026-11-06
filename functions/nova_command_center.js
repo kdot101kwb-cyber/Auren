@@ -11,6 +11,7 @@ const db = getFirestore();
 const REGION = 'us-central1';
 const TASK_COLLECTION = 'nova_tasks';
 const {normalizeNovaTaskInput} = require('./nova_command_validation');
+const {resolveDependencyState} = require('./nova_task_dependency_policy');
 
 exports.submitNovaTask = onCall(
   {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
@@ -25,31 +26,32 @@ exports.submitNovaTask = onCall(
     const result = await db.runTransaction(async (tx) => {
       const existing = await tx.get(taskRef);
       if (existing.exists) return {created:false, taskId:id, task:existing.data()};
+      const dependencyStatuses = [];
+      for (const dependencyId of input.dependsOnTaskIds) {
+        const dependencyRef = db.collection('users').doc(uid).collection(TASK_COLLECTION).doc(dependencyId);
+        const dependencySnap = await tx.get(dependencyRef);
+        if (!dependencySnap.exists) throw new HttpsError('not-found', 'A prerequisite NOVA task was not found: ' + dependencyId);
+        dependencyStatuses.push(String(dependencySnap.data()?.status || 'unknown'));
+      }
+      const dependencyState = resolveDependencyState(dependencyStatuses, input.requiresApproval);
+      if (dependencyState.status === 'blocked') throw new HttpsError('failed-precondition', 'A prerequisite task has already failed or been cancelled.');
       const task = {
-        taskId:id,
-        ownerUid:uid,
-        type:input.type,
-        prompt:input.prompt,
-        metadata:input.metadata,
-        requiresApproval:input.requiresApproval,
-        status:input.requiresApproval ? 'awaiting_approval' : 'queued',
+        taskId:id, ownerUid:uid, type:input.type, prompt:input.prompt,
+        metadata:input.metadata, requiresApproval:input.requiresApproval,
+        dependsOnTaskIds:input.dependsOnTaskIds,
+        dependencyPolicy:'all_successful',
+        status:dependencyState.status,
         executionMode:'queued_backend_worker_required',
-        result:null,
-        error:null,
-        retryCount:0,
-        createdAt:FieldValue.serverTimestamp(),
-        updatedAt:FieldValue.serverTimestamp(),
+        result:null, error:dependencyState.error, retryCount:0,
+        createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
       };
       tx.create(taskRef, task);
       if (task.status === 'queued') {
         tx.create(queueRef, {ownerUid:uid, taskId:id, status:'queued', attempts:0, createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
       }
       tx.create(auditRef, {
-        action:'nova.task.submitted',
-        actorUid:uid,
-        taskId:id,
-        taskType:input.type,
-        status:task.status,
+        action:'nova.task.submitted', actorUid:uid, taskId:id, taskType:input.type,
+        dependsOnTaskIds:input.dependsOnTaskIds, status:task.status,
         createdAt:FieldValue.serverTimestamp(),
       });
       return {created:true, taskId:id, task};
@@ -60,10 +62,13 @@ exports.submitNovaTask = onCall(
       taskId:id,
       status:result.task.status,
       requiresApproval:result.task.requiresApproval,
+      dependsOnTaskIds:result.task.dependsOnTaskIds || [],
       executionMode:result.task.executionMode,
       message:result.task.status === 'queued'
         ? 'Task was queued; a production worker must claim it before execution.'
-        : 'Task is awaiting explicit approval before side effects.',
+        : result.task.status === 'waiting_for_dependencies'
+          ? 'Task is waiting until every prerequisite succeeds.'
+          : 'Task is awaiting explicit approval before side effects.',
     };
   }
 );
@@ -87,6 +92,7 @@ exports.getNovaTask = onCall(
       result:task.result || null,
       error:task.error || null,
       retryCount:Number(task.retryCount) || 0,
+      dependsOnTaskIds:Array.isArray(task.dependsOnTaskIds) ? task.dependsOnTaskIds : [],
       createdAt:task.createdAt?.toDate?.().toISOString() || null,
       updatedAt:task.updatedAt?.toDate?.().toISOString() || null,
     };
@@ -146,7 +152,7 @@ exports.cancelNovaTask = onCall(
       if (!snap.exists) throw new HttpsError('not-found', 'NOVA task not found.');
       const queueSnap = await tx.get(queueRef);
       const task = snap.data() || {};
-      if (!['queued','awaiting_approval'].includes(task.status)) {
+      if (!['queued','awaiting_approval','waiting_for_dependencies'].includes(task.status)) {
         throw new HttpsError('failed-precondition', 'Only queued or approval-pending tasks can be cancelled.');
       }
       tx.update(taskRef, {status:'cancelled', cancelledAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
@@ -181,6 +187,7 @@ exports.listNovaTasks = onCall(
         prompt:task.prompt,
         status:task.status,
         requiresApproval:task.requiresApproval === true,
+        dependsOnTaskIds:Array.isArray(task.dependsOnTaskIds) ? task.dependsOnTaskIds : [],
         executionMode:task.executionMode || 'unknown',
         result:task.result || null,
         error:task.error || null,
@@ -191,6 +198,80 @@ exports.listNovaTasks = onCall(
   }
 );
 
+
+
+// Advance dependent tasks when prerequisite statuses change. The transaction
+// makes each transition idempotent and never bypasses an approval requirement.
+exports.advanceNovaTaskDependents = onDocumentUpdated(
+  {document:'users/{uid}/nova_tasks/{taskId}', region:REGION, timeoutSeconds:60, memory:'256MiB'},
+  async (event) => {
+    const before = event.data?.before?.data() || {};
+    const after = event.data?.after?.data() || {};
+    if (String(before.status || '') === String(after.status || '')) return;
+    const uid = String(event.params.uid || '');
+    const completedTaskId = String(event.params.taskId || '');
+    if (!uid || !completedTaskId) return;
+
+    const userTasks = db.collection('users').doc(uid).collection(TASK_COLLECTION);
+    let cursor = null;
+    while (true) {
+      let query = userTasks.where('dependsOnTaskIds', 'array-contains', completedTaskId).limit(50);
+      if (cursor) query = query.startAfter(cursor);
+      const snapshot = await query.get();
+      if (snapshot.empty) break;
+
+      for (const dependent of snapshot.docs) {
+        const dependentRef = dependent.ref;
+        const dependencyIds = Array.isArray(dependent.data()?.dependsOnTaskIds)
+          ? dependent.data().dependsOnTaskIds : [];
+        const queueRef = db.collection('nova_task_queue').doc(uid + '_' + dependent.id);
+        const auditRef = db.collection('users').doc(uid).collection('nova_audit').doc();
+
+        await db.runTransaction(async (tx) => {
+          const current = await tx.get(dependentRef);
+          if (!current.exists || current.data()?.status !== 'waiting_for_dependencies') return;
+          const dependencyStatuses = [];
+          for (const dependencyId of dependencyIds) {
+            const dependencySnap = await tx.get(userTasks.doc(String(dependencyId)));
+            dependencyStatuses.push(dependencySnap.exists
+              ? String(dependencySnap.data()?.status || 'unknown') : 'blocked');
+          }
+          const queueSnap = await tx.get(queueRef);
+          const task = current.data() || {};
+          const resolution = resolveDependencyState(dependencyStatuses, task.requiresApproval === true);
+          if (resolution.status === 'waiting_for_dependencies') return;
+
+          tx.update(dependentRef, {
+            status:resolution.status,
+            error:resolution.error,
+            dependencyResolvedAt:FieldValue.serverTimestamp(),
+            updatedAt:FieldValue.serverTimestamp(),
+          });
+          if (resolution.status === 'queued' && !queueSnap.exists) {
+            tx.create(queueRef, {
+              ownerUid:uid, taskId:dependent.id, status:'queued', attempts:0,
+              createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
+            });
+          }
+          tx.create(auditRef, {
+            action:resolution.status === 'queued'
+              ? 'nova.task.dependencies_satisfied'
+              : resolution.status === 'awaiting_approval'
+                ? 'nova.task.dependencies_satisfied_approval_required'
+                : 'nova.task.blocked_dependency_failed',
+            actorUid:'nova_dependency_engine',
+            taskId:dependent.id,
+            dependsOnTaskIds:dependencyIds,
+            status:resolution.status,
+            createdAt:FieldValue.serverTimestamp(),
+          });
+        });
+      }
+      cursor = snapshot.docs[snapshot.docs.length - 1];
+      if (snapshot.size < 50) break;
+    }
+  }
+);
 
 // Device tokens are private server-owned records; clients can only register or
 // remove their own current FCM token through these App Check protected callables.

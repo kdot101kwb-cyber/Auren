@@ -54,3 +54,27 @@ test('approval and failure milestones have distinct messages', () => {
   assert.match(buildNovaMilestoneNotification('failed', 'research').body, /مراجعة السبب/);
   assert.equal(buildNovaMilestoneNotification('queued', 'research'), null);
 });
+
+test('accepts valid dependency IDs and defaults to an empty dependency list', () => {
+  const task = normalizeNovaTaskInput({
+    type:'research',
+    prompt:'continue the report',
+    idempotencyKey:'nova_task_654321',
+    dependsOnTaskIds:['nova_task_123456'],
+  });
+  assert.deepEqual(task.dependsOnTaskIds, ['nova_task_123456']);
+  assert.deepEqual(normalizeNovaTaskInput({
+    type:'chat', prompt:'hello', idempotencyKey:'nova_task_654322',
+  }).dependsOnTaskIds, []);
+});
+
+test('rejects invalid or self-referential task dependencies', () => {
+  assert.throws(() => normalizeNovaTaskInput({
+    type:'research', prompt:'x', idempotencyKey:'nova_task_654323',
+    dependsOnTaskIds:['invalid'],
+  }), /valid NOVA task ID/);
+  assert.throws(() => normalizeNovaTaskInput({
+    type:'research', prompt:'x', idempotencyKey:'nova_task_654324',
+    dependsOnTaskIds:['nova_task_654324'],
+  }), /itself/);
+});
