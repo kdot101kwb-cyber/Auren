@@ -25,8 +25,12 @@ function buildNovaMilestoneNotification(status, taskType) {
   return null;
 }
 
+function shouldNotifyNovaCreation(status) {
+  return status === 'awaiting_approval';
+}
+
 function shouldNotifyNovaTransition(beforeStatus, afterStatus) {
   return beforeStatus !== afterStatus && MILESTONE_STATUSES.has(afterStatus);
 }
 
-module.exports = {buildNovaMilestoneNotification, shouldNotifyNovaTransition};
+module.exports = {buildNovaMilestoneNotification, shouldNotifyNovaCreation, shouldNotifyNovaTransition};
