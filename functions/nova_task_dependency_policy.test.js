@@ -47,3 +47,8 @@ test('blocks a dependent task when any prerequisite fails or is cancelled', () =
     assert.equal(resolveDependencyState(['succeeded', status]).status, 'blocked');
   }
 });
+
+test('queues ordinary tasks immediately when no dependencies are supplied', () => {
+  assert.deepEqual(resolveDependencyState([], false), {status:'queued', error:null});
+  assert.deepEqual(resolveDependencyState([], true), {status:'awaiting_approval', error:null});
+});
