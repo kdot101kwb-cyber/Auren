@@ -6,7 +6,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {
   Timestamp,
-  getFirestore,
   doc,
   setDoc,
   getDoc,
