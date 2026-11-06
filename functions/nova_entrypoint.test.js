@@ -11,7 +11,7 @@ test('Firebase deployment entrypoint exports NOVA revenue callables and daily sc
   assert.equal(typeof deployedFunctions.getNovaSignalOpportunities, 'function');
 });
 
-test('Firebase deployment entrypoint exports NOVA task and push notification functions', () => {
+test('Firebase deployment entrypoint exports NOVA task, worker, and push functions', () => {
   for (const name of [
     'submitNovaTask',
     'getNovaTask',
@@ -21,6 +21,8 @@ test('Firebase deployment entrypoint exports NOVA task and push notification fun
     'registerNovaDeviceToken',
     'unregisterNovaDeviceToken',
     'notifyNovaTaskMilestone',
+    'processNovaTaskQueue',
+    'pollHiggsfieldVideoTasks',
   ]) {
     assert.equal(typeof deployedFunctions[name], 'function', name + ' must be exported');
   }
