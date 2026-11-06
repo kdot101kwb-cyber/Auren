@@ -26,7 +26,7 @@ function normalizeNovaTaskInput(data, ErrorType = Error) {
     metadata: {
       source: String(metadata.source || 'nova_android').slice(0, 80),
       locale: String(metadata.locale || 'ar').slice(0, 20),
-      workflowSteps: normalizeWorkflowSteps(metadata.workflowSteps),
+      workflowSteps: normalizeWorkflowSteps(metadata.workflowSteps, ErrorType),
     },
     requiresApproval: APPROVAL_TYPES.has(type) || data.requiresApproval === true,
   };
