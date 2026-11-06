@@ -4,8 +4,6 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-require('firebase/compat/app');
-require('firebase/compat/firestore');
 const { Timestamp, doc, getDoc, setDoc, updateDoc, deleteDoc, runTransaction } = require('firebase/firestore');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
 
