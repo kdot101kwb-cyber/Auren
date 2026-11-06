@@ -31,6 +31,9 @@ exports.submitNovaTask = onCall(
         type:input.type,
         prompt:input.prompt,
         metadata:input.metadata,
+        workflowSteps:input.metadata.workflowSteps || [],
+        workflowProgress:0,
+        workflowResults:[],
         requiresApproval:input.requiresApproval,
         status:input.requiresApproval ? 'awaiting_approval' : 'queued',
         executionMode:'queued_backend_worker_required',
@@ -185,6 +188,8 @@ exports.listNovaTasks = onCall(
         result:task.result || null,
         error:task.error || null,
         retryCount:Number(task.retryCount) || 0,
+        workflowProgress:Number(task.workflowProgress) || 0,
+        workflowTotal:1 + (Array.isArray(task.workflowSteps) ? task.workflowSteps.length : 0),
         createdAt:task.createdAt?.toDate?.().toISOString() || null,
       };
     })};

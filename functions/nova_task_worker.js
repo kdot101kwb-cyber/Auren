@@ -10,6 +10,7 @@ const HIGGSFIELD_API_KEY_ID = defineSecret('HIGGSFIELD_API_KEY_ID');
 const HIGGSFIELD_API_KEY_SECRET = defineSecret('HIGGSFIELD_API_KEY_SECRET');
 const {submitVideoGeneration, getVideoGenerationStatus} = require('./nova_higgsfield_adapter');
 const {isTaskExecutable} = require('./nova_task_worker_policy');
+const {buildWorkflowSequence} = require('./nova_autonomous_workflow');
 const REGION = 'us-central1';
 
 async function runTextTask(prompt, type, apiKey) {
@@ -39,7 +40,7 @@ async function runTextTask(prompt, type, apiKey) {
     if (!response.ok) throw new Error(String(payload?.error?.message || 'OpenRouter HTTP ' + response.status).slice(0,400));
     const text = payload?.choices?.[0]?.message?.content;
     if (typeof text !== 'string' || !text.trim()) throw new Error('AI provider returned an empty result.');
-    return {text:text.trim(), model:payload?.model || 'openrouter/free'};
+    return {text:text.trim().slice(0,12000), model:payload?.model || 'openrouter/free'};
   } finally {
     clearTimeout(timeout);
   }
@@ -121,14 +122,43 @@ exports.processNovaTaskQueue = onSchedule(
             });
           });
         } else {
-          const result = await runTextTask(String(task.prompt || ''), String(task.type), OPENROUTER_API_KEY.value().trim());
+          const sequence = buildWorkflowSequence(task);
+          const workflowResults = Array.isArray(task.workflowResults) ? [...task.workflowResults] : [];
+          const startIndex = Math.min(sequence.length, Math.max(0, Number(task.workflowProgress) || 0));
+          let result = workflowResults.length ? workflowResults[workflowResults.length - 1] : null;
+          for (let stepIndex = startIndex; stepIndex < sequence.length; stepIndex++) {
+            const step = sequence[stepIndex];
+            const previousOutput = workflowResults.length ? workflowResults[workflowResults.length - 1].text : '';
+            const stepPrompt = previousOutput
+              ? 'Previous workflow step output:\n' + previousOutput + '\n\nNext step instruction:\n' + step.prompt
+              : step.prompt;
+            result = await runTextTask(stepPrompt, step.type, OPENROUTER_API_KEY.value().trim());
+            workflowResults.push({step:stepIndex + 1, type:step.type, text:result.text, model:result.model});
+            await db.runTransaction(async (tx) => {
+              const current = await tx.get(taskRef);
+              if (!current.exists || current.data()?.status !== 'running') return;
+              tx.update(taskRef, {
+                workflowProgress:stepIndex + 1,
+                workflowResults,
+                updatedAt:FieldValue.serverTimestamp(),
+              });
+            });
+          }
+          if (!result) throw new Error('Workflow has no completed step result.');
+          const combinedResult = {
+            text:workflowResults.map((item) => 'Step ' + item.step + ' (' + item.type + '):\n' + item.text).join('\n\n'),
+            provider:'openrouter',
+            model:result.model,
+            completedSteps:workflowResults.length,
+            totalSteps:sequence.length,
+          };
           await db.runTransaction(async (tx) => {
             const qs = await tx.get(queueRef);
             const ts = await tx.get(taskRef);
             if (!qs.exists || !ts.exists || qs.data()?.status !== 'running' || ts.data()?.status !== 'running') return;
             tx.update(taskRef, {
               status:'succeeded',
-              result:{text:result.text, provider:'openrouter', model:result.model},
+              result:combinedResult,
               error:null,
               completedAt:FieldValue.serverTimestamp(),
               updatedAt:FieldValue.serverTimestamp(),

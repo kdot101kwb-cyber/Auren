@@ -193,6 +193,35 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
           'يلزم إعداد Firebase وتفعيل App Check قبل إرسال المهام.');
       return;
     }
+    final workflowSteps = <Map<String, dynamic>>[];
+    if (_type == 'plan') {
+      workflowSteps.addAll([
+        <String, dynamic>{
+          'type': 'plan',
+          'prompt': 'راجع الخطة السابقة وحدد النواقص والاعتماديات والمخاطر والافتراضات، ثم حسّنها دون ادعاء تنفيذ أي إجراء خارجي.',
+        },
+        <String, dynamic>{
+          'type': 'content_draft',
+          'prompt': 'حوّل الخطة المحسّنة إلى قائمة تنفيذ مرتبة، مع معيار واضح لاكتمال كل خطوة.',
+        },
+      ]);
+    } else if (_type == 'research') {
+      workflowSteps.addAll([
+        <String, dynamic>{
+          'type': 'research',
+          'prompt': 'راجع نتيجة البحث السابقة، وافصل الحقائق عن الافتراضات، وحدد المعلومات غير المؤكدة والنواقص.',
+        },
+        <String, dynamic>{
+          'type': 'content_draft',
+          'prompt': 'اكتب خلاصة نهائية منظمة تتضمن النتائج والقيود وما يحتاج تحققاً وخطوات المتابعة.',
+        },
+      ]);
+    } else if (_type == 'content_draft') {
+      workflowSteps.add(<String, dynamic>{
+        'type': 'content_draft',
+        'prompt': 'راجع المسودة السابقة وحسّن الوضوح والدقة والاكتمال، ثم قدم النسخة النهائية.',
+      });
+    }
     setState(() { _busy = true; _message = null; });
     try {
       await _ensureSignedIn();
@@ -202,14 +231,15 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
         'type': _type,
         'prompt': prompt,
         'idempotencyKey': idempotencyKey,
-        'metadata': <String, dynamic>{'source': 'nova_android', 'locale': 'ar'},
+        'metadata': <String, dynamic>{'source': 'nova_android', 'locale': 'ar', 'workflowSteps': workflowSteps},
       });
       final data = Map<String, dynamic>.from(response.data as Map);
       _prompt.clear();
       if (mounted) {
         setState(() => _message =
             'سُجلت المهمة في قائمة الخلفية: ${data['taskId']} — الحالة: ${data['status']}. '
-            'التسجيل وحده لا يثبت بدء التنفيذ.');
+            + (workflowSteps.isEmpty ? 'مهمة واحدة.' : 'ستنفذ NOVA ${workflowSteps.length + 1} خطوات مترابطة تلقائياً.')
+            + 'التسجيل وحده لا يثبت بدء التنفيذ.');
       }
       _busy = false;
       await _loadTasks();
@@ -314,6 +344,14 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 5),
             Text('${task['prompt'] ?? task['taskId'] ?? ''}', maxLines: 3, overflow: TextOverflow.ellipsis),
+            if ((task['workflowTotal'] as num? ?? 1) > 1) ...[
+              const SizedBox(height: 8),
+              Text('تقدم التنفيذ: ${task['workflowProgress'] ?? 0} / ${task['workflowTotal']} خطوات'),
+              LinearProgressIndicator(
+                value: ((task['workflowProgress'] as num? ?? 0).toDouble() /
+                    (task['workflowTotal'] as num? ?? 1).toDouble()).clamp(0.0, 1.0),
+              ),
+            ],
             if (task['result'] is Map && (task['result'] as Map)['text'] is String) ...[
               const SizedBox(height: 8),
               Text('النتيجة: ${(task['result'] as Map)['text']}', textDirection: TextDirection.rtl),
