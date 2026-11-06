@@ -30,12 +30,12 @@ jobs:
           const token = process.env.CIRCLECI_API_TOKEN;
           const build = process.env.BUILD_NUMBER;
           if (!token) throw new Error('Missing repository secret CIRCLECI_API_TOKEN');
-          if (!/^\\d+$/.test(build || '')) throw new Error('build_number must be numeric');
+          if (!/^\d+$/.test(build || '')) throw new Error('build_number must be numeric');
 
           const mask = (s) => String(s)
             .replace(/(gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})/g, '[REDACTED_TOKEN]')
-            .replace(/(Bearer|Circle-Token)\\s+\\S+/gi, '$1 [REDACTED]')
-            .replace(/((?:TOKEN|SECRET|PASSWORD|API[_-]?KEY)\\s*[=:]\\s*)\\S+/gi, '$1[REDACTED]')
+            .replace(/(Bearer|Circle-Token)\s+\S+/gi, '$1 [REDACTED]')
+            .replace(/((?:TOKEN|SECRET|PASSWORD|API[_-]?KEY)\s*[=:]\s*)\S+/gi, '$1[REDACTED]')
             .replace(/sk-[A-Za-z0-9_-]{16,}/g, '[REDACTED_KEY]');
 
           async function getJson(url, headers = {}) {
