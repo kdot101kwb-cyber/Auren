@@ -1,0 +1,409 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:auren/features/transport/data/mobility_local_store.dart';
+import 'package:auren/features/transport/domain/mobility_models.dart';
+import 'package:auren/features/transport/presentation/transport_screen.dart';
+
+
+class _FailingShipmentStore extends MobilityLocalStore {
+  @override
+  Future<void> saveShipments(List<CargoShipment> shipments) async {
+    throw StateError('simulated local storage failure');
+  }
+}
+
+class _FailingRouteStore extends MobilityLocalStore {
+  @override
+  Future<void> saveRoutes(List<PublicTransportRoute> routes) async {
+    throw StateError('simulated local storage failure');
+  }
+}
+
+class _FailingVehicleStore extends MobilityLocalStore {
+  @override
+  Future<void> saveVehicles(List<VehicleRecord> vehicles) async {
+    throw StateError('simulated local storage failure');
+  }
+}
+
+class _FailingPortStore extends MobilityLocalStore {
+  @override
+  Future<void> savePorts(List<PortInformation> ports) async {
+    throw StateError('simulated local storage failure');
+  }
+}
+
+Finder field(String label) => find.byWidgetPredicate(
+      (widget) => widget is TextField && widget.decoration?.labelText == label,
+      description: 'TextField with label $label',
+    );
+
+Future<void> openSection(WidgetTester tester, String title) async {
+  ScaffoldMessenger.of(tester.element(find.byType(Scaffold))).clearSnackBars();
+  await tester.pumpAndSettle();
+  final sectionTitle = find.text(title);
+  await tester.scrollUntilVisible(
+    sectionTitle,
+    250,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.ensureVisible(sectionTitle);
+  await tester.pumpAndSettle();
+  await tester.tap(sectionTitle);
+  await tester.pumpAndSettle();
+}
+
+Future<void> enterField(
+  WidgetTester tester,
+  String label,
+  String value,
+) async {
+  final target = field(label);
+  await tester.scrollUntilVisible(
+    target,
+    220,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.ensureVisible(target);
+  await tester.pumpAndSettle();
+  await tester.enterText(target, value);
+  tester.testTextInput.hide();
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  testWidgets('failed cargo save keeps the form and does not show a phantom record', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: AurenTransportScreen(localStore: _FailingShipmentStore()),
+    ));
+    await openSection(tester, 'Freight & Cargo Coordination');
+
+    await enterField(tester, 'مرجع الشحنة', 'FAIL-101');
+    await enterField(tester, 'من', 'بورتسودان');
+    await enterField(tester, 'إلى', 'الخرطوم');
+    await tester.ensureVisible(find.text('حفظ مسودة الشحنة'));
+    await tester.tap(find.text('حفظ مسودة الشحنة'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تعذر حفظ الشحنة على الجهاز؛ لم تتم إضافتها إلى السجل.'), findsOneWidget);
+    expect(find.textContaining('FAIL-101: بورتسودان → الخرطوم'), findsNothing);
+    expect(tester.widget<TextField>(field('مرجع الشحنة')).controller!.text, 'FAIL-101');
+    expect(tester.widget<TextField>(field('من')).controller!.text, 'بورتسودان');
+    expect(tester.widget<TextField>(field('إلى')).controller!.text, 'الخرطوم');
+  });
+
+
+  testWidgets('shows five separate mobility workspaces', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+
+    expect(find.text('Public Transport Intelligence'), findsOneWidget);
+    expect(find.text('Vehicle Ownership'), findsOneWidget);
+    expect(find.text('Mobility Cost Planner'), findsOneWidget);
+    expect(find.text('Freight & Cargo Coordination'), findsOneWidget);
+    expect(find.text('Maritime & Port Intelligence'), findsOneWidget);
+  });
+
+  testWidgets('cost planner calculates only from explicit inputs', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+    await openSection(tester, 'Mobility Cost Planner');
+
+    await enterField(tester, 'المسافة لكل رحلة (كم)', '100');
+    await enterField(tester, 'عدد الرحلات', '2');
+    await enterField(tester, 'استهلاك الوقود (لتر / 100 كم)', '8');
+    await enterField(tester, 'سعر لتر الوقود', '1.5');
+    await enterField(tester, 'رسوم الطريق لكل رحلة', '2');
+    await enterField(tester, 'مواقف لكل رحلة', '3');
+    await enterField(tester, 'تكاليف أخرى لكل رحلة', '1');
+    await enterField(tester, 'العملة', 'SDG');
+
+    await tester.ensureVisible(find.text('احسب التقدير'));
+    await tester.tap(find.text('احسب التقدير'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('الإجمالي التقديري: 36.00 SDG'), findsOneWidget);
+    expect(find.text('الوقود: 24.00 SDG'), findsOneWidget);
+  });
+
+  testWidgets('requires a named source before recording a transit route', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+    await openSection(tester, 'Public Transport Intelligence');
+    await tester.ensureVisible(find.text('حفظ محليًا'));
+    await tester.tap(find.text('حفظ محليًا'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('أدخل المشغّل والمسار والتوقفات واسم المصدر وتاريخ ملاحظته بصيغة YYYY-MM-DD.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('cargo draft records selected status and delivery requirements', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+    await openSection(tester, 'Freight & Cargo Coordination');
+
+    await enterField(tester, 'مرجع الشحنة', 'C-101');
+    await enterField(tester, 'من', 'بورتسودان');
+    await enterField(tester, 'إلى', 'الخرطوم');
+    await enterField(tester, 'الناقل (اختياري)', 'ناقل تجريبي');
+    await enterField(
+      tester,
+      'متطلبات التسليم، مفصولة بفواصل (اختياري)',
+      'تغليف, توقيع المستلم',
+    );
+    await enterField(tester, 'ملاحظات (اختياري)', 'اتصل قبل الوصول');
+
+    await tester.ensureVisible(find.byType(DropdownButtonFormField<CargoStatus>));
+    await tester.tap(find.byType(DropdownButtonFormField<CargoStatus>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('قيد النقل').last);
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('حفظ مسودة الشحنة'));
+    await tester.tap(find.text('حفظ مسودة الشحنة'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('C-101: بورتسودان → الخرطوم • قيد النقل'), findsOneWidget);
+    expect(find.textContaining('ناقل تجريبي'), findsOneWidget);
+    expect(find.textContaining('تغليف, توقيع المستلم'), findsOneWidget);
+    expect(find.textContaining('ملاحظات: اتصل قبل الوصول'), findsOneWidget);
+  });
+
+  testWidgets('cargo drafts survive reopening the transport screen', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+    await openSection(tester, 'Freight & Cargo Coordination');
+
+    await enterField(tester, 'مرجع الشحنة', 'PERSIST-2026');
+    await enterField(tester, 'من', 'بورتسودان');
+    await enterField(tester, 'إلى', 'عطبرة');
+    await enterField(tester, 'الناقل (اختياري)', 'ناقل محفوظ');
+    await tester.ensureVisible(find.text('حفظ مسودة الشحنة'));
+    await tester.tap(find.text('حفظ مسودة الشحنة'));
+    await tester.pumpAndSettle();
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+    await tester.pumpAndSettle();
+    await openSection(tester, 'Freight & Cargo Coordination');
+
+    expect(find.textContaining('PERSIST-2026: بورتسودان → عطبرة'), findsOneWidget);
+    expect(find.textContaining('ناقل محفوظ'), findsOneWidget);
+  });
+
+  testWidgets('saved cargo shipment status updates persist locally', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+    await openSection(tester, 'Freight & Cargo Coordination');
+
+    await enterField(tester, 'مرجع الشحنة', 'STATUS-101');
+    await enterField(tester, 'من', 'بورتسودان');
+    await enterField(tester, 'إلى', 'الخرطوم');
+    await tester.ensureVisible(find.text('حفظ مسودة الشحنة'));
+    await tester.tap(find.text('حفظ مسودة الشحنة'));
+    await tester.pumpAndSettle();
+
+    final statusDropdown = find.byKey(const ValueKey('cargo-status-0'));
+    await tester.scrollUntilVisible(
+      statusDropdown,
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(statusDropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('تم التسليم').last);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('STATUS-101: بورتسودان → الخرطوم • تم التسليم'), findsOneWidget);
+    expect(find.text('تم تحديث حالة الشحنة وحفظها محليًا.'), findsOneWidget);
+
+    final stored = await MobilityLocalStore().loadShipments();
+    expect(stored, hasLength(1));
+    expect(stored.single.status, CargoStatus.delivered);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+    await tester.pumpAndSettle();
+    await openSection(tester, 'Freight & Cargo Coordination');
+
+    expect(find.textContaining('STATUS-101: بورتسودان → الخرطوم • تم التسليم'), findsOneWidget);
+  });
+
+  testWidgets('vehicle records surface insurance and maintenance alerts', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+    await openSection(tester, 'Vehicle Ownership');
+
+    final today = DateTime.now();
+    final soon = today.add(const Duration(days: 1));
+    final overdue = today.subtract(const Duration(days: 1));
+    String date(DateTime value) =>
+        '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+
+    await enterField(tester, 'الشركة / الصانع', 'Toyota');
+    await enterField(tester, 'الطراز', 'Corolla');
+    await enterField(tester, 'سنة الصنع', '2020');
+    await enterField(tester, 'ملاحظات المركبة (اختياري)', 'تغيير زيت قريب');
+    await enterField(
+      tester,
+      'انتهاء التأمين YYYY-MM-DD (اختياري)',
+      date(soon),
+    );
+    await enterField(
+      tester,
+      'موعد الصيانة YYYY-MM-DD (اختياري)',
+      date(overdue),
+    );
+
+    await tester.ensureVisible(find.text('إضافة مركبة'));
+    await tester.tap(find.text('إضافة مركبة'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('ملاحظات: تغيير زيت قريب'), findsOneWidget);
+    expect(find.textContaining('تنبيه: التأمين يحتاج مراجعة'), findsOneWidget);
+    expect(find.textContaining('تنبيه: موعد الصيانة حان أو فات'), findsOneWidget);
+  });
+  testWidgets('route and port records retain the user-entered observation date', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+
+    await openSection(tester, 'Public Transport Intelligence');
+    await enterField(tester, 'اسم المشغّل', 'مشغّل تجريبي');
+    await enterField(tester, 'اسم / رقم المسار', 'R-22');
+    await enterField(tester, 'التوقفات بالترتيب، مفصولة بفواصل', 'السوق, المحطة');
+    await enterField(tester, 'مصدر المعلومات', 'جدول المشغّل');
+    await tester.ensureVisible(find.text('حفظ محليًا'));
+    await tester.tap(find.text('حفظ محليًا'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('أدخل المشغّل والمسار والتوقفات واسم المصدر وتاريخ ملاحظته بصيغة YYYY-MM-DD.'),
+      findsOneWidget,
+    );
+    await enterField(tester, 'تاريخ ملاحظة المصدر YYYY-MM-DD', '2026-02-31');
+    await tester.ensureVisible(find.text('حفظ محليًا'));
+    await tester.tap(find.text('حفظ محليًا'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('أدخل المشغّل والمسار والتوقفات واسم المصدر وتاريخ ملاحظته بصيغة YYYY-MM-DD.'),
+      findsOneWidget,
+    );
+    await enterField(tester, 'تاريخ ملاحظة المصدر YYYY-MM-DD', '2026-10-20');
+    await tester.ensureVisible(find.text('حفظ محليًا'));
+    await tester.tap(find.text('حفظ محليًا'));
+    await tester.pumpAndSettle();
+
+    final routes = await MobilityLocalStore().loadRoutes();
+    expect(routes, hasLength(1));
+    expect(routes.single.evidence?.observedAt, DateTime(2026, 10, 20));
+
+    await openSection(tester, 'Maritime & Port Intelligence');
+    await enterField(tester, 'اسم الميناء', 'ميناء تجريبي');
+    await enterField(tester, 'الدولة', 'السودان');
+    await enterField(tester, 'مصدر المعلومات', 'إدارة الميناء');
+    await enterField(tester, 'تاريخ ملاحظة المصدر YYYY-MM-DD', '2026-10-19');
+    await tester.ensureVisible(find.text('حفظ معلومات الميناء'));
+    await tester.tap(find.text('حفظ معلومات الميناء'));
+    await tester.pumpAndSettle();
+
+    final ports = await MobilityLocalStore().loadPorts();
+    expect(ports, hasLength(1));
+    expect(ports.single.evidence?.observedAt, DateTime(2026, 10, 19));
+  });
+
+
+  testWidgets('failed route save preserves the form and does not add a record', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: AurenTransportScreen(localStore: _FailingRouteStore()),
+    ));
+    await openSection(tester, 'Public Transport Intelligence');
+    await enterField(tester, 'اسم المشغّل', 'مشغّل تجريبي');
+    await enterField(tester, 'اسم / رقم المسار', 'R-FAIL');
+    await enterField(tester, 'التوقفات بالترتيب، مفصولة بفواصل', 'السوق, المحطة');
+    await enterField(tester, 'مصدر المعلومات', 'جدول المشغّل');
+    await enterField(tester, 'تاريخ ملاحظة المصدر YYYY-MM-DD', '2026-10-20');
+    await tester.ensureVisible(find.text('حفظ محليًا'));
+    await tester.tap(find.text('حفظ محليًا'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تعذر حفظ المسار على الجهاز؛ لم تتم إضافته إلى السجل.'), findsOneWidget);
+    expect(await MobilityLocalStore().loadRoutes(), isEmpty);
+    expect(tester.widget<TextField>(field('اسم / رقم المسار')).controller!.text, 'R-FAIL');
+    expect(tester.widget<TextField>(field('مصدر المعلومات')).controller!.text, 'جدول المشغّل');
+  });
+
+  testWidgets('failed vehicle save preserves the form and does not add a record', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: AurenTransportScreen(localStore: _FailingVehicleStore()),
+    ));
+    await openSection(tester, 'Vehicle Ownership');
+    await enterField(tester, 'الشركة / الصانع', 'Toyota');
+    await enterField(tester, 'الطراز', 'Corolla');
+    await enterField(tester, 'سنة الصنع', '2020');
+    await tester.ensureVisible(find.text('إضافة مركبة'));
+    await tester.tap(find.text('إضافة مركبة'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تعذر حفظ المركبة على الجهاز؛ لم تتم إضافتها إلى السجل.'), findsOneWidget);
+    expect(find.textContaining('Toyota Corolla'), findsNothing);
+    expect(tester.widget<TextField>(field('الشركة / الصانع')).controller!.text, 'Toyota');
+    expect(tester.widget<TextField>(field('الطراز')).controller!.text, 'Corolla');
+  });
+
+  testWidgets('failed port save preserves the form and does not add a record', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: AurenTransportScreen(localStore: _FailingPortStore()),
+    ));
+    await openSection(tester, 'Maritime & Port Intelligence');
+    await enterField(tester, 'اسم الميناء', 'ميناء تجريبي');
+    await enterField(tester, 'الدولة', 'السودان');
+    await enterField(tester, 'مصدر المعلومات', 'إدارة الميناء');
+    await enterField(tester, 'تاريخ ملاحظة المصدر YYYY-MM-DD', '2026-10-19');
+    await tester.ensureVisible(find.text('حفظ معلومات الميناء'));
+    await tester.tap(find.text('حفظ معلومات الميناء'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تعذر حفظ معلومات الميناء على الجهاز؛ لم تتم إضافتها إلى السجل.'), findsOneWidget);
+    expect(await MobilityLocalStore().loadPorts(), isEmpty);
+    expect(tester.widget<TextField>(field('اسم الميناء')).controller!.text, 'ميناء تجريبي');
+    expect(tester.widget<TextField>(field('مصدر المعلومات')).controller!.text, 'إدارة الميناء');
+  });
+
+  testWidgets('failed shipment status update keeps the previously saved status', (tester) async {
+    await MobilityLocalStore().saveShipments([
+      const CargoShipment(
+        reference: 'STATUS-FAIL',
+        origin: 'بورتسودان',
+        destination: 'الخرطوم',
+        status: CargoStatus.draft,
+      ),
+    ]);
+    await tester.pumpWidget(MaterialApp(
+      home: AurenTransportScreen(localStore: _FailingShipmentStore()),
+    ));
+    await tester.pumpAndSettle();
+    await openSection(tester, 'Freight & Cargo Coordination');
+
+    expect(find.textContaining('STATUS-FAIL: بورتسودان → الخرطوم • مسودة'), findsOneWidget);
+    final statusDropdown = find.byKey(const ValueKey('cargo-status-0'));
+    await tester.scrollUntilVisible(
+      statusDropdown,
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(statusDropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(statusDropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('تم التسليم').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('تعذر حفظ الحالة الجديدة؛ لم يتم تغيير السجل المعروض.'), findsOneWidget);
+    expect(find.textContaining('STATUS-FAIL: بورتسودان → الخرطوم • مسودة'), findsOneWidget);
+    final stored = await MobilityLocalStore().loadShipments();
+    expect(stored.single.status, CargoStatus.draft);
+  });
+
+}
