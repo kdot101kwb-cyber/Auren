@@ -7,7 +7,10 @@ import 'package:url_launcher/url_launcher.dart';
 /// Read-only live view of public GitHub Actions runs for the AUREN repository.
 /// No token is embedded in the mobile app; private repositories need a secure backend.
 class GitHubCiScreen extends StatefulWidget {
-  const GitHubCiScreen({super.key});
+  const GitHubCiScreen({super.key, this.httpClient});
+
+  /// Optional client for deterministic widget tests.
+  final http.Client? httpClient;
 
   @override
   State<GitHubCiScreen> createState() => _GitHubCiScreenState();
@@ -20,16 +23,53 @@ class _GitHubCiScreenState extends State<GitHubCiScreen> {
     const {'per_page': '15'},
   );
 
+  late final http.Client _httpClient;
+  bool _ownsClient = false;
   bool _loading = false;
   String? _error;
+  String _filter = 'all';
   List<_WorkflowRun> _runs = const [];
   DateTime? _lastUpdated;
 
   @override
   void initState() {
     super.initState();
+    if (widget.httpClient case final client?) {
+      _httpClient = client;
+    } else {
+      _httpClient = http.Client();
+      _ownsClient = true;
+    }
     _refresh();
   }
+
+  @override
+  void dispose() {
+    if (_ownsClient) _httpClient.close();
+    super.dispose();
+  }
+
+  int get _successCount => _runs.where((run) => run.conclusion == 'success').length;
+  int get _failureCount => _runs.where((run) => _isFailure(run.conclusion)).length;
+  int get _runningCount => _runs.where((run) => run.status != 'completed').length;
+
+  List<_WorkflowRun> get _visibleRuns {
+    switch (_filter) {
+      case 'running':
+        return _runs.where((run) => run.status != 'completed').toList();
+      case 'success':
+        return _runs.where((run) => run.conclusion == 'success').toList();
+      case 'failure':
+        return _runs.where((run) => _isFailure(run.conclusion)).toList();
+      default:
+        return _runs;
+    }
+  }
+
+  static bool _isFailure(String conclusion) =>
+      conclusion == 'failure' ||
+      conclusion == 'cancelled' ||
+      conclusion == 'timed_out';
 
   Future<void> _refresh() async {
     if (_loading) return;
@@ -38,7 +78,7 @@ class _GitHubCiScreenState extends State<GitHubCiScreen> {
       _error = null;
     });
     try {
-      final response = await http.get(
+      final response = await _httpClient.get(
         _runsUri,
         headers: const {
           'Accept': 'application/vnd.github+json',
@@ -83,7 +123,7 @@ class _GitHubCiScreenState extends State<GitHubCiScreen> {
 
   Future<void> _openRun(String url) async {
     final uri = Uri.tryParse(url);
-    if (uri == null || !uri.hasScheme) return;
+    if (uri == null || uri.scheme != 'https' || uri.host != 'github.com') return;
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -94,6 +134,7 @@ class _GitHubCiScreenState extends State<GitHubCiScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final visibleRuns = _visibleRuns;
     return Directionality(
       textDirection: TextDirection.rtl,
       child: RefreshIndicator(
@@ -139,6 +180,29 @@ class _GitHubCiScreenState extends State<GitHubCiScreen> {
                 ),
               ],
             ),
+            if (_runs.isNotEmpty) ...[
+              Row(
+                children: [
+                  Expanded(child: _SummaryTile(label: 'النجاح', value: _successCount, icon: Icons.check_circle_outline)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _SummaryTile(label: 'الفشل', value: _failureCount, icon: Icons.error_outline)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _SummaryTile(label: 'الجارية', value: _runningCount, icon: Icons.pending_outlined)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  _filterChip('all', 'الكل'),
+                  _filterChip('running', 'قيد التنفيذ'),
+                  _filterChip('success', 'الناجحة'),
+                  _filterChip('failure', 'الفاشلة'),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
             if (_error != null)
               Card(
                 child: Padding(
@@ -171,7 +235,12 @@ class _GitHubCiScreenState extends State<GitHubCiScreen> {
                 padding: EdgeInsets.all(20),
                 child: Text('لم يعرض GitHub أي تشغيلات في الاستجابة الحالية. اسحب للتحديث.'),
               ),
-            for (final run in _runs)
+            if (_runs.isNotEmpty && visibleRuns.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(20),
+                child: Text('لا توجد تشغيلات ضمن هذا التصنيف.'),
+              ),
+            for (final run in visibleRuns)
               Card(
                 child: InkWell(
                   borderRadius: BorderRadius.circular(18),
@@ -217,19 +286,23 @@ class _GitHubCiScreenState extends State<GitHubCiScreen> {
     );
   }
 
+  Widget _filterChip(String value, String label) => ChoiceChip(
+        label: Text(label),
+        selected: _filter == value,
+        onSelected: (_) => setState(() => _filter = value),
+      );
+
   static IconData _iconFor(String status, String conclusion) {
     if (status != 'completed') return Icons.pending_outlined;
     if (conclusion == 'success') return Icons.check_circle_outline;
-    if (conclusion == 'failure' || conclusion == 'cancelled' || conclusion == 'timed_out') return Icons.error_outline;
+    if (_isFailure(conclusion)) return Icons.error_outline;
     return Icons.info_outline;
   }
 
   static Color _colorFor(BuildContext context, String status, String conclusion) {
     if (status != 'completed') return Colors.amber;
     if (conclusion == 'success') return Colors.green;
-    if (conclusion == 'failure' || conclusion == 'cancelled' || conclusion == 'timed_out') {
-      return Theme.of(context).colorScheme.error;
-    }
+    if (_isFailure(conclusion)) return Theme.of(context).colorScheme.error;
     return Theme.of(context).colorScheme.onSurfaceVariant;
   }
 
@@ -250,6 +323,29 @@ class _GitHubCiScreenState extends State<GitHubCiScreen> {
       default: return conclusion.isEmpty ? 'اكتمل دون نتيجة معروفة' : conclusion;
     }
   }
+}
+
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({required this.label, required this.value, required this.icon});
+
+  final String label;
+  final int value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          child: Column(
+            children: [
+              Icon(icon, size: 20),
+              const SizedBox(height: 4),
+              Text('$value', style: Theme.of(context).textTheme.titleLarge),
+              Text(label, style: Theme.of(context).textTheme.bodySmall),
+            ],
+          ),
+        ),
+      );
 }
 
 class _WorkflowRun {

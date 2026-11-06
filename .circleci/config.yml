@@ -285,10 +285,38 @@ jobs:
           name: Build Plugin Worker image
           command: docker build -t auren-plugin-worker:ci backend/plugin-worker
 
+  # NOVA is a separate Flutter package. Keep its signal independent from AUREN's root app.
+  nova_flutter_ci:
+    docker:
+      - image: ghcr.io/gmeligio/flutter-android:3.47.2
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - nova-flutter-deps-v1-{{ .Branch }}
+            - nova-flutter-deps-v1-
+      - run:
+          name: NOVA Flutter version
+          command: flutter --version && dart --version
+      - run:
+          name: Get NOVA dependencies
+          command: cd nova_ai && flutter pub get
+      - save_cache:
+          key: nova-flutter-deps-v1-{{ .Branch }}
+          paths:
+            - ~/.pub-cache
+      - run:
+          name: Analyze NOVA
+          command: cd nova_ai && flutter analyze --no-fatal-warnings --no-fatal-infos
+      - run:
+          name: Test NOVA
+          command: cd nova_ai && flutter test
+
 workflows:
   auren_ci:
     jobs:
       - flutter_ci
+      - nova_flutter_ci
       - functions_tests
       - gitleaks_scan
       - action_executor_tests
