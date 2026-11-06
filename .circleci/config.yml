@@ -209,7 +209,32 @@ jobs:
             SCAN_DIR="$(mktemp -d)"
             mkdir -p "${SCAN_DIR}/functions"
             find functions -maxdepth 1 -type f -name 'nova_*.js' ! -name '*.test.js' -exec cp {} "${SCAN_DIR}/functions/" +
-            gitleaks dir "${SCAN_DIR}" --redact --exit-code 1
+            set +e
+            gitleaks dir "${SCAN_DIR}" --redact --exit-code 1 --report-format json --report-path gitleaks-report.json
+            status=$?
+            echo "${status}" > /tmp/gitleaks_scan_status
+            echo "Gitleaks exit code: ${status} (0 = clean, 1 = findings or scan error)"
+            if [ -f gitleaks-report.json ]; then
+              echo "Redacted Gitleaks JSON report generated."
+              cat gitleaks-report.json
+            else
+              echo "Gitleaks did not generate a report; inspect install/CLI output above."
+            fi
+            exit 0
+      - store_artifacts:
+          path: gitleaks-report.json
+      - run:
+          name: Enforce Gitleaks result
+          command: |
+            status=1
+            if [ -f /tmp/gitleaks_scan_status ]; then
+              read status < /tmp/gitleaks_scan_status
+            fi
+            if [ "${status}" -ne 0 ]; then
+              echo "Gitleaks gate failed. Review the redacted report artifact and install/scan output."
+              exit 1
+            fi
+            echo "Gitleaks scan passed."
 
   action_executor_tests:
     docker:
