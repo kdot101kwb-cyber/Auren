@@ -2,7 +2,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {normalizeNovaTaskInput} = require('./nova_command_validation');
-const {shouldNotifyNovaCreation, shouldNotifyNovaTransition} = require('./nova_notification_policy');
 
 test('accepts a bounded task with stable idempotency key', () => {
   const task = normalizeNovaTaskInput({type:'research',prompt:'ابحث عن فرصة',idempotencyKey:'nova_task_123456'});
@@ -34,6 +33,7 @@ test('limits prompt size and normalizes metadata', () => {
 
 const {
   buildNovaMilestoneNotification,
+  shouldNotifyNovaCreation,
   shouldNotifyNovaTransition,
 } = require('./nova_notification_policy');
 
