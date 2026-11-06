@@ -238,8 +238,8 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen>
       if (mounted) {
         setState(() => _message =
             'سُجلت المهمة في قائمة الخلفية: ${data['taskId']} — الحالة: ${data['status']}. '
-            (workflowSteps.isEmpty ? 'مهمة واحدة.' : 'ستنفذ NOVA ${workflowSteps.length + 1} خطوات مترابطة تلقائياً.') '
-            'التسجيل وحده لا يثبت بدء التنفيذ.');
+            + (workflowSteps.isEmpty ? 'مهمة واحدة.' : 'ستنفذ NOVA ${workflowSteps.length + 1} خطوات مترابطة تلقائياً.')
+            + 'التسجيل وحده لا يثبت بدء التنفيذ.');
       }
       _busy = false;
       await _loadTasks();
