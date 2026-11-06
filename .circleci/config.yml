@@ -144,8 +144,8 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - functions-node-v3-
-            - functions-node-v3
+            - functions-node-v4-
+            - functions-node-v4
       - run:
           name: Install Functions dependencies
           command: |
@@ -154,7 +154,7 @@ jobs:
             echo "========== RESOLVED FIREBASE TEST SDK VERSIONS =========="
             npm ls firebase @firebase/rules-unit-testing
       - save_cache:
-          key: functions-node-v3-{{ .Branch }}
+          key: functions-node-v4-{{ .Branch }}
           paths:
             - functions/node_modules
       - run:
@@ -182,10 +182,24 @@ jobs:
           name: Run Firestore Action Rules emulator gate
           command: |
             set -e
-            if ! java -version >/dev/null 2>&1; then
+            set -e
+            JAVA_VERSION="$(java -version 2>&1 | head -n 1 || true)"
+            echo "Java before emulator setup: ${JAVA_VERSION:-not installed}"
+            if ! echo "$JAVA_VERSION" | grep -Eq 'version "21([.]|")|openjdk 21([.]| )'; then
               sudo apt-get update
               sudo apt-get install -y openjdk-21-jre-headless
             fi
+            JAVA21_BIN="/usr/lib/jvm/java-21-openjdk-amd64/bin"
+            if [ -x "${JAVA21_BIN}/java" ]; then
+              export JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
+              export PATH="${JAVA21_BIN}:${PATH}"
+            fi
+            echo "Java selected for emulator:"
+            java -version
+            java -version 2>&1 | grep -Eq 'version "21([.]|")|openjdk 21([.]| )' || {
+              echo "ERROR: Firestore emulator requires Java 21+, but Java 21 was not selected."
+              exit 1
+            }
             npx --yes firebase-tools emulators:exec --project auren-emulator --only firestore "node --test functions/action_rules.integration.test.js" 2>&1 | tee firestore_action_rules.log
             status=${PIPESTATUS[0]}
             echo "firestore_action_rules_exit_code=${status}" >> firestore_action_rules.log

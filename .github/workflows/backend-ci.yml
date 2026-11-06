@@ -51,9 +51,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install Java 21 for Firebase Emulator
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
       - name: Install Functions dependencies
         working-directory: functions
-        run: npm install --no-audit --no-fund
+        run: |
+          npm install --no-audit --no-fund
+          npm ls firebase @firebase/rules-unit-testing
       - name: Run Functions tests with diagnostic capture
         working-directory: functions
         run: |
@@ -63,12 +70,19 @@ jobs:
           echo "npm_test_exit_code=${status}" >> ci-test.log
           exit ${status}
 
-      - name: Upload Functions test diagnostics
+      - name: Run Firestore Action Rules emulator gate
+        run: |
+          set -o pipefail
+          npx --yes firebase-tools emulators:exec --project auren-emulator --only firestore "node --test functions/action_rules.integration.test.js" 2>&1 | tee firestore-action-rules.log
+
+      - name: Upload Functions and emulator diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: functions-test-diagnostics
-          path: functions/ci-test.log
+          path: |
+            functions/ci-test.log
+            firestore-action-rules.log
           if-no-files-found: ignore
 
   plugin-worker-image:
