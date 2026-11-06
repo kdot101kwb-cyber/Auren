@@ -37,15 +37,12 @@ function approvedVideoTask(overrides = {}) {
   return task;
 }
 
-test('video generation requires owner approval bound to the exact task and expiry', () => {
+test('video generation stays blocked even with exact owner approval until a zero-cost provider is verified', () => {
   const task = approvedVideoTask();
-  assert.equal(isTaskExecutable(task, 'owner-1', 1_000_000), true);
+  assert.equal(isTaskExecutable(task, 'owner-1', 1_000_000), false);
   assert.equal(isTaskExecutable(task, 'owner-2', 1_000_000), false);
   assert.equal(isTaskExecutable({...task, ownerUid: 'owner-2'}, 'owner-1', 1_000_000), false);
   assert.equal(isTaskExecutable({...task, requiresApproval: false}, 'owner-1', 1_000_000), false);
-  assert.equal(isTaskExecutable({...task, approval: {...task.approval, approvedBy: 'owner-2'}}, 'owner-1', 1_000_000), false);
-  assert.equal(isTaskExecutable({...task, approval: {...task.approval, expiresAt: 999_999}}, 'owner-1', 1_000_000), false);
-  assert.equal(isTaskExecutable({...task, approval: {...task.approval, expiresAt: null}}, 'owner-1', 1_000_000), false);
 });
 
 test('changing the approved prompt or metadata invalidates the approval hash', () => {
