@@ -4,7 +4,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { Timestamp, doc, getDoc, getFirestore, setDoc, updateDoc, deleteDoc, runTransaction } = require('firebase/firestore');
+require('firebase/compat/app');
+require('firebase/compat/firestore');
+const { Timestamp, doc, getDoc, setDoc, updateDoc, deleteDoc, runTransaction } = require('firebase/firestore');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'auren-emulator';
@@ -27,7 +29,7 @@ test.after(async () => {
 
 async function seedAction(userId, actionId, overrides = {}) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    const db = getFirestore(context.app);
+    const db = context.firestore();
     const now = Timestamp.now();
     await setDoc(doc(db, `users/${userId}/actions/${actionId}`), {
       actionType: 'demo.create_note',
@@ -45,7 +47,7 @@ async function seedAction(userId, actionId, overrides = {}) {
 }
 
 function actionRef(userId, actionId) {
-  const db = getFirestore(testEnv.authenticatedContext(userId).app);
+  const db = testEnv.authenticatedContext(userId).firestore();
   return doc(db, `users/${userId}/actions/${actionId}`);
 }
 
@@ -143,7 +145,7 @@ test('client cannot delete an action', async () => {
 
 test('another user cannot read or update the action', async () => {
   await seedAction('rules-owner', 'cross-user');
-  const db = getFirestore(testEnv.authenticatedContext('rules-other').app);
+  const db = testEnv.authenticatedContext('rules-other').firestore();
   const ref = doc(db, 'users/rules-owner/actions/cross-user');
   await assertFails(getDoc(ref));
   await assertFails(updateDoc(ref, {
@@ -155,7 +157,7 @@ test('another user cannot read or update the action', async () => {
 
 test('unauthenticated client cannot read or update the action', async () => {
   await seedAction('rules-user-10', 'unauth');
-  const db = getFirestore(testEnv.unauthenticatedContext().app);
+  const db = testEnv.unauthenticatedContext().firestore();
   const ref = doc(db, 'users/rules-user-10/actions/unauth');
   await assertFails(getDoc(ref));
   await assertFails(updateDoc(ref, {
@@ -166,7 +168,7 @@ test('unauthenticated client cannot read or update the action', async () => {
 });
 
 test('client cannot create action documents directly', async () => {
-  const db = getFirestore(testEnv.authenticatedContext('rules-user-11').app);
+  const db = testEnv.authenticatedContext('rules-user-11').firestore();
   await assertFails(setDoc(doc(db, 'users/rules-user-11/actions/client-create'), {
     actionType: 'demo.create_note',
     title: 'Client-created',
@@ -190,7 +192,7 @@ test('concurrent execution claims allow exactly one winner', async () => {
   });
 
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    const db = getFirestore(context.app);
+    const db = context.firestore();
     const ref = doc(db, 'users/rules-concurrency/actions/execution-claim');
 
     const claim = async () => {
@@ -219,7 +221,7 @@ test('concurrent execution claims allow exactly one winner', async () => {
 
 async function seedSocialRequest(collection, id, data) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    const db = getFirestore(context.app);
+    const db = context.firestore();
     await setDoc(doc(db, `${collection}/${id}`), data);
   });
 }
@@ -232,9 +234,9 @@ test('random connect requests: only waiting requests or involved users are reada
     uid: 'social-owner', status: 'matched', matchedWith: 'social-peer',
     displayName: 'Matched profile',
   });
-  const strangerDb = getFirestore(testEnv.authenticatedContext('social-stranger').app);
-  const ownerDb = getFirestore(testEnv.authenticatedContext('social-owner').app);
-  const peerDb = getFirestore(testEnv.authenticatedContext('social-peer').app);
+  const strangerDb = testEnv.authenticatedContext('social-stranger').firestore();
+  const ownerDb = testEnv.authenticatedContext('social-owner').firestore();
+  const peerDb = testEnv.authenticatedContext('social-peer').firestore();
 
   await assertSucceeds(getDoc(doc(strangerDb, 'random_connect/waiting-public')));
   await assertFails(getDoc(doc(strangerDb, 'random_connect/matched-private')));
@@ -249,8 +251,8 @@ test('random group requests: only waiting requests or the owner are readable', a
   await seedSocialRequest('random_group_connect', 'grouped-private', {
     uid: 'group-owner', status: 'grouped', groupSize: 4,
   });
-  const strangerDb = getFirestore(testEnv.authenticatedContext('group-stranger').app);
-  const ownerDb = getFirestore(testEnv.authenticatedContext('group-owner').app);
+  const strangerDb = testEnv.authenticatedContext('group-stranger').firestore();
+  const ownerDb = testEnv.authenticatedContext('group-owner').firestore();
 
   await assertSucceeds(getDoc(doc(strangerDb, 'random_group_connect/group-waiting')));
   await assertFails(getDoc(doc(strangerDb, 'random_group_connect/grouped-private')));
@@ -259,7 +261,7 @@ test('random group requests: only waiting requests or the owner are readable', a
 
 test('NOVA debate history is readable only by its owner and remains server-write-only', async () => {
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    const db = getFirestore(context.app);
+    const db = context.firestore();
     await setDoc(doc(db, 'users/nova-owner/novaDebates/debate123456789012'), {
       status: 'awaiting_user_agreement',
       executionStarted: false,
@@ -267,8 +269,8 @@ test('NOVA debate history is readable only by its owner and remains server-write
     });
   });
 
-  const ownerDb = getFirestore(testEnv.authenticatedContext('nova-owner').app);
-  const otherDb = getFirestore(testEnv.authenticatedContext('nova-other').app);
+  const ownerDb = testEnv.authenticatedContext('nova-owner').firestore();
+  const otherDb = testEnv.authenticatedContext('nova-other').firestore();
   const ownerRef = doc(ownerDb, 'users/nova-owner/novaDebates/debate123456789012');
   const otherUserRef = doc(otherDb, 'users/nova-owner/novaDebates/debate123456789012');
 
