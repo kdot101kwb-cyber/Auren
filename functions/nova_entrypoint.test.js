@@ -21,6 +21,7 @@ test('Firebase deployment entrypoint exports NOVA task, worker, and push functio
     'registerNovaDeviceToken',
     'unregisterNovaDeviceToken',
     'notifyNovaTaskMilestone',
+    'notifyNovaApprovalRequired',
     'processNovaTaskQueue',
     'pollHiggsfieldVideoTasks',
   ]) {
