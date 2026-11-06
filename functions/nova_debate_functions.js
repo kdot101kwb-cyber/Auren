@@ -90,7 +90,7 @@ exports.novaApproveDebatePlan = onCall(
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', 'Authentication is required.');
     const debateId = String(request.data?.debateId || '').trim();
-    if (!/^[A-Za-z0-9A-Za-z_-]{1,128}$/.test(debateId)) {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(debateId)) {
       throw new HttpsError('invalid-argument', 'Invalid debate id.');
     }
     const ref = db.collection('users').doc(uid).collection('nova_debates').doc(debateId);
