@@ -23,6 +23,7 @@ import 'core_ten_screen.dart';
 import 'core_five_next_screen.dart';
 import 'systems_47_screen.dart';
 import '../../suppliers/presentation/auren_supplier_requests_screen.dart';
+import '../../everyday_life/presentation/auren_everyday_life_screen.dart';
 
 class AurenMoreScreen extends StatelessWidget {
   const AurenMoreScreen({super.key});
@@ -58,6 +59,13 @@ class AurenMoreScreen extends StatelessWidget {
         const SizedBox(height: 6),
         const Text('كل مسارات AUREN في مكان واحد — واختر كيف تريد أن تبدأ.'),
         const SizedBox(height: 18),
+        Card(child: ListTile(
+          leading: const Icon(Icons.checklist_rtl_outlined),
+          title: const Text('Everyday Life & Services'),
+          subtitle: const Text('مهام وملاحظات، أعمال المنزل، مسودات الخدمات ودليل محلي.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEverydayLifeScreen())),
+        )),
         Card(child: ListTile(
           leading: const Icon(Icons.local_shipping_outlined),
           title: const Text('طلبات الموردين'),
