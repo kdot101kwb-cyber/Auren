@@ -5,7 +5,7 @@ const ALLOWED_TYPES = new Set([
   'image_generation', 'video_generation', 'social_publish',
   'github_ci_check', 'integration_health', 'finance_report',
 ]);
-const APPROVAL_TYPES = new Set(['social_publish', 'image_generation', 'video_generation']);
+const {APPROVAL_REQUIRED_TYPES: APPROVAL_TYPES} = require('./nova_action_policy');
 
 function normalizeNovaTaskInput(data, ErrorType = Error) {
   const fail = (code, message) => { throw ErrorType === Error ? new ErrorType(message) : new ErrorType(code, message); };
