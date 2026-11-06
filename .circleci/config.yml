@@ -207,11 +207,9 @@ jobs:
             go install github.com/zricethezav/gitleaks/v8@v8.30.1
             export PATH="$(go env GOPATH)/bin:$PATH"
             SCAN_DIR="$(mktemp -d)"
-            mkdir -p "${SCAN_DIR}/functions" "${SCAN_DIR}/nova_ai/video_factory/remotion_worker"
+            mkdir -p "${SCAN_DIR}/functions"
             find functions -maxdepth 1 -type f -name 'nova_*.js' ! -name '*.test.js' -exec cp {} "${SCAN_DIR}/functions/" \;
-            if [ -d nova_ai/lib ]; then cp -a nova_ai/lib "${SCAN_DIR}/nova_ai/lib"; fi
-            if [ -d nova_ai/test ]; then cp -a nova_ai/test "${SCAN_DIR}/nova_ai/test"; fi
-            if [ -d nova_ai/video_factory/remotion_worker/src ]; then cp -a nova_ai/video_factory/remotion_worker/src "${SCAN_DIR}/nova_ai/video_factory/remotion_worker/src"; fi
+            cp -a nova_ai "${SCAN_DIR}/nova_ai"
             gitleaks dir "${SCAN_DIR}" --redact --exit-code 1
 
   action_executor_tests:
