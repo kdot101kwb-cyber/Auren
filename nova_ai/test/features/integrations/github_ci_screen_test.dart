@@ -60,8 +60,18 @@ void main() {
     expect(find.text('الجارية'), findsOneWidget);
     expect(find.text('Android build passed'), findsOneWidget);
     expect(find.text('Functions tests failed'), findsOneWidget);
+
+    // The third run can be below the initial viewport in the scrollable list.
+    await tester.scrollUntilVisible(
+      find.text('Security scan running'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Security scan running'), findsOneWidget);
 
+    // Return to the filter controls before changing the selected filter.
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, 1000));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ChoiceChip, 'الفاشلة'));
     await tester.pumpAndSettle();
 
