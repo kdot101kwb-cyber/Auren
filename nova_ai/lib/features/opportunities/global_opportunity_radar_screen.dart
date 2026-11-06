@@ -212,6 +212,52 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
           if (lead.remote) const Chip(label: Text('Remote')),
           if (lead.salary.isNotEmpty) Chip(label: Text(lead.salary, overflow: TextOverflow.ellipsis)),
         ]),
+        final safety = assessOpportunitySafety(lead);
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: safety.level == OpportunityRiskLevel.high
+                ? Colors.red.withValues(alpha: .12)
+                : safety.level == OpportunityRiskLevel.review
+                    ? Colors.orange.withValues(alpha: .12)
+                    : Colors.white.withValues(alpha: .04),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: safety.level == OpportunityRiskLevel.high
+                  ? Colors.redAccent
+                  : safety.level == OpportunityRiskLevel.review
+                      ? Colors.orangeAccent
+                      : Colors.white24,
+            ),
+          ),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(
+              safety.level == OpportunityRiskLevel.high
+                  ? Icons.gpp_bad_outlined
+                  : safety.level == OpportunityRiskLevel.review
+                      ? Icons.warning_amber_rounded
+                      : Icons.shield_outlined,
+              size: 19,
+              color: safety.level == OpportunityRiskLevel.high
+                  ? Colors.redAccent
+                  : safety.level == OpportunityRiskLevel.review
+                      ? Colors.orangeAccent
+                      : Colors.white70,
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: Text(
+              safety.level == OpportunityRiskLevel.high
+                  ? 'تحذير قوي: ${safety.reasons.join('، ')}. لا تدفع ولا تشارك بيانات محفظتك.'
+                  : safety.level == OpportunityRiskLevel.review
+                      ? 'تحتاج مراجعة: ${safety.reasons.join('، ')}. تحقق من الجهة والعقد والدفع.'
+                      : 'لم تظهر إشارات الخطر الشائعة في النص؛ هذا لا يثبت أن الفرصة موثوقة.',
+              textDirection: TextDirection.rtl,
+              style: const TextStyle(fontSize: 12),
+            )),
+          ]),
+        ),
         if (lead.category.isNotEmpty) Text('المجال: ' + lead.category),
         if (lead.description.isNotEmpty) ...[const SizedBox(height: 6), Text(lead.description, maxLines: 4, overflow: TextOverflow.ellipsis)],
         const SizedBox(height: 8),
