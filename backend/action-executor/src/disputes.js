@@ -19,9 +19,10 @@ const allowedTransitions = {
 export function createDisputeId(){ return 'dsp_'+crypto.randomUUID(); }
 
 export async function openDispute(db, uid, {transactionId, reason, description}){
-  if(typeof transactionId!=='string'||!transactionId.trim()) throw Object.assign(new Error('transactionId is required.'),{code:400});
-  if(typeof reason!=='string'||reason.trim().length<2) throw Object.assign(new Error('Dispute reason is required.'),{code:400});
-  if(typeof description!=='string'||description.trim().length<5) throw Object.assign(new Error('Dispute description is required.'),{code:400});
+  if(typeof uid!=='string'||!uid.trim()||uid.length>128||uid.includes('/')) throw Object.assign(new Error('A valid owner uid is required.'),{code:400});
+  if(typeof transactionId!=='string'||!transactionId.trim()||transactionId.trim().length>128) throw Object.assign(new Error('A valid transactionId is required.'),{code:400});
+  if(typeof reason!=='string'||reason.trim().length<2||reason.trim().length>200) throw Object.assign(new Error('Dispute reason must contain 2 to 200 characters.'),{code:400});
+  if(typeof description!=='string'||description.trim().length<5||description.trim().length>4000) throw Object.assign(new Error('Dispute description must contain 5 to 4000 characters.'),{code:400});
   const txQuery=await db.collection('users').doc(uid).collection('wallet_transactions').where('transactionId','==',transactionId.trim()).limit(1).get();
   if(txQuery.empty) throw Object.assign(new Error('Transaction not found.'),{code:404});
   const txDoc=txQuery.docs[0];
@@ -39,9 +40,11 @@ export async function openDispute(db, uid, {transactionId, reason, description})
 }
 
 export async function addEvidence(db, uid, {disputeId,type,description,reference}){
-  if(typeof disputeId!=='string'||!disputeId.trim()) throw Object.assign(new Error('disputeId is required.'),{code:400});
+  if(typeof uid!=='string'||!uid.trim()||uid.length>128||uid.includes('/')) throw Object.assign(new Error('A valid owner uid is required.'),{code:400});
+  if(typeof disputeId!=='string'||!disputeId.trim()||disputeId.length>128) throw Object.assign(new Error('A valid disputeId is required.'),{code:400});
   if(!['text','document','transaction','audit'].includes(type)) throw Object.assign(new Error('Unsupported evidence type.'),{code:400});
-  if(typeof description!=='string'||description.trim().length<2) throw Object.assign(new Error('Evidence description is required.'),{code:400});
+  if(typeof description!=='string'||description.trim().length<2||description.trim().length>4000) throw Object.assign(new Error('Evidence description must contain 2 to 4000 characters.'),{code:400});
+  if(reference!==undefined&&reference!==null&&typeof reference!=='string') throw Object.assign(new Error('Evidence reference must be text.'),{code:400});
   const disputeRef=db.collection('users').doc(uid).collection('disputes').doc(disputeId);
   const snap=await disputeRef.get();
   if(!snap.exists) throw Object.assign(new Error('Dispute not found.'),{code:404});
@@ -56,7 +59,10 @@ export async function addEvidence(db, uid, {disputeId,type,description,reference
 }
 
 export async function resolveDispute(db, uid, {disputeId,resolution,amountMinor=0}){
+  if(typeof uid!=='string'||!uid.trim()||uid.length>128||uid.includes('/')) throw Object.assign(new Error('A valid owner uid is required.'),{code:400});
+  if(typeof disputeId!=='string'||!disputeId.trim()||disputeId.length>128) throw Object.assign(new Error('A valid disputeId is required.'),{code:400});
   if(!DISPUTE_RESOLUTIONS.includes(resolution)) throw Object.assign(new Error('Invalid dispute resolution.'),{code:400});
+  if(!Number.isSafeInteger(amountMinor)||amountMinor<0) throw Object.assign(new Error('Resolution amount must be a non-negative safe integer.'),{code:400});
   const ref=db.collection('users').doc(uid).collection('disputes').doc(disputeId);
   return db.runTransaction(async t=>{
     const snap=await t.get(ref);
@@ -108,6 +114,8 @@ export async function resolveDispute(db, uid, {disputeId,resolution,amountMinor=
   });
 }
 export async function transitionDispute(db,uid,{disputeId,toState}){
+  if(typeof uid!=='string'||!uid.trim()||uid.length>128||uid.includes('/')) throw Object.assign(new Error('A valid owner uid is required.'),{code:400});
+  if(typeof disputeId!=='string'||!disputeId.trim()||disputeId.length>128) throw Object.assign(new Error('A valid disputeId is required.'),{code:400});
   if(!DISPUTE_STATES.includes(toState)) throw Object.assign(new Error('Invalid dispute state.'),{code:400});
   const ref=db.collection('users').doc(uid).collection('disputes').doc(disputeId);
   const snap=await ref.get();
