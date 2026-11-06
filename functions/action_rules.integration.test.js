@@ -178,7 +178,7 @@ test('unauthenticated client cannot read or update the action', async () => {
 });
 
 test('client cannot create action documents directly', async () => {
-  const db = getFirestore(testEnv.authenticatedContext('rules-user-11').app);
+  const db = getFirestore(testEnv.authenticatedContext('rules-user-11').firestore().app);
   await assertFails(setDoc(doc(db, 'users/rules-user-11/actions/client-create'), {
     actionType: 'demo.create_note',
     title: 'Client-created',
