@@ -1,5 +1,7 @@
 'use strict';
 
+const {normalizeWorkflowSteps} = require('./nova_autonomous_workflow');
+
 const ALLOWED_TYPES = new Set([
   'chat', 'plan', 'research', 'opportunity_scan', 'content_draft',
   'image_generation', 'video_generation', 'social_publish',
@@ -24,6 +26,7 @@ function normalizeNovaTaskInput(data, ErrorType = Error) {
     metadata: {
       source: String(metadata.source || 'nova_android').slice(0, 80),
       locale: String(metadata.locale || 'ar').slice(0, 20),
+      workflowSteps: normalizeWorkflowSteps(metadata.workflowSteps),
     },
     requiresApproval: APPROVAL_TYPES.has(type) || data.requiresApproval === true,
   };
