@@ -42,7 +42,7 @@ function isNovaActionApprovalValid(task, ownerUid, nowMs = Date.now()) {
   if (!task || typeof task !== 'object' || !ownerUid || task.ownerUid !== ownerUid ||
       task.requiresApproval !== true) return false;
   const policy = getNovaActionPolicy(task.type);
-  if (!policy.approvalRequired) return false;
+  if (!policy.approvalRequired && task.requiresApproval !== true) return false;
   const approval = task.approval;
   if (!approval || approval.required !== true || approval.approvedBy !== ownerUid ||
       typeof approval.scopeHash !== 'string' || !/^[a-f0-9]{64}$/i.test(approval.scopeHash)) return false;
@@ -64,9 +64,9 @@ function canNovaWorkerExecute(task, ownerUid, nowMs = Date.now()) {
   if (!task || typeof task !== 'object') return false;
   const policy = getNovaActionPolicy(task.type);
   if (!policy.workerExecutable) return false;
-  return policy.approvalRequired
+  return (policy.approvalRequired || task.requiresApproval === true)
     ? isNovaActionApprovalValid(task, ownerUid, nowMs)
-    : task.requiresApproval !== true;
+    : true;
 }
 
 module.exports = {
