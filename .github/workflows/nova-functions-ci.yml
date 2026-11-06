@@ -5,6 +5,7 @@ on:
     branches:
       - feat/nova-ai-android-app
       - feat/nova-shared-task-contract-v1
+      - feat/nova-exact-action-approval-v1
     paths:
       - "functions/**"
       - ".github/workflows/nova-functions-ci.yml"
@@ -12,6 +13,7 @@ on:
     branches:
       - main
       - feat/nova-ai-android-app
+      - feat/nova-shared-task-contract-v1
     paths:
       - "functions/**"
       - ".github/workflows/nova-functions-ci.yml"
