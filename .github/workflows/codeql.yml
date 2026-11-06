@@ -15,6 +15,7 @@ on:
     paths:
       - 'functions/**'
       - 'backend/**'
+      - 'nova_ai/video_factory/remotion_worker/**'
       - '.github/workflows/**'
   schedule:
     - cron: '30 2 * * 1'
