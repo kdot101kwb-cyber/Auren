@@ -76,6 +76,24 @@ test('approved but unconnected side-effect adapters remain non-executable', () =
   assert.equal(canNovaWorkerExecute(image, 'owner-1', 1000), false);
 });
 
+
+test('revoked approvals are immediately invalid even before expiry', () => {
+  const task = taskWithApproval();
+  const revoked = {
+    ...task,
+    approval: {
+      ...task.approval,
+      approvedBy: null,
+      approvedAt: null,
+      expiresAt: null,
+      scopeHash: null,
+      revokedBy: 'owner-1',
+    },
+  };
+  assert.equal(isNovaActionApprovalValid(revoked, 'owner-1', 1000), false);
+  assert.equal(canNovaWorkerExecute(revoked, 'owner-1', 1000), false);
+});
+
 test('explicit owner approval can also gate a normally safe task', () => {
   const task = taskWithApproval({type: 'research'});
   assert.equal(canNovaWorkerExecute(task, 'owner-1', 1000), true);
