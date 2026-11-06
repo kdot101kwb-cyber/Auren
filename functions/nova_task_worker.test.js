@@ -13,9 +13,9 @@ test('safe research and content-drafting tasks can run autonomously', () => {
   assert.equal(SAFE_TEXT_TYPES.has('video_generation'), false);
 });
 
-test('video generation is executable only after the owner explicitly approves it', () => {
+test('video generation stays disabled even with exact owner approval under zero-budget policy', () => {
   const task = {type:'video_generation', requiresApproval:true, approvedBy:'owner-1'};
-  assert.equal(isTaskExecutable(task, 'owner-1'), true);
+  assert.equal(isTaskExecutable(task, 'owner-1'), false);
   assert.equal(isTaskExecutable(task, 'owner-2'), false);
   assert.equal(isTaskExecutable({...task, requiresApproval:false}, 'owner-1'), false);
   assert.equal(isTaskExecutable({...task, approvedBy:undefined}, 'owner-1'), false);

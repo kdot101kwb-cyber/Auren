@@ -11,6 +11,8 @@ const HIGGSFIELD_API_KEY_SECRET = defineSecret('HIGGSFIELD_API_KEY_SECRET');
 const {submitVideoGeneration, getVideoGenerationStatus} = require('./nova_higgsfield_adapter');
 const {isTaskExecutable} = require('./nova_task_worker_policy');
 const REGION = 'us-central1';
+// Zero-budget default: provider-backed video generation and polling stay disabled.
+const NOVA_VIDEO_PROVIDER_ENABLED = false;
 
 async function runTextTask(prompt, type, apiKey) {
   if (!apiKey) throw new Error('OPENROUTER_API_KEY is not configured in Firebase Secret Manager.');
@@ -90,6 +92,9 @@ exports.processNovaTaskQueue = onSchedule(
 
       try {
         if (task.type === 'video_generation') {
+          if (!NOVA_VIDEO_PROVIDER_ENABLED) {
+            throw new Error('Video generation is disabled until a verified zero-cost provider is explicitly approved.');
+          }
           const endpoint = String(process.env.HIGGSFIELD_VIDEO_ENDPOINT || '').trim();
           const submitted = await submitVideoGeneration({
             endpoint,
@@ -175,6 +180,7 @@ exports.processNovaTaskQueue = onSchedule(
 exports.pollHiggsfieldVideoTasks = onSchedule(
   {schedule:'every 1 minutes', region:REGION, timeoutSeconds:180, memory:'512MiB', maxInstances:1, secrets:[HIGGSFIELD_API_KEY_ID, HIGGSFIELD_API_KEY_SECRET]},
   async () => {
+    if (!NOVA_VIDEO_PROVIDER_ENABLED) return;
     const queue = await db.collection('nova_task_queue').where('status','==','provider_processing').limit(10).get();
     for (const queueDoc of queue.docs) {
       const row = queueDoc.data() || {};
