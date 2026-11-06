@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
+import '../../../services/entertainment/auren_reading_progress_service.dart';
 import 'entertainment_detail_screen.dart';
 
 class AurenBooksMangaScreen extends StatefulWidget {
@@ -48,6 +49,61 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
   Map<String,dynamic>? _graph;
   bool _unifiedLoading = false;
   List<Map<String,dynamic>> _unifiedResults = const [];
+  final _readingProgressService = AurenReadingProgressService();
+  Map<String, AurenReadingProgress> _readingProgress = const {};
+
+  Future<void> _loadReadingProgress() async {
+    try {
+      final rows = await _readingProgressService.list();
+      if (mounted) setState(() => _readingProgress = {
+        for (final row in rows) row.itemId: row,
+      });
+    } catch (_) {
+      if (mounted) setState(() => _readingProgress = const {});
+    }
+  }
+
+  Future<void> _cycleReadingStatus(AurenEntertainmentItem item) async {
+    final current = _readingProgress[item.id];
+    try {
+      if (current == null) {
+        await _readingProgressService.setStatus(
+          itemId: item.id, title: item.title,
+          status: AurenReadingStatus.wantToRead,
+        );
+      } else if (current.status == AurenReadingStatus.wantToRead) {
+        await _readingProgressService.setStatus(
+          itemId: item.id, title: item.title,
+          status: AurenReadingStatus.inProgress,
+        );
+      } else if (current.status == AurenReadingStatus.inProgress) {
+        await _readingProgressService.setStatus(
+          itemId: item.id, title: item.title,
+          status: AurenReadingStatus.completed,
+        );
+      } else {
+        await _readingProgressService.remove(item.id);
+      }
+      await _loadReadingProgress();
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر تحديث تقدم القراءة المحفوظ محلياً.')),
+      );
+    }
+  }
+
+  String _readingLabel(AurenReadingStatus? status) {
+    switch (status) {
+      case AurenReadingStatus.wantToRead:
+        return 'أريد قراءته';
+      case AurenReadingStatus.inProgress:
+        return 'قيد القراءة';
+      case AurenReadingStatus.completed:
+        return 'مكتمل';
+      case null:
+        return 'إضافة لقائمة القراءة';
+    }
+  }
   Future<void> _searchComics() async { final q=_query.trim(); if(q.length<2)return; setState(()=>_comicLoading=true); try { final r=await FirebaseFunctions.instanceFor(region:'us-central1').httpsCallable('searchAurenComics').call({'query':q,'limit':30}); final d=Map<String,dynamic>.from(r.data as Map); if(mounted)setState(()=>_comicResults=(d['results'] as List? ?? const []).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList()); } catch(_){if(mounted)setState(()=>_comicResults=const []);} finally{if(mounted)setState(()=>_comicLoading=false);} }
   Future<void> _searchResearch() async { final q=_query.trim(); if(q.length<2)return; setState(()=>_researchLoading=true); try { final r=await FirebaseFunctions.instanceFor(region:'us-central1').httpsCallable('searchAurenResearch').call({'query':q,'limit':30}); final d=Map<String,dynamic>.from(r.data as Map); if(mounted)setState(()=>_researchResults=(d['results'] as List? ?? const []).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList()); } catch(_){if(mounted)setState(()=>_researchResults=const []);} finally{if(mounted)setState(()=>_researchLoading=false);} }
   Future<void> _searchUnified() async {
@@ -212,7 +268,7 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
   }
 
   @override
-  void initState() { super.initState(); _loadSubjects(); _loadHeritage(); _loadWorldHeritage(); }
+  void initState() { super.initState(); _loadSubjects(); _loadHeritage(); _loadWorldHeritage(); _loadReadingProgress(); }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -371,7 +427,35 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
           if(snapshot.connectionState==ConnectionState.waiting) const Center(child:Padding(padding:EdgeInsets.all(24),child:CircularProgressIndicator()))
           else if(snapshot.hasError) const Text('تعذر تحميل المكتبة حالياً. حاول مرة أخرى.')
           else if(filtered.isEmpty) const Card(child:Padding(padding:EdgeInsets.all(20),child:Text('لا توجد عناصر منشورة في هذا القسم بعد. ستظهر هنا عندما تتم إضافة محتوى مرخّص إلى AUREN.',textAlign:TextAlign.center)))
-          else ...filtered.map((item)=>Card(clipBehavior:Clip.antiAlias, child:ListTile(contentPadding:const EdgeInsets.all(10), leading:item.imageUrl.isEmpty?CircleAvatar(child:Icon(_iconFor(_type))):CircleAvatar(child:ClipOval(child:Image.network(item.imageUrl,width:40,height:40,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.library_books_rounded)))), title:Text(item.title,style:const TextStyle(fontWeight:FontWeight.w800)), subtitle:Text(item.description,maxLines:2,overflow:TextOverflow.ellipsis), trailing:const Icon(Icons.chevron_right_rounded), onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenEntertainmentDetailScreen(itemId:item.id))))))
+          else ...filtered.map((item) {
+            final progress = _readingProgress[item.id];
+            return Card(clipBehavior: Clip.antiAlias, child: ListTile(
+              contentPadding: const EdgeInsets.all(10),
+              leading: item.imageUrl.isEmpty
+                  ? CircleAvatar(child: Icon(_iconFor(_type)))
+                  : CircleAvatar(child: ClipOval(child: Image.network(
+                      item.imageUrl, width: 40, height: 40, fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.library_books_rounded)))),
+              title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.w800)),
+              subtitle: Text(progress == null
+                  ? item.description
+                  : '${_readingLabel(progress.status)} • ${item.description}',
+                  maxLines: 2, overflow: TextOverflow.ellipsis),
+              trailing: IconButton(
+                tooltip: _readingLabel(progress?.status),
+                icon: Icon(progress?.status == AurenReadingStatus.completed
+                    ? Icons.task_alt
+                    : progress?.status == AurenReadingStatus.inProgress
+                        ? Icons.auto_stories_rounded
+                        : progress?.status == AurenReadingStatus.wantToRead
+                            ? Icons.bookmark_added_outlined
+                            : Icons.bookmark_add_outlined),
+                onPressed: () => _cycleReadingStatus(item),
+              ),
+              onTap: () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => AurenEntertainmentDetailScreen(itemId: item.id))),
+            ));
+          })
         ]);
       },
     ),
