@@ -1,13 +1,13 @@
 'use strict';
 
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
-const {getFirestore, FieldValue} = require('firebase-admin/firestore');
+const {getFirestore, FieldValue, Timestamp} = require('firebase-admin/firestore');
 
 const db = getFirestore();
 const REGION = 'us-central1';
 const TASK_COLLECTION = 'nova_tasks';
 const {normalizeNovaTaskInput} = require('./nova_command_validation');
-const {createNovaTaskRecord, createNovaQueueRecord, createNovaAuditEvent} = require('./nova_task_contract');
+const {createNovaTaskRecord, createNovaQueueRecord, createNovaAuditEvent, createNovaApprovalScopeHash} = require('./nova_task_contract');
 
 exports.submitNovaTask = onCall(
   {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
@@ -102,6 +102,8 @@ exports.approveNovaTask = onCall(
       if (task.status !== 'awaiting_approval' || task.requiresApproval !== true) {
         throw new HttpsError('failed-precondition', 'Task is not awaiting approval.');
       }
+      const scopeHash = createNovaApprovalScopeHash(task);
+      const approvalExpiresAt = Timestamp.fromMillis(Date.now() + 30 * 60 * 1000);
       tx.update(taskRef, {
         status:'queued',
         approvedBy:uid,
@@ -110,7 +112,8 @@ exports.approveNovaTask = onCall(
           required:true,
           approvedBy:uid,
           approvedAt:FieldValue.serverTimestamp(),
-          scopeHash:null,
+          expiresAt:approvalExpiresAt,
+          scopeHash,
         },
         updatedAt:FieldValue.serverTimestamp(),
       });
@@ -125,7 +128,7 @@ exports.approveNovaTask = onCall(
           actorUid:uid,
           taskId,
           taskType:String(task.type || ''),
-          details:{status:'queued'},
+          details:{status:'queued', scopeHash},
         }),
         createdAt:FieldValue.serverTimestamp(),
       });

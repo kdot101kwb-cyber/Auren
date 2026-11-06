@@ -7,6 +7,7 @@ const {
   TASK_STATUSES,
   TERMINAL_STATUSES,
   canTransitionTask,
+  createNovaApprovalScopeHash,
   createNovaTaskRecord,
   createNovaQueueRecord,
   createNovaAuditEvent,
@@ -43,6 +44,28 @@ test('approval-required tasks start blocked from execution until approval', () =
   assert.equal(task.status, 'awaiting_approval');
   assert.equal(task.approval.required, true);
   assert.equal(task.approval.approvedBy, null);
+});
+
+
+test('approval scope hash is stable across metadata key order and changes with task intent', () => {
+  const task = {
+    schemaVersion: 1,
+    taskId: 'nova_task_123456',
+    ownerUid: 'owner-1',
+    type: 'video_generation',
+    prompt: 'Create a video',
+    metadata: {locale: 'ar', source: 'nova_android'},
+    requiresApproval: true,
+  };
+  const hash = createNovaApprovalScopeHash(task);
+  assert.match(hash, /^[a-f0-9]{64}$/);
+  assert.equal(createNovaApprovalScopeHash({
+    ...task,
+    metadata: {source: 'nova_android', locale: 'ar'},
+  }), hash);
+  assert.notEqual(createNovaApprovalScopeHash({...task, prompt: 'Different video'}), hash);
+  assert.notEqual(createNovaApprovalScopeHash({...task, ownerUid: 'owner-2'}), hash);
+  assert.throws(() => createNovaApprovalScopeHash({type: 'video_generation'}), /complete task/);
 });
 
 test('queue envelope preserves owner and bounded retry contract', () => {

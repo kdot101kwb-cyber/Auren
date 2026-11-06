@@ -1,5 +1,7 @@
 name: NOVA Android Build
 
+# Keep Android validation on the same branch head as NOVA security and Functions checks.
+
 on:
   workflow_dispatch:
   push:
@@ -8,6 +10,7 @@ on:
       - feat/nova-ai-android-app
       - feat/nova-application-factory-market-scout
       - feat/nova-shared-task-contract-v1
+      - feat/nova-exact-action-approval-security
     paths:
       - 'nova_ai/**'
       - '.github/workflows/nova-android-build.yml'
