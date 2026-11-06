@@ -170,7 +170,7 @@ exports.cancelNovaTask = onCall(
       const queueSnap = await tx.get(queueRef);
       const task = snap.data() || {};
       if (!['queued','awaiting_approval','waiting_for_dependencies'].includes(task.status)) {
-        throw new HttpsError('failed-precondition', 'Only queued or approval-pending tasks can be cancelled.');
+        throw new HttpsError('failed-precondition', 'Only queued, approval-pending, or dependency-waiting tasks can be cancelled.');
       }
       tx.update(taskRef, {status:'cancelled', cancelledAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
       if (queueSnap.exists && queueSnap.data()?.status === 'queued') {
