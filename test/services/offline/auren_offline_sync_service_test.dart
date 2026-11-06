@@ -1,0 +1,116 @@
+import 'dart:async';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:auren/services/offline/auren_offline_sync_service.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  test('enqueue returns existing ID for duplicate idempotency key', () async {
+    final service = AurenOfflineSyncService.instance;
+    final first = await service.enqueue(
+      type: 'save', payload: {'value': 1}, idempotencyKey: 'operation-1',
+    );
+    final second = await service.enqueue(
+      type: 'save', payload: {'value': 2}, idempotencyKey: 'operation-1',
+    );
+    expect(second, first);
+    expect((await service.pending()).length, 1);
+    await service.clear();
+  });
+
+  test('full queue rejects new work without evicting pending records', () async {
+    final service = AurenOfflineSyncService.instance;
+    for (var i = 0; i < 100; i++) {
+      await service.enqueue(type: 'save', payload: {'index': i});
+    }
+    await expectLater(
+      service.enqueue(type: 'save', payload: {'index': 100}),
+      throwsStateError,
+    );
+    final pending = await service.pending();
+    expect(pending.length, 100);
+    expect((pending.first['payload'] as Map)['index'], 0);
+    expect((pending.last['payload'] as Map)['index'], 99);
+    await service.clear();
+  });
+
+  test('concurrent enqueues preserve every distinct action', () async {
+    final service = AurenOfflineSyncService.instance;
+    await Future.wait(List.generate(
+      40,
+      (index) => service.enqueue(
+        type: 'save',
+        payload: {'index': index},
+      ),
+    ));
+    final pending = await service.pending();
+    expect(pending.length, 40);
+    expect(
+      pending.map((item) => (item['payload'] as Map)['index']).toSet().length,
+      40,
+    );
+    await service.clear();
+  });
+
+  test('concurrent duplicate idempotency keys create one queue item', () async {
+    final service = AurenOfflineSyncService.instance;
+    final ids = await Future.wait(List.generate(
+      20,
+      (index) => service.enqueue(
+        type: 'save',
+        payload: {'index': index},
+        idempotencyKey: 'same-operation',
+      ),
+    ));
+    expect(ids.toSet().length, 1);
+    expect((await service.pending()).length, 1);
+    await service.clear();
+  });
+
+  test('successful replay does not erase an item enqueued during handler', () async {
+    final service = AurenOfflineSyncService.instance;
+    final entered = Completer<void>();
+    final release = Completer<void>();
+    await service.enqueue(type: 'slow', payload: {'old': true});
+    service.registerHandler('slow', (_) async {
+      entered.complete();
+      await release.future;
+    });
+    final flushing = service.flush();
+    await entered.future;
+    await service.enqueue(type: 'later', payload: {'new': true});
+    release.complete();
+    await flushing;
+    final pending = await service.pending();
+    expect(pending.length, 1);
+    expect(pending.single['type'], 'later');
+    service.unregisterHandler('slow');
+    await service.clear();
+  });
+
+  test('corrupted persisted queue is preserved until explicit clear', () async {
+    final service = AurenOfflineSyncService.instance;
+    final prefs = await SharedPreferences.getInstance();
+    const corrupted = '{"unfinished":';
+    await prefs.setString('auren_offline_sync_queue_v1', corrupted);
+
+    await expectLater(
+      service.enqueue(type: 'save', payload: {'new': true}),
+      throwsStateError,
+    );
+    expect(
+      prefs.getString('auren_offline_sync_queue_v1'),
+      corrupted,
+      reason: 'Enqueue must not overwrite data it cannot safely decode.',
+    );
+    await expectLater(service.pending(), throwsStateError);
+
+    // Clearing is the explicit destructive operation.
+    await service.clear();
+    expect(prefs.getString('auren_offline_sync_queue_v1'), isNull);
+  });
+}
