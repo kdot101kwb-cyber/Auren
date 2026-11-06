@@ -9,6 +9,7 @@ on:
     paths:
       - 'functions/**'
       - 'backend/**'
+      - 'nova_ai/video_factory/remotion_worker/**'
       - '.github/workflows/**'
   pull_request:
     paths:
