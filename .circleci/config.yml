@@ -144,17 +144,17 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - functions-node-v3-
-            - functions-node-v3
+            - functions-node-v4-
+            - functions-node-v4
       - run:
           name: Install Functions dependencies
           command: |
             cd functions
-            npm install --no-audit --no-fund
+            npm install --include=dev --no-audit --no-fund
             echo "========== RESOLVED FIREBASE TEST SDK VERSIONS =========="
-            npm ls firebase @firebase/rules-unit-testing
+            npm ls --include=dev firebase @firebase/rules-unit-testing
       - save_cache:
-          key: functions-node-v3-{{ .Branch }}
+          key: functions-node-v4-{{ .Branch }}
           paths:
             - functions/node_modules
       - run:
@@ -195,6 +195,47 @@ jobs:
       - store_artifacts:
           path: firestore_action_rules.log
 
+  gitleaks_scan:
+    docker:
+      - image: cimg/go:1.25
+    steps:
+      - checkout
+      - run:
+          name: Install pinned Gitleaks and scan NOVA Functions source
+          command: |
+            set -euo pipefail
+            go install github.com/zricethezav/gitleaks/v8@v8.30.1
+            export PATH="$(go env GOPATH)/bin:$PATH"
+            SCAN_DIR="$(mktemp -d)"
+            mkdir -p "${SCAN_DIR}/functions"
+            find functions -maxdepth 1 -type f -name 'nova_*.js' ! -name '*.test.js' -exec cp --target-directory="${SCAN_DIR}/functions/" {} +
+            set +e
+            gitleaks dir "${SCAN_DIR}" --redact --exit-code 1 --report-format json --report-path gitleaks-report.json
+            status=$?
+            echo "${status}" > /tmp/gitleaks_scan_status
+            echo "Gitleaks exit code: ${status} (0 = clean, 1 = findings or scan error)"
+            if [ -f gitleaks-report.json ]; then
+              echo "Redacted Gitleaks JSON report generated."
+              cat gitleaks-report.json
+            else
+              echo "Gitleaks did not generate a report; inspect install/CLI output above."
+            fi
+            exit 0
+      - store_artifacts:
+          path: gitleaks-report.json
+      - run:
+          name: Enforce Gitleaks result
+          command: |
+            status=1
+            if [ -f /tmp/gitleaks_scan_status ]; then
+              read status < /tmp/gitleaks_scan_status
+            fi
+            if [ "${status}" -ne 0 ]; then
+              echo "Gitleaks gate failed. Review the redacted report artifact and install/scan output."
+              exit 1
+            fi
+            echo "Gitleaks scan passed."
+
   action_executor_tests:
     docker:
       - image: cimg/node:20.19
@@ -206,7 +247,7 @@ jobs:
             - action-executor-node-v1
       - run:
           name: Install Action Executor dependencies
-          command: cd backend/action-executor && npm install --no-audit --no-fund
+          command: cd backend/action-executor && npm install --include=dev --no-audit --no-fund
       - save_cache:
           key: action-executor-node-v1-{{ .Branch }}
           paths:
@@ -237,7 +278,7 @@ jobs:
             - plugin-worker-node-v1
       - run:
           name: Install Plugin Worker dependencies
-          command: cd backend/plugin-worker && npm install --no-audit --no-fund
+          command: cd backend/plugin-worker && npm install --include=dev --no-audit --no-fund
       - save_cache:
           key: plugin-worker-node-v1-{{ .Branch }}
           paths:
@@ -273,6 +314,7 @@ workflows:
     jobs:
       - flutter_ci
       - functions_tests
+      - gitleaks_scan
       - action_executor_tests
       - plugin_worker_tests
       - plugin_worker_image
