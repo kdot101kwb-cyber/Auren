@@ -56,6 +56,40 @@ void main() {
       expect(result.map((e) => e.id), ['a']);
     });
 
+    test('flags advance-fee and wallet credential requests as high risk', () {
+      final lead = GlobalOpportunityLead(
+        id: 'fee', title: 'Remote assistant',
+        description: 'Pay a registration fee before starting and send your wallet seed phrase.',
+        company: 'Unknown', country: 'Worldwide', category: 'Work',
+        source: 'Test', url: 'https://example.com/job', language: '',
+        salary: '', remote: true,
+      );
+      final assessment = assessOpportunitySafety(lead);
+      expect(assessment.level, OpportunityRiskLevel.high);
+      expect(assessment.hasWarnings, isTrue);
+    });
+
+    test('flags guaranteed income claims for manual review', () {
+      final lead = GlobalOpportunityLead(
+        id: 'promise', title: 'Guaranteed income', description: 'Risk-free profit every day',
+        company: 'Unknown', country: 'Worldwide', category: 'Work',
+        source: 'Test', url: 'https://example.com/job', language: '',
+        salary: '', remote: true,
+      );
+      expect(assessOpportunitySafety(lead).level, OpportunityRiskLevel.review);
+    });
+
+    test('does not label ordinary paid work as suspicious by default', () {
+      final lead = GlobalOpportunityLead(
+        id: 'normal', title: 'Arabic translator', description: 'Translate documents for clients.',
+        company: 'Example', country: 'Sudan', category: 'Translation',
+        source: 'Test', url: 'https://example.com/job', language: 'Arabic',
+        salary: 'USD 10 per task', remote: true,
+      );
+      expect(assessOpportunitySafety(lead).level, OpportunityRiskLevel.low);
+      expect(assessOpportunitySafety(lead).hasWarnings, isFalse);
+    });
+
     test('round trips saved opportunities', () {
       final lead = GlobalOpportunityLead(
         id: 'saved-1', title: 'Arabic QA', description: 'Check transcripts',

@@ -53,6 +53,49 @@ class GlobalOpportunityLead {
   static String _s(Object? value) => value?.toString() ?? '';
 }
 
+/// Heuristic screening for common advance-fee and account-takeover patterns.
+/// This is a warning aid only; it cannot certify an employer or offer as safe.
+enum OpportunityRiskLevel { low, review, high }
+
+class OpportunitySafetyAssessment {
+  final OpportunityRiskLevel level;
+  final List<String> reasons;
+  const OpportunitySafetyAssessment(this.level, this.reasons);
+
+  bool get hasWarnings => reasons.isNotEmpty;
+}
+
+OpportunitySafetyAssessment assessOpportunitySafety(GlobalOpportunityLead lead) {
+  final text = normalizeRadarText(
+    '${lead.title} ${lead.description} ${lead.company} ${lead.salary}',
+  );
+  final highRiskPatterns = <RegExp>[
+    RegExp(r'pay.{0,35}(?:to apply|application fee|registration fee|training fee|deposit|starter kit)', caseSensitive: false),
+    RegExp(r'(?:deposit|registration fee|training fee|starter kit).{0,35}(?:required|before|upfront)', caseSensitive: false),
+    RegExp(r'(?:seed phrase|recovery phrase|private key|wallet password)', caseSensitive: false),
+    RegExp(r'(?:send|transfer|deposit).{0,25}(?:bitcoin|crypto|usdt|ethereum)', caseSensitive: false),
+    RegExp(r'(?:رسوم تسجيل|رسوم تدريب|إيداع مقدم|ادفع مقدما|ادفع مقدماً|مفتاح خاص|عبارة الاسترداد|عبارة الاستعادة)'),
+  ];
+  final reviewPatterns = <RegExp>[
+    RegExp(r'guaranteed (?:income|profit|earnings)|risk.?free (?:income|profit)', caseSensitive: false),
+    RegExp(r'(?:earn|make)\s+\$?\d{3,}\s*(?:daily|per day|a day)', caseSensitive: false),
+    RegExp(r'(?:دخل مضمون|ربح مضمون|أرباح مضمونة|اربح مئات الدولارات يوميا|اربح مئات الدولارات يومياً)'),
+  ];
+
+  final reasons = <String>[];
+  if (highRiskPatterns.any((pattern) => pattern.hasMatch(text))) {
+    reasons.add('طلب رسوم أو إيداع مسبق أو بيانات محفظة حساسة');
+    return OpportunitySafetyAssessment(OpportunityRiskLevel.high, List.unmodifiable(reasons));
+  }
+  if (reviewPatterns.any((pattern) => pattern.hasMatch(text))) {
+    reasons.add('وعد بدخل مضمون أو أرباح مرتفعة بصورة غير معتادة');
+  }
+  return OpportunitySafetyAssessment(
+    reasons.isEmpty ? OpportunityRiskLevel.low : OpportunityRiskLevel.review,
+    List.unmodifiable(reasons),
+  );
+}
+
 String normalizeRadarText(String value) => value
     .toLowerCase()
     .replaceAll(RegExp(r'[^\p{L}\p{N}]+', unicode: true), ' ')
