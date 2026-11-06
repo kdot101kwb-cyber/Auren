@@ -5,6 +5,7 @@ on:
     branches:
       - feat/nova-ai-android-app
       - feat/nova-shared-task-contract-v1
+      - feat/nova-exact-action-approval-security
     paths:
       - "functions/**"
       - ".github/workflows/nova-functions-ci.yml"
