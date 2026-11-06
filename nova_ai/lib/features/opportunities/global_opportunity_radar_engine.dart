@@ -173,7 +173,7 @@ List<GlobalOpportunityLead> rankGlobalLeads(
     if (q.isEmpty) return true;
 
     final haystack = normalizeRadarText(
-      '\${lead.title} \${lead.description} \${lead.company} \${lead.category} \${lead.country} \${lead.language}',
+      '${lead.title} ${lead.description} ${lead.company} ${lead.category} ${lead.country} ${lead.language}',
     );
     final tokens = q.split(' ').where((token) => token.length > 2).toList();
     return tokens.isEmpty || tokens.any(haystack.contains);
