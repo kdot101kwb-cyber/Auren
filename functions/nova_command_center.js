@@ -3,9 +3,9 @@
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const {getFirestore, FieldValue} = require('firebase-admin/firestore');
 const {getMessaging} = require('firebase-admin/messaging');
-const {onDocumentUpdated} = require('firebase-functions/v2/firestore');
+const {onDocumentCreated, onDocumentUpdated} = require('firebase-functions/v2/firestore');
 const {createHash} = require('node:crypto');
-const {buildNovaMilestoneNotification, shouldNotifyNovaTransition} = require('./nova_notification_policy');
+const {buildNovaMilestoneNotification, shouldNotifyNovaCreation, shouldNotifyNovaTransition} = require('./nova_notification_policy');
 
 const db = getFirestore();
 const REGION = 'us-central1';
@@ -280,6 +280,42 @@ exports.notifyNovaTaskMilestone = onDocumentUpdated(
           code === 'messaging/invalid-registration-token') {
         staleRefs.push(tokens[index].doc.ref);
       }
+    });
+    for (let index = 0; index < staleRefs.length; index += 450) {
+      const batch = db.batch();
+      staleRefs.slice(index, index + 450).forEach((ref) => batch.delete(ref));
+      await batch.commit();
+    }
+  }
+);
+
+
+// A task created in the approval queue has no update event yet. Notify the
+// owner on creation so a sensitive action never waits silently for approval.
+exports.notifyNovaApprovalRequired = onDocumentCreated(
+  {document:'users/{uid}/nova_tasks/{taskId}', region:REGION, timeoutSeconds:30, memory:'256MiB'},
+  async (event) => {
+    const task = event.data?.data() || {};
+    if (!shouldNotifyNovaCreation(String(task.status || ''))) return;
+    const notification = buildNovaMilestoneNotification('awaiting_approval', task.type);
+    if (!notification) return;
+    const devices = await db.collection('users').doc(String(event.params.uid))
+      .collection('nova_devices').where('enabled', '==', true).limit(100).get();
+    const tokens = devices.docs
+      .map((doc) => ({doc, token:String(doc.data()?.token || '').trim()}))
+      .filter((item) => item.token.length >= 20);
+    if (tokens.length === 0) return;
+    const response = await getMessaging().sendEachForMulticast({
+      tokens:tokens.map((item) => item.token),
+      notification,
+      data:{taskId:String(event.params.taskId), status:'awaiting_approval', type:String(task.type || 'task')},
+      android:{priority:'high', notification:{sound:'default'}},
+    });
+    const staleRefs = [];
+    response.responses.forEach((result, index) => {
+      const code = result.error?.code || '';
+      if (code === 'messaging/registration-token-not-registered' ||
+          code === 'messaging/invalid-registration-token') staleRefs.push(tokens[index].doc.ref);
     });
     for (let index = 0; index < staleRefs.length; index += 450) {
       const batch = db.batch();
