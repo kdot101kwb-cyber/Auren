@@ -9,6 +9,7 @@ on:
     paths:
       - "functions/**"
       - ".github/workflows/nova-functions-ci.yml"
+      - ".github/workflows/nova-android-build.yml"
   pull_request:
     branches:
       - main
